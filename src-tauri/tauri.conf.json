@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "rudditui",
-  "version": "0.1.0",
+  "productName": "Ruddit",
+  "version": "0.0.1",
   "identifier": "com.tauri.dev",
   "build": {
     "frontendDist": "../out",
@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "rudditui",
-        "width": 800,
-        "height": 600,
+        "title": "Ruddit - 0.0.1",
+        "width": 1200,
+        "height": 800,
         "resizable": true,
         "fullscreen": false
       }

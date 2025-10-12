@@ -21,8 +21,8 @@ export function Header({ children }: HeaderProps) {
   };
 
   return (
-    <header className="border-b border-border bg-card fixed w-full bg-white z-50  ">
-      <div className="container mx-auto px-4 py-4">
+    <header className="border-b border-border fixed w-full bg-white z-50  max-w-full">
+      <div className="container mx-auto px-4 py-4 shadow-sm w-full max-w-full">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2">
@@ -31,7 +31,7 @@ export function Header({ children }: HeaderProps) {
                   R
                 </span>
               </div>
-              <h1 className="text-xl font-semibold">Reddit Tracker</h1>
+              <h1 className="text-xl font-semibold">Ruddit</h1>
             </div>
 
             <nav className="hidden md:flex items-center gap-6">
@@ -79,7 +79,7 @@ export function Header({ children }: HeaderProps) {
               <FileSpreadsheet className="w-4 h-4" />
               <span className="hidden lg:inline">Excel</span>
             </Button>
-            {children}
+            <section>{children}</section>
             <Button variant="ghost" size="icon">
               <Bell className="w-4 h-4" />
             </Button>

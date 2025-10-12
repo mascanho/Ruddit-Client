@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Sparkles, Send } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Sparkles, Send } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,22 +11,22 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function AIAnalysisModal() {
-  const [prompt, setPrompt] = useState("")
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysis, setAnalysis] = useState<string | null>(null)
+  const [prompt, setPrompt] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<string | null>(null);
 
   const handleAnalyze = () => {
-    if (!prompt.trim()) return
+    if (!prompt.trim()) return;
 
-    setIsAnalyzing(true)
+    setIsAnalyzing(true);
 
     // Simulate AI analysis
     setTimeout(() => {
-      setIsAnalyzing(false)
+      setIsAnalyzing(false);
       setAnalysis(`Based on your Reddit mentions data for "${prompt}":
 
 **Sentiment Trends:**
@@ -48,14 +48,14 @@ export function AIAnalysisModal() {
 - Focus on technical content for better engagement
 - Post during peak hours (2-6 PM EST)
 - Engage with r/MachineLearning and r/ChatGPT communities
-- Address regulatory concerns proactively`)
-    }, 2000)
-  }
+- Address regulatory concerns proactively`);
+    }, 2000);
+  };
 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className="gap-2 h-8">
           <Sparkles className="w-4 h-4" />
           AI Analysis
         </Button>
@@ -63,7 +63,9 @@ export function AIAnalysisModal() {
       <DialogContent className="max-w-3xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>AI Analysis</DialogTitle>
-          <DialogDescription>Ask questions about your Reddit mentions data or request insights</DialogDescription>
+          <DialogDescription>
+            Ask questions about your Reddit mentions data or request insights
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-3">
@@ -74,7 +76,11 @@ export function AIAnalysisModal() {
               className="min-h-[100px] resize-none bg-background"
             />
             <div className="flex justify-end">
-              <Button onClick={handleAnalyze} disabled={!prompt.trim() || isAnalyzing} className="gap-2">
+              <Button
+                onClick={handleAnalyze}
+                disabled={!prompt.trim() || isAnalyzing}
+                className="gap-2"
+              >
                 {isAnalyzing ? (
                   <>
                     <Sparkles className="w-4 h-4 animate-pulse" />
@@ -94,7 +100,10 @@ export function AIAnalysisModal() {
             <ScrollArea className="h-[400px] rounded-md border border-border p-4 bg-card">
               <div className="prose prose-sm prose-invert max-w-none">
                 {analysis.split("\n").map((line, i) => (
-                  <p key={i} className="text-sm leading-relaxed whitespace-pre-wrap">
+                  <p
+                    key={i}
+                    className="text-sm leading-relaxed whitespace-pre-wrap"
+                  >
                     {line}
                   </p>
                 ))}
@@ -104,5 +113,5 @@ export function AIAnalysisModal() {
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
