@@ -1,3 +1,5 @@
+pub mod commands;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -12,7 +14,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // COMMAND GOES HERE
+            // COMMANDS GOES HERE
+            commands::get_reddit_results
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

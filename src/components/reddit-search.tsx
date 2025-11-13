@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Search,
   Plus,
@@ -16,46 +16,52 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-} from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { useAppSettings } from "./app-settings"
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAppSettings } from "./app-settings";
 
 type SearchResult = {
-  id: string
-  title: string
-  subreddit: string
-  url: string
-  relevance: number
-  snippet: string
-}
+  id: string;
+  title: string;
+  subreddit: string;
+  url: string;
+  relevance: number;
+  snippet: string;
+};
 
-type SortType = "hot" | "top" | "new"
+type SortType = "hot" | "top" | "new";
 
 export function RedditSearch({
   onAddResults,
   onNotifyNewPosts,
-}: { onAddResults: (results: SearchResult[]) => void; onNotifyNewPosts: (count: number) => void }) {
-  const [query, setQuery] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
-  const [results, setResults] = useState<SearchResult[]>([])
-  const [selectedSorts, setSelectedSorts] = useState<SortType[]>(["hot"])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
-  const { toast } = useToast()
-  const { settings } = useAppSettings()
+}: {
+  onAddResults: (results: SearchResult[]) => void;
+  onNotifyNewPosts: (count: number) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [selectedSorts, setSelectedSorts] = useState<SortType[]>(["hot"]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const { toast } = useToast();
+  const { settings } = useAppSettings();
 
   const toggleSort = (sort: SortType) => {
     setSelectedSorts((prev) => {
       if (prev.includes(sort)) {
         // Don't allow deselecting all
-        if (prev.length === 1) return prev
-        return prev.filter((s) => s !== sort)
+        if (prev.length === 1) return prev;
+        return prev.filter((s) => s !== sort);
       }
-      return [...prev, sort]
-    })
-  }
+      return [...prev, sort];
+    });
+  };
 
-  const generateMockResults = (searchQuery: string, sortType: SortType): SearchResult[] => {
+  const generateMockResults = (
+    searchQuery: string,
+    sortType: SortType,
+  ): SearchResult[] => {
     const templates = [
       {
         titleTemplate: `How to implement ${searchQuery} in production`,
@@ -77,49 +83,56 @@ export function RedditSearch({
         titleTemplate: `${searchQuery} vs alternatives - What should you choose?`,
         subreddits: ["webdev", "programming", "coding"],
       },
-    ]
+    ];
 
-    let relevanceModifier = 0
+    let relevanceModifier = 0;
     if (sortType === "hot") {
-      relevanceModifier = 15
+      relevanceModifier = 15;
     } else if (sortType === "top") {
-      relevanceModifier = 20
+      relevanceModifier = 20;
     } else if (sortType === "new") {
-      relevanceModifier = -10
+      relevanceModifier = -10;
     }
 
     return templates.map((template, index) => ({
       id: `search_${sortType}_${Date.now()}_${index}`,
       title: template.titleTemplate,
-      subreddit: template.subreddits[Math.floor(Math.random() * template.subreddits.length)],
+      subreddit:
+        template.subreddits[
+          Math.floor(Math.random() * template.subreddits.length)
+        ],
       url: `https://reddit.com/r/${template.subreddits[0]}/post${index}`,
-      relevance: Math.max(0, Math.min(100, Math.floor(Math.random() * 30) + 60 + relevanceModifier)),
+      relevance: Math.max(
+        0,
+        Math.min(100, Math.floor(Math.random() * 30) + 60 + relevanceModifier),
+      ),
       snippet: `Discussion about ${searchQuery} and its applications in modern web development...`,
-    }))
-  }
+    }));
+  };
 
+  // HANDLE THE SEARCH FUNCTION
   const handleSearch = async () => {
-    if (!query.trim()) return
+    if (!query.trim()) return;
 
-    setIsSearching(true)
-    setCurrentPage(1)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    setIsSearching(true);
+    setCurrentPage(1);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Generate results for each selected sort type
-    const allResults: SearchResult[] = []
+    const allResults: SearchResult[] = [];
     selectedSorts.forEach((sortType) => {
-      const mockResults = generateMockResults(query, sortType)
-      allResults.push(...mockResults)
-    })
+      const mockResults = generateMockResults(query, sortType);
+      allResults.push(...mockResults);
+    });
 
-    setResults(allResults)
-    setIsSearching(false)
+    setResults(allResults);
+    setIsSearching(false);
 
     toast({
       title: "Search complete",
       description: `Found ${allResults.length} results across ${selectedSorts.join(", ")} for "${query}"`,
-    })
-  }
+    });
+  };
 
   const addToTable = (result: SearchResult) => {
     onAddResults([
@@ -131,15 +144,15 @@ export function RedditSearch({
         relevance: result.relevance,
         subreddit: result.subreddit,
       },
-    ])
+    ]);
 
-    onNotifyNewPosts(1)
+    onNotifyNewPosts(1);
 
     toast({
       title: "Added to Reddit Posts",
       description: `"${result.title.substring(0, 50)}..." has been added`,
-    })
-  }
+    });
+  };
 
   const addAllToTable = () => {
     onAddResults(
@@ -151,29 +164,32 @@ export function RedditSearch({
         relevance: result.relevance,
         subreddit: result.subreddit,
       })),
-    )
+    );
 
-    onNotifyNewPosts(results.length)
+    onNotifyNewPosts(results.length);
 
     toast({
       title: `${results.length} posts added to Reddit Posts`,
       description: "All search results have been added to your table",
-    })
+    });
 
-    setResults([])
-  }
+    setResults([]);
+  };
 
   const searchMonitored = () => {
-    const monitored = [...settings.monitoredSubreddits, ...settings.monitoredKeywords]
+    const monitored = [
+      ...settings.monitoredSubreddits,
+      ...settings.monitoredKeywords,
+    ];
     if (monitored.length > 0) {
-      setQuery(monitored.join(" OR "))
+      setQuery(monitored.join(" OR "));
     }
-  }
+  };
 
-  const totalPages = Math.ceil(results.length / rowsPerPage)
-  const startIndex = (currentPage - 1) * rowsPerPage
-  const endIndex = startIndex + rowsPerPage
-  const paginatedResults = results.slice(startIndex, endIndex)
+  const totalPages = Math.ceil(results.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedResults = results.slice(startIndex, endIndex);
 
   return (
     <Card className="p-6">
@@ -234,10 +250,17 @@ export function RedditSearch({
               className="pl-9"
             />
           </div>
-          <Button onClick={handleSearch} disabled={isSearching || !query.trim()}>
+          <Button
+            onClick={handleSearch}
+            disabled={isSearching || !query.trim()}
+          >
             {isSearching ? "Searching..." : "Search"}
           </Button>
-          <Button variant="outline" onClick={searchMonitored} disabled={isSearching}>
+          <Button
+            variant="outline"
+            onClick={searchMonitored}
+            disabled={isSearching}
+          >
             <Sparkles className="h-4 w-4 mr-2" />
             Use Monitored
           </Button>
@@ -247,7 +270,9 @@ export function RedditSearch({
           <>
             <div className="flex items-center justify-between pt-4 border-t">
               <div className="flex items-center gap-2">
-                <p className="text-sm text-muted-foreground">{results.length} results found</p>
+                <p className="text-sm text-muted-foreground">
+                  {results.length} results found
+                </p>
                 {selectedSorts.map((sort) => (
                   <Badge key={sort} variant="secondary" className="text-xs">
                     {sort === "hot" && <Flame className="h-3 w-3 mr-1" />}
@@ -265,11 +290,18 @@ export function RedditSearch({
 
             <div className="space-y-3">
               {paginatedResults.map((result) => (
-                <Card key={result.id} className="p-4 hover:bg-accent/50 transition-colors">
+                <Card
+                  key={result.id}
+                  className="p-4 hover:bg-accent/50 transition-colors"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium mb-1 line-clamp-2">{result.title}</h4>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{result.snippet}</p>
+                      <h4 className="font-medium mb-1 line-clamp-2">
+                        {result.title}
+                      </h4>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                        {result.snippet}
+                      </p>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className="font-mono text-xs">
                           r/{result.subreddit}
@@ -287,7 +319,11 @@ export function RedditSearch({
                         </Badge>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => addToTable(result)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addToTable(result)}
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       Add
                     </Button>
@@ -300,13 +336,15 @@ export function RedditSearch({
               <div className="flex items-center justify-between pt-4 border-t">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <label className="text-sm text-muted-foreground">Rows per page:</label>
+                    <label className="text-sm text-muted-foreground">
+                      Rows per page:
+                    </label>
                     <select
                       className="border rounded px-2 py-1 text-sm bg-background"
                       value={rowsPerPage}
                       onChange={(e) => {
-                        setRowsPerPage(Number(e.target.value))
-                        setCurrentPage(1)
+                        setRowsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
                       }}
                     >
                       <option value={10}>10</option>
@@ -316,18 +354,26 @@ export function RedditSearch({
                     </select>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Showing {startIndex + 1}-{Math.min(endIndex, results.length)} of {results.length}
+                    Showing {startIndex + 1}-
+                    {Math.min(endIndex, results.length)} of {results.length}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                  >
                     <ChevronsLeft className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -338,7 +384,9 @@ export function RedditSearch({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
                     disabled={currentPage === totalPages}
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -358,5 +406,5 @@ export function RedditSearch({
         )}
       </div>
     </Card>
-  )
+  );
 }
