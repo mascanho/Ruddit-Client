@@ -1,26 +1,28 @@
 use directories::{BaseDirs, UserDirs};
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf};
+use std::fs;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct ApiKeys {
-    pub REDDIT_API_ID: String,
-    pub REDDIT_API_SECRET: String,
-    pub GEMINI_API_KEY: String,
-    pub SUBREDDIT: String,
-    pub RELEVANCE: String,
+    pub reddit_api_id: String,
+    pub reddit_api_secret: String,
+    pub gemini_api_key: String,
+    pub subreddit: String,
+    pub relevance: String,
 
     #[serde(default)]
-    pub LEAD_KEYWORDS: Vec<String>,
+    pub lead_keywords: Vec<String>,
 
     #[serde(default)]
-    pub BRANDED_KEYWORDS: Vec<String>,
+    pub branded_keywords: Vec<String>,
 
     #[serde(default)]
-    pub SENTIMENT: Vec<String>,
+    pub sentiment: Vec<String>,
 
     #[serde(default)]
-    pub MATCH: String,
+    #[serde(rename = "MATCH")]
+    pub match_keyword: String,
 }
 
 #[derive(Debug)]
@@ -32,7 +34,7 @@ pub struct ConfigDirs {
     pub documents_dir: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct AppConfig {
     pub api_keys: ApiKeys,
 }
@@ -40,26 +42,20 @@ pub struct AppConfig {
 impl Default for ApiKeys {
     fn default() -> Self {
         ApiKeys {
-            REDDIT_API_ID: "CHANGE_ME".to_string(),
-            REDDIT_API_SECRET: "CHANGE_ME".to_string(),
-            GEMINI_API_KEY: "CHANGE_ME".to_string(),
-            SUBREDDIT: "all".to_string(),
-            RELEVANCE: "hot".to_string(),
-            LEAD_KEYWORDS: vec![],
-            BRANDED_KEYWORDS: vec![],
-            SENTIMENT: vec!["neutral".to_string()],
-            MATCH: "".to_string(),
+            reddit_api_id: "CHANGE_ME".to_string(),
+            reddit_api_secret: "CHANGE_ME".to_string(),
+            gemini_api_key: "CHANGE_ME".to_string(),
+            subreddit: "all".to_string(),
+            relevance: "hot".to_string(),
+            lead_keywords: vec![],
+            branded_keywords: vec![],
+            sentiment: vec!["neutral".to_string()],
+            match_keyword: "".to_string(),
         }
     }
 }
 
-impl Default for AppConfig {
-    fn default() -> Self {
-        AppConfig {
-            api_keys: ApiKeys::default(),
-        }
-    }
-}
+
 
 impl ConfigDirs {
     pub fn new() -> Option<Self> {
@@ -91,14 +87,14 @@ impl ConfigDirs {
         // Default TOML content
         let toml_content = r#"
 [api_keys]
-REDDIT_API_ID = "your_api_id_here"
-REDDIT_API_SECRET = "your_api_secret_here"
-SUBREDDIT = "supplychain"
-RELEVANCE = "hot"
-GEMINI_API_KEY = "your_api_key_here"
-BRANDED_KEYWORDS = ["keyword1", "keyword2"]
-LEAD_KEYWORDS = ["keyword1", "keyword2"]
-SENTIMENT = ["keyword1", "keyword2"]
+reddit_api_id = "your_api_id_here"
+reddit_api_secret = "your_api_secret_here"
+subreddit = "supplychain"
+relevance = "hot"
+gemini_api_key = "your_api_key_here"
+branded_keywords = ["keyword1", "keyword2"]
+lead_keywords = ["keyword1", "keyword2"]
+sentiment = ["keyword1", "keyword2"]
 MATCH = "OR"
 
 "#
