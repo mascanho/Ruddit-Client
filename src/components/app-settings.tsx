@@ -1,53 +1,74 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Slider } from "@/components/ui/slider"
-import { Card } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Settings2, Palette, Table2, Bell, Database, Plus, X, Radar } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Settings2,
+  Palette,
+  Table2,
+  Bell,
+  Database,
+  Plus,
+  X,
+  Radar,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 export type AppSettings = {
   // Appearance
-  theme: "light" | "dark" | "system"
-  accentColor: "blue" | "violet" | "green" | "orange" | "red"
-  fontSize: number
+  theme: "light" | "dark" | "system";
+  accentColor: "blue" | "violet" | "green" | "orange" | "red";
+  fontSize: number;
 
   // Table Settings
-  tableDensity: "compact" | "comfortable" | "spacious"
-  rowsPerPage: number
-  showRowNumbers: boolean
-  enableAnimations: boolean
+  tableDensity: "compact" | "comfortable" | "spacious";
+  rowsPerPage: number;
+  showRowNumbers: boolean;
+  enableAnimations: boolean;
 
   // Behavior
-  confirmDelete: boolean
-  autoRefresh: boolean
-  refreshInterval: number
+  confirmDelete: boolean;
+  autoRefresh: boolean;
+  refreshInterval: number;
 
   // Data
-  defaultSubredditFilter: string
-  defaultRelevanceFilter: string
-  defaultSortField: string
-  defaultSortDirection: "asc" | "desc"
+  defaultSubredditFilter: string;
+  defaultRelevanceFilter: string;
+  defaultSortField: string;
+  defaultSortDirection: "asc" | "desc";
 
   // Monitoring
-  monitoredSubreddits: string[]
-  monitoredKeywords: string[]
-}
+  monitoredSubreddits: string[];
+  monitoredKeywords: string[];
+};
 
 const defaultSettings: AppSettings = {
   theme: "dark",
   accentColor: "blue",
   fontSize: 14,
   tableDensity: "comfortable",
-  rowsPerPage: 10,
+  rowsPerPage: 100,
   showRowNumbers: false,
   enableAnimations: true,
   confirmDelete: true,
@@ -59,104 +80,132 @@ const defaultSettings: AppSettings = {
   defaultSortDirection: "desc",
   monitoredSubreddits: ["nextjs", "typescript", "webdev"],
   monitoredKeywords: ["react", "api", "database", "performance"],
-}
+};
 
-const SETTINGS_STORAGE_KEY = "app-settings"
+const SETTINGS_STORAGE_KEY = "app-settings";
 
 export function useAppSettings() {
-  const [settings, setSettings] = useState<AppSettings>(defaultSettings)
+  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
 
   useEffect(() => {
-    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY)
+    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (stored) {
       try {
-        setSettings(JSON.parse(stored))
+        setSettings(JSON.parse(stored));
       } catch (error) {
-        console.error("Failed to parse settings:", error)
+        console.error("Failed to parse settings:", error);
       }
     }
-  }, [])
+  }, []);
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {
-    const updated = { ...settings, ...newSettings }
-    setSettings(updated)
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated))
-  }
+    const updated = { ...settings, ...newSettings };
+    setSettings(updated);
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+  };
 
   const resetSettings = () => {
-    setSettings(defaultSettings)
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(defaultSettings))
-  }
+    setSettings(defaultSettings);
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(defaultSettings));
+  };
 
-  return { settings, updateSettings, resetSettings }
+  return { settings, updateSettings, resetSettings };
 }
 
 export function AppSettingsDialog({
   open,
   onOpenChange,
   onSubredditsChanged,
-}: { open: boolean; onOpenChange: (open: boolean) => void; onSubredditsChanged?: (addedCount: number) => void }) {
-  const { settings, updateSettings, resetSettings } = useAppSettings()
-  const { toast } = useToast()
-  const [newSubreddit, setNewSubreddit] = useState("")
-  const [newKeyword, setNewKeyword] = useState("")
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubredditsChanged?: (addedCount: number) => void;
+}) {
+  const { settings, updateSettings, resetSettings } = useAppSettings();
+  const { toast } = useToast();
+  const [newSubreddit, setNewSubreddit] = useState("");
+  const [newKeyword, setNewKeyword] = useState("");
 
   const handleReset = () => {
-    resetSettings()
+    resetSettings();
     toast({
       title: "Settings reset",
       description: "All settings have been restored to defaults.",
-    })
-  }
+    });
+  };
 
   const addSubreddit = () => {
-    if (!newSubreddit.trim()) return
-    const cleaned = newSubreddit.trim().toLowerCase().replace(/^r\//, "")
+    if (!newSubreddit.trim()) return;
+    const cleaned = newSubreddit.trim().toLowerCase().replace(/^r\//, "");
     if (settings.monitoredSubreddits.includes(cleaned)) {
-      toast({ title: "Already monitoring", description: `r/${cleaned} is already in your list.` })
-      return
+      toast({
+        title: "Already monitoring",
+        description: `r/${cleaned} is already in your list.`,
+      });
+      return;
     }
-    updateSettings({ monitoredSubreddits: [...settings.monitoredSubreddits, cleaned] })
-    setNewSubreddit("")
+    updateSettings({
+      monitoredSubreddits: [...settings.monitoredSubreddits, cleaned],
+    });
+    setNewSubreddit("");
 
     toast({
       title: "⚠️ Subreddit added",
       description: `Now monitoring r/${cleaned}. Refresh Reddit Posts to update results.`,
       duration: 5000,
-    })
+    });
 
-    const simulatedPostCount = Math.floor(Math.random() * 6) + 3
-    onSubredditsChanged?.(simulatedPostCount)
-  }
+    const simulatedPostCount = Math.floor(Math.random() * 6) + 3;
+    onSubredditsChanged?.(simulatedPostCount);
+  };
 
   const removeSubreddit = (subreddit: string) => {
-    updateSettings({ monitoredSubreddits: settings.monitoredSubreddits.filter((s) => s !== subreddit) })
+    updateSettings({
+      monitoredSubreddits: settings.monitoredSubreddits.filter(
+        (s) => s !== subreddit,
+      ),
+    });
 
     toast({
       title: "⚠️ Subreddit removed",
       description: `Stopped monitoring r/${subreddit}. Your Reddit Posts data has changed.`,
       duration: 5000,
-    })
+    });
 
-    onSubredditsChanged?.(0)
-  }
+    onSubredditsChanged?.(0);
+  };
 
   const addKeyword = () => {
-    if (!newKeyword.trim()) return
-    const cleaned = newKeyword.trim().toLowerCase()
+    if (!newKeyword.trim()) return;
+    const cleaned = newKeyword.trim().toLowerCase();
     if (settings.monitoredKeywords.includes(cleaned)) {
-      toast({ title: "Already monitoring", description: `"${cleaned}" is already in your list.` })
-      return
+      toast({
+        title: "Already monitoring",
+        description: `"${cleaned}" is already in your list.`,
+      });
+      return;
     }
-    updateSettings({ monitoredKeywords: [...settings.monitoredKeywords, cleaned] })
-    setNewKeyword("")
-    toast({ title: "Keyword added", description: `Now monitoring "${cleaned}"` })
-  }
+    updateSettings({
+      monitoredKeywords: [...settings.monitoredKeywords, cleaned],
+    });
+    setNewKeyword("");
+    toast({
+      title: "Keyword added",
+      description: `Now monitoring "${cleaned}"`,
+    });
+  };
 
   const removeKeyword = (keyword: string) => {
-    updateSettings({ monitoredKeywords: settings.monitoredKeywords.filter((k) => k !== keyword) })
-    toast({ title: "Keyword removed", description: `Stopped monitoring "${keyword}"` })
-  }
+    updateSettings({
+      monitoredKeywords: settings.monitoredKeywords.filter(
+        (k) => k !== keyword,
+      ),
+    });
+    toast({
+      title: "Keyword removed",
+      description: `Stopped monitoring "${keyword}"`,
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -166,10 +215,15 @@ export function AppSettingsDialog({
             <Settings2 className="h-5 w-5" />
             Application Settings
           </DialogTitle>
-          <DialogDescription>Customize the appearance and behavior of your data tables.</DialogDescription>
+          <DialogDescription>
+            Customize the appearance and behavior of your data tables.
+          </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="appearance" className="flex-1 overflow-hidden flex flex-col">
+        <Tabs
+          defaultValue="appearance"
+          className="flex-1 overflow-hidden flex flex-col"
+        >
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="appearance" className="text-xs sm:text-sm">
               <Palette className="h-4 w-4 mr-1.5" />
@@ -201,8 +255,15 @@ export function AppSettingsDialog({
                     <Label htmlFor="theme" className="text-base font-semibold">
                       Theme
                     </Label>
-                    <p className="text-sm text-muted-foreground mb-3">Choose your preferred color scheme</p>
-                    <Select value={settings.theme} onValueChange={(value) => updateSettings({ theme: value as any })}>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Choose your preferred color scheme
+                    </p>
+                    <Select
+                      value={settings.theme}
+                      onValueChange={(value) =>
+                        updateSettings({ theme: value as any })
+                      }
+                    >
                       <SelectTrigger id="theme">
                         <SelectValue />
                       </SelectTrigger>
@@ -218,10 +279,14 @@ export function AppSettingsDialog({
                     <Label htmlFor="accent" className="text-base font-semibold">
                       Accent Color
                     </Label>
-                    <p className="text-sm text-muted-foreground mb-3">Primary color for buttons and highlights</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Primary color for buttons and highlights
+                    </p>
                     <Select
                       value={settings.accentColor}
-                      onValueChange={(value) => updateSettings({ accentColor: value as any })}
+                      onValueChange={(value) =>
+                        updateSettings({ accentColor: value as any })
+                      }
                     >
                       <SelectTrigger id="accent">
                         <SelectValue />
@@ -237,17 +302,24 @@ export function AppSettingsDialog({
                   </div>
 
                   <div>
-                    <Label htmlFor="fontSize" className="text-base font-semibold">
+                    <Label
+                      htmlFor="fontSize"
+                      className="text-base font-semibold"
+                    >
                       Font Size: {settings.fontSize}px
                     </Label>
-                    <p className="text-sm text-muted-foreground mb-3">Adjust the base font size</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Adjust the base font size
+                    </p>
                     <Slider
                       id="fontSize"
                       min={12}
                       max={18}
                       step={1}
                       value={[settings.fontSize]}
-                      onValueChange={([value]) => updateSettings({ fontSize: value })}
+                      onValueChange={([value]) =>
+                        updateSettings({ fontSize: value })
+                      }
                       className="mt-2"
                     />
                   </div>
@@ -259,13 +331,20 @@ export function AppSettingsDialog({
               <Card className="p-4">
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="density" className="text-base font-semibold">
+                    <Label
+                      htmlFor="density"
+                      className="text-base font-semibold"
+                    >
                       Table Density
                     </Label>
-                    <p className="text-sm text-muted-foreground mb-3">Adjust spacing and row height</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Adjust spacing and row height
+                    </p>
                     <Select
                       value={settings.tableDensity}
-                      onValueChange={(value) => updateSettings({ tableDensity: value as any })}
+                      onValueChange={(value) =>
+                        updateSettings({ tableDensity: value as any })
+                      }
                     >
                       <SelectTrigger id="density">
                         <SelectValue />
@@ -279,46 +358,67 @@ export function AppSettingsDialog({
                   </div>
 
                   <div>
-                    <Label htmlFor="rowsPerPage" className="text-base font-semibold">
+                    <Label
+                      htmlFor="rowsPerPage"
+                      className="text-base font-semibold"
+                    >
                       Rows Per Page: {settings.rowsPerPage}
                     </Label>
-                    <p className="text-sm text-muted-foreground mb-3">Number of rows to display per page</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Number of rows to display per page
+                    </p>
                     <Slider
                       id="rowsPerPage"
                       min={5}
                       max={50}
                       step={5}
                       value={[settings.rowsPerPage]}
-                      onValueChange={([value]) => updateSettings({ rowsPerPage: value })}
+                      onValueChange={([value]) =>
+                        updateSettings({ rowsPerPage: value })
+                      }
                       className="mt-2"
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label htmlFor="rowNumbers" className="text-base font-semibold">
+                      <Label
+                        htmlFor="rowNumbers"
+                        className="text-base font-semibold"
+                      >
                         Show Row Numbers
                       </Label>
-                      <p className="text-sm text-muted-foreground">Display row numbers in tables</p>
+                      <p className="text-sm text-muted-foreground">
+                        Display row numbers in tables
+                      </p>
                     </div>
                     <Switch
                       id="rowNumbers"
                       checked={settings.showRowNumbers}
-                      onCheckedChange={(checked) => updateSettings({ showRowNumbers: checked })}
+                      onCheckedChange={(checked) =>
+                        updateSettings({ showRowNumbers: checked })
+                      }
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label htmlFor="animations" className="text-base font-semibold">
+                      <Label
+                        htmlFor="animations"
+                        className="text-base font-semibold"
+                      >
                         Enable Animations
                       </Label>
-                      <p className="text-sm text-muted-foreground">Smooth transitions and effects</p>
+                      <p className="text-sm text-muted-foreground">
+                        Smooth transitions and effects
+                      </p>
                     </div>
                     <Switch
                       id="animations"
                       checked={settings.enableAnimations}
-                      onCheckedChange={(checked) => updateSettings({ enableAnimations: checked })}
+                      onCheckedChange={(checked) =>
+                        updateSettings({ enableAnimations: checked })
+                      }
                     />
                   </div>
                 </div>
@@ -330,45 +430,66 @@ export function AppSettingsDialog({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label htmlFor="confirmDelete" className="text-base font-semibold">
+                      <Label
+                        htmlFor="confirmDelete"
+                        className="text-base font-semibold"
+                      >
                         Confirm Before Delete
                       </Label>
-                      <p className="text-sm text-muted-foreground">Show confirmation dialog when deleting</p>
+                      <p className="text-sm text-muted-foreground">
+                        Show confirmation dialog when deleting
+                      </p>
                     </div>
                     <Switch
                       id="confirmDelete"
                       checked={settings.confirmDelete}
-                      onCheckedChange={(checked) => updateSettings({ confirmDelete: checked })}
+                      onCheckedChange={(checked) =>
+                        updateSettings({ confirmDelete: checked })
+                      }
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label htmlFor="autoRefresh" className="text-base font-semibold">
+                      <Label
+                        htmlFor="autoRefresh"
+                        className="text-base font-semibold"
+                      >
                         Auto Refresh Data
                       </Label>
-                      <p className="text-sm text-muted-foreground">Automatically refresh table data</p>
+                      <p className="text-sm text-muted-foreground">
+                        Automatically refresh table data
+                      </p>
                     </div>
                     <Switch
                       id="autoRefresh"
                       checked={settings.autoRefresh}
-                      onCheckedChange={(checked) => updateSettings({ autoRefresh: checked })}
+                      onCheckedChange={(checked) =>
+                        updateSettings({ autoRefresh: checked })
+                      }
                     />
                   </div>
 
                   {settings.autoRefresh && (
                     <div>
-                      <Label htmlFor="refreshInterval" className="text-base font-semibold">
+                      <Label
+                        htmlFor="refreshInterval"
+                        className="text-base font-semibold"
+                      >
                         Refresh Interval: {settings.refreshInterval}s
                       </Label>
-                      <p className="text-sm text-muted-foreground mb-3">How often to refresh data</p>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        How often to refresh data
+                      </p>
                       <Slider
                         id="refreshInterval"
                         min={10}
                         max={300}
                         step={10}
                         value={[settings.refreshInterval]}
-                        onValueChange={([value]) => updateSettings({ refreshInterval: value })}
+                        onValueChange={([value]) =>
+                          updateSettings({ refreshInterval: value })
+                        }
                         className="mt-2"
                       />
                     </div>
@@ -381,13 +502,20 @@ export function AppSettingsDialog({
               <Card className="p-4">
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="defaultSubreddit" className="text-base font-semibold">
+                    <Label
+                      htmlFor="defaultSubreddit"
+                      className="text-base font-semibold"
+                    >
                       Default Subreddit Filter
                     </Label>
-                    <p className="text-sm text-muted-foreground mb-3">Initial subreddit filter on load</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Initial subreddit filter on load
+                    </p>
                     <Select
                       value={settings.defaultSubredditFilter}
-                      onValueChange={(value) => updateSettings({ defaultSubredditFilter: value })}
+                      onValueChange={(value) =>
+                        updateSettings({ defaultSubredditFilter: value })
+                      }
                     >
                       <SelectTrigger id="defaultSubreddit">
                         <SelectValue />
@@ -404,13 +532,20 @@ export function AppSettingsDialog({
                   </div>
 
                   <div>
-                    <Label htmlFor="defaultRelevance" className="text-base font-semibold">
+                    <Label
+                      htmlFor="defaultRelevance"
+                      className="text-base font-semibold"
+                    >
                       Default Relevance Filter
                     </Label>
-                    <p className="text-sm text-muted-foreground mb-3">Initial relevance filter on load</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Initial relevance filter on load
+                    </p>
                     <Select
                       value={settings.defaultRelevanceFilter}
-                      onValueChange={(value) => updateSettings({ defaultRelevanceFilter: value })}
+                      onValueChange={(value) =>
+                        updateSettings({ defaultRelevanceFilter: value })
+                      }
                     >
                       <SelectTrigger id="defaultRelevance">
                         <SelectValue />
@@ -425,13 +560,20 @@ export function AppSettingsDialog({
                   </div>
 
                   <div>
-                    <Label htmlFor="defaultSort" className="text-base font-semibold">
+                    <Label
+                      htmlFor="defaultSort"
+                      className="text-base font-semibold"
+                    >
                       Default Sort Field
                     </Label>
-                    <p className="text-sm text-muted-foreground mb-3">Initial sort field on load</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Initial sort field on load
+                    </p>
                     <Select
                       value={settings.defaultSortField}
-                      onValueChange={(value) => updateSettings({ defaultSortField: value })}
+                      onValueChange={(value) =>
+                        updateSettings({ defaultSortField: value })
+                      }
                     >
                       <SelectTrigger id="defaultSort">
                         <SelectValue />
@@ -447,13 +589,20 @@ export function AppSettingsDialog({
                   </div>
 
                   <div>
-                    <Label htmlFor="defaultDirection" className="text-base font-semibold">
+                    <Label
+                      htmlFor="defaultDirection"
+                      className="text-base font-semibold"
+                    >
                       Default Sort Direction
                     </Label>
-                    <p className="text-sm text-muted-foreground mb-3">Initial sort direction on load</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Initial sort direction on load
+                    </p>
                     <Select
                       value={settings.defaultSortDirection}
-                      onValueChange={(value) => updateSettings({ defaultSortDirection: value as any })}
+                      onValueChange={(value) =>
+                        updateSettings({ defaultSortDirection: value as any })
+                      }
                     >
                       <SelectTrigger id="defaultDirection">
                         <SelectValue />
@@ -472,8 +621,12 @@ export function AppSettingsDialog({
               <Card className="p-4">
                 <div className="space-y-6">
                   <div>
-                    <Label className="text-base font-semibold">Monitored Subreddits</Label>
-                    <p className="text-sm text-muted-foreground mb-3">Track specific subreddits for relevant content</p>
+                    <Label className="text-base font-semibold">
+                      Monitored Subreddits
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Track specific subreddits for relevant content
+                    </p>
 
                     <div className="flex gap-2 mb-3">
                       <Input
@@ -489,7 +642,11 @@ export function AppSettingsDialog({
 
                     <div className="flex flex-wrap gap-2">
                       {settings.monitoredSubreddits.map((subreddit) => (
-                        <Badge key={subreddit} variant="secondary" className="px-3 py-1.5">
+                        <Badge
+                          key={subreddit}
+                          variant="secondary"
+                          className="px-3 py-1.5"
+                        >
                           <span className="font-mono">r/{subreddit}</span>
                           <Button
                             variant="ghost"
@@ -502,15 +659,20 @@ export function AppSettingsDialog({
                         </Badge>
                       ))}
                       {settings.monitoredSubreddits.length === 0 && (
-                        <p className="text-sm text-muted-foreground">No subreddits added yet</p>
+                        <p className="text-sm text-muted-foreground">
+                          No subreddits added yet
+                        </p>
                       )}
                     </div>
                   </div>
 
                   <div>
-                    <Label className="text-base font-semibold">Monitored Keywords</Label>
+                    <Label className="text-base font-semibold">
+                      Monitored Keywords
+                    </Label>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Track posts containing specific keywords across all subreddits
+                      Track posts containing specific keywords across all
+                      subreddits
                     </p>
 
                     <div className="flex gap-2 mb-3">
@@ -527,7 +689,11 @@ export function AppSettingsDialog({
 
                     <div className="flex flex-wrap gap-2">
                       {settings.monitoredKeywords.map((keyword) => (
-                        <Badge key={keyword} variant="secondary" className="px-3 py-1.5">
+                        <Badge
+                          key={keyword}
+                          variant="secondary"
+                          className="px-3 py-1.5"
+                        >
                           {keyword}
                           <Button
                             variant="ghost"
@@ -540,15 +706,18 @@ export function AppSettingsDialog({
                         </Badge>
                       ))}
                       {settings.monitoredKeywords.length === 0 && (
-                        <p className="text-sm text-muted-foreground">No keywords added yet</p>
+                        <p className="text-sm text-muted-foreground">
+                          No keywords added yet
+                        </p>
                       )}
                     </div>
                   </div>
 
                   <div className="bg-muted/50 p-4 rounded-lg">
                     <p className="text-sm text-muted-foreground">
-                      💡 <strong>Tip:</strong> Use the search feature on the main page to discover new subreddits and
-                      keywords based on your monitored items.
+                      💡 <strong>Tip:</strong> Use the search feature on the
+                      main page to discover new subreddits and keywords based on
+                      your monitored items.
                     </p>
                   </div>
                 </div>
@@ -565,5 +734,5 @@ export function AppSettingsDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

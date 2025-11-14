@@ -155,7 +155,7 @@ export function RedditTable({
   const [comments, setComments] = useState<Message[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(settings.rowsPerPage);
-  const [tableDeletion, setTableDeletion] = useState(false);
+  const [showClearTableDialog, setShowClearTableDialog] = useState(false);
 
   useEffect(() => {
     if (externalPosts.length > 0) {
@@ -313,9 +313,7 @@ export function RedditTable({
     relevanceFilter !== "all" ||
     sortField;
 
-  async function clearSavedRedditsTable() {
-    setTableDeletion(true);
-
+  const handleClearTable = async () => {
     try {
       await invoke("clear_saved_reddits");
       toast("Table is being deleted", {
@@ -334,7 +332,7 @@ export function RedditTable({
     } catch (err) {
       console.log(err);
     }
-  }
+  };
 
   return (
     <>
@@ -375,7 +373,10 @@ export function RedditTable({
               </SelectContent>
             </Select>
 
-            <Button variant="destructive" onClick={clearSavedRedditsTable}>
+            <Button
+              variant="destructive"
+              onClick={() => setShowClearTableDialog(true)}
+            >
               Clear Table
             </Button>
 
@@ -457,7 +458,7 @@ export function RedditTable({
           </div>
         </div>
 
-        <div className="max-h-[600px] overflow-y-auto overflow-x-auto">
+        <div className="max-h-[600px] h-[600px] overflow-y-auto overflow-x-auto">
           <Table>
             <TableBody>
               {paginatedData.length === 0 ? (
@@ -661,6 +662,30 @@ export function RedditTable({
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      <AlertDialog
+        open={showClearTableDialog}
+        onOpenChange={setShowClearTableDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear entire table?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete ALL
+              posts from your table ({data.length} posts will be removed).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearTable}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Clear Table
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={selectedPost !== null}
