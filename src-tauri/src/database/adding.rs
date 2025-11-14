@@ -82,6 +82,13 @@ impl DB {
         Ok(())
     }
 
+    // REMOVE A SINGLE ENTRY FROM THE TABLE
+    pub fn remove_single_reddit(&self, id: &i64) -> RusqliteResult<()> {
+        self.conn
+            .execute("DELETE FROM reddit_posts WHERE id = ?", params![id])?;
+        Ok(())
+    }
+
     pub fn create_tables(&self) -> RusqliteResult<()> {
         // Create posts table if it doesn't exist
         self.conn.execute(

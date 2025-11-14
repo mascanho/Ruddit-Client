@@ -58,12 +58,11 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/hooks/use-toast";
 import type { Message, SearchState, RedditPost } from "./smart-data-tables";
 import { useAppSettings } from "./app-settings";
 import { invoke } from "@tauri-apps/api/core";
 import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
-import { useSonner } from "sonner";
+import { toast } from "sonner";
 
 const initialData: RedditPost[] = []; // Declare initialData here
 
@@ -156,7 +155,7 @@ export function RedditTable({
   const [comments, setComments] = useState<Message[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(settings.rowsPerPage);
-  const { toast } = useToast();
+  const [tableDeletion, setTableDeletion] = useState(false);
 
   useEffect(() => {
     if (externalPosts.length > 0) {
@@ -165,11 +164,11 @@ export function RedditTable({
         const newPosts = externalPosts.filter((p) => !existingIds.has(p.id));
 
         if (newPosts.length > 0) {
-          toast({
-            title: "New posts added",
-            description: `${newPosts.length} new post${newPosts.length > 1 ? "s" : ""} added to Reddit Posts`,
-            duration: 3000,
-          });
+          // toast({
+          //   title: "New posts added",
+          //   description: `${newPosts.length} new post${newPosts.length > 1 ? "s" : ""} added to Reddit Posts`,
+          //   duration: 3000,
+          // });
         }
 
         return [...prev, ...newPosts];
@@ -179,7 +178,7 @@ export function RedditTable({
 
   const subreddits = useMemo(() => {
     return Array.from(new Set(data.map((post) => post.subreddit)));
-  }, [data]);
+  }, [data, externalPosts]);
 
   const filteredAndSortedData = useMemo(() => {
     const filtered = data.filter((post) => {
@@ -228,13 +227,14 @@ export function RedditTable({
     relevanceFilter,
     sortField,
     sortDirection,
+    externalPosts,
   ]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * rowsPerPage;
     const endIndex = startIndex + rowsPerPage;
     return filteredAndSortedData.slice(startIndex, endIndex);
-  }, [filteredAndSortedData, currentPage, rowsPerPage]);
+  }, [filteredAndSortedData, currentPage, rowsPerPage, externalPosts]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / rowsPerPage);
 
@@ -251,13 +251,18 @@ export function RedditTable({
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!settings.confirmDelete) {
       setData(data.filter((post) => post.id !== id));
       return;
     }
-    setData(data.filter((post) => post.id !== id));
-    setDeleteId(null);
+
+    await invoke("remove_single_reddit_command", { post: id });
+    toast.info("Post deleted successfully");
+
+    // Wait a few seconds before reloading
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    window.location.reload();
   };
 
   const handleGetComments = (post: RedditPost) => {
@@ -270,11 +275,6 @@ export function RedditTable({
     setCommentsPost(post);
 
     onAddComments(generatedComments);
-
-    toast({
-      title: "Comments loaded",
-      description: `${generatedComments.length} comments added to Messages tab`,
-    });
   };
 
   const clearFilters = () => {
@@ -313,11 +313,24 @@ export function RedditTable({
     relevanceFilter !== "all" ||
     sortField;
 
-  const { clearSavedSubredditsTable } = useAddSingleSubReddit();
   async function clearSavedRedditsTable() {
+    setTableDeletion(true);
+
     try {
       await invoke("clear_saved_reddits");
-      await window.location.reload();
+      toast("Table is being deleted", {
+        description: "All your entries will be lost.",
+        position: "top-center",
+        action: {
+          label: "Warning",
+          onClick: () => console.log("Undo"),
+        },
+      });
+
+      // delay 1 second
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      window.location.reload();
     } catch (err) {
       console.log(err);
     }

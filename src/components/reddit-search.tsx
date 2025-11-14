@@ -27,6 +27,7 @@ import {
   useRedditPostsTab,
   useSubredditsStore,
 } from "@/store/store";
+import { toast } from "sonner";
 
 type SearchResult = {
   id: string;
@@ -52,7 +53,6 @@ export function RedditSearch({
   const [selectedSorts, setSelectedSorts] = useState<SortType[]>(["hot"]);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const { toast } = useToast();
   const { settings } = useAppSettings();
   const { setSubreddits, subreddits } = useSubredditsStore();
   const { redditPosts, setRedditPosts } = useRedditPostsTab();
@@ -105,17 +105,6 @@ export function RedditSearch({
 
   // ADD SINGLE SUBREDDIT TO REDDIT POSTS TABLE
   const addToTable = async (result: SearchResult) => {
-    onAddResults([
-      {
-        id: result.id,
-        date: new Date().toISOString().split("T")[0],
-        title: result.title,
-        url: result.url,
-        relevance: result.relevance,
-        subreddit: result.subreddit,
-      },
-    ]);
-
     try {
       // TAURI COMMAND TO SEND TO BE
       const singlePost = await invoke("save_single_reddit_command", {
@@ -134,17 +123,15 @@ export function RedditSearch({
       // Now singlePost should match PostDataWrapper format
       addSingleSubreddit(singlePost);
 
-      console.log("Single post:", singlePost);
+      // Show toaster
+      toast.info(`Added ${singlePost.title} post to table`, {
+        position: "bottom-center",
+      });
     } catch (err) {
       console.error(err);
     }
 
     onNotifyNewPosts(1);
-
-    toast({
-      title: "Added to Reddit Posts",
-      description: `"${result.title.substring(0, 50)}..." has been added`,
-    });
   };
   const addAllToTable = () => {
     onAddResults(
@@ -159,11 +146,6 @@ export function RedditSearch({
     );
 
     onNotifyNewPosts(subreddits.length);
-
-    toast({
-      title: `${subreddits.length} posts added to Reddit Posts`,
-      description: "All search results have been added to your table",
-    });
 
     setResults([]);
   };
