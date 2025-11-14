@@ -1,0 +1,223 @@
+use crate::database::adding::{CommentDataWrapper, PostDataWrapper, DB};
+use rusqlite::Result as RusqliteResult;
+
+pub struct DBReader;
+
+impl DBReader {
+    pub fn new() -> Self {
+        DBReader
+    }
+
+    pub fn get_posts_by_relevance(&self) -> RusqliteResult<Vec<(String, i64)>> {
+        let db = DB::new()?;
+        let mut stmt = db
+            .conn
+            .prepare("SELECT relevance, COUNT(*) FROM reddit_posts GROUP BY relevance")?;
+
+        let relevance_counts = stmt.query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
+        })?;
+
+        relevance_counts.collect()
+    }
+
+    // ADD THIS FUNCTION - Gets ALL posts from the database
+    pub fn get_all_posts(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
+        let db = DB::new()?;
+        let mut stmt = db.conn.prepare(
+            "SELECT id, timestamp, formatted_date, title, url, relevance, subreddit, permalink
+         FROM reddit_posts
+         ORDER BY timestamp DESC",
+        )?;
+
+        let posts = stmt.query_map([], |row| {
+            Ok(PostDataWrapper {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                formatted_date: row.get(2)?,
+                title: row.get(3)?,
+                url: row.get(4)?,
+                relevance: row.get(5)?,
+                subreddit: row.get(6)?,
+                permalink: row.get(7)?,
+            })
+        })?;
+
+        posts.collect()
+    }
+
+    // GET JUST THE SEARCHED SUBREDDITS
+    pub fn get_all_searched_posts(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
+        let db = DB::new()?;
+        let mut stmt = db.conn.prepare(
+            "SELECT id, timestamp, formatted_date, title, url, relevance, subreddit, permalink
+         FROM subreddit_search
+         ORDER BY timestamp DESC",
+        )?;
+
+        let posts = stmt.query_map([], |row| {
+            Ok(PostDataWrapper {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                formatted_date: row.get(2)?,
+                title: row.get(3)?,
+                url: row.get(4)?,
+                relevance: row.get(5)?,
+                subreddit: row.get(6)?,
+                permalink: row.get(7)?,
+            })
+        })?;
+
+        posts.collect()
+    }
+
+    pub fn get_recent_posts(&self, limit: i64) -> RusqliteResult<Vec<PostDataWrapper>> {
+        let db = DB::new()?;
+        let mut stmt = db.conn.prepare(
+            "SELECT id, timestamp, formatted_date, title, url, relevance, subreddit, permalink
+         FROM reddit_posts 
+         ORDER BY timestamp DESC 
+         LIMIT ?1",
+        )?;
+
+        let posts = stmt.query_map([limit], |row| {
+            Ok(PostDataWrapper {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                formatted_date: row.get(2)?,
+                title: row.get(3)?,
+                url: row.get(4)?,
+                relevance: row.get(5)?,
+                subreddit: row.get(6)?,
+                permalink: row.get(7)?,
+            })
+        })?;
+
+        posts.collect()
+    }
+
+    pub fn get_posts_by_subreddit(&self, subreddit: &str) -> RusqliteResult<Vec<PostDataWrapper>> {
+        let db = DB::new()?;
+        let mut stmt = db.conn.prepare(
+            "SELECT id, timestamp, formatted_date, title, url, relevance, subreddit, permalink
+         FROM reddit_posts 
+         WHERE subreddit = ?1
+         ORDER BY timestamp DESC",
+        )?;
+
+        let posts = stmt.query_map([subreddit], |row| {
+            Ok(PostDataWrapper {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                formatted_date: row.get(2)?,
+                title: row.get(3)?,
+                url: row.get(4)?,
+                relevance: row.get(5)?,
+                subreddit: row.get(6)?,
+                permalink: row.get(7)?,
+            })
+        })?;
+
+        posts.collect()
+    }
+
+    pub fn get_posts_by_relevance_type(
+        &self,
+        relevance: &str,
+    ) -> RusqliteResult<Vec<PostDataWrapper>> {
+        let db = DB::new()?;
+        let mut stmt = db.conn.prepare(
+            "SELECT id, timestamp, formatted_date, title, url, relevance, subreddit, permalink
+         FROM reddit_posts 
+         WHERE relevance = ?1
+         ORDER BY timestamp DESC",
+        )?;
+
+        let posts = stmt.query_map([relevance], |row| {
+            Ok(PostDataWrapper {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                formatted_date: row.get(2)?,
+                title: row.get(3)?,
+                url: row.get(4)?,
+                relevance: row.get(5)?,
+                subreddit: row.get(6)?,
+                permalink: row.get(7)?,
+            })
+        })?;
+
+        posts.collect()
+    }
+
+    pub fn search_posts(&self, search_term: &str) -> RusqliteResult<Vec<PostDataWrapper>> {
+        let db = DB::new()?;
+        let mut stmt = db.conn.prepare(
+            "SELECT id, timestamp, formatted_date, title, url, relevance, subreddit, permalink
+         FROM reddit_posts 
+         WHERE title LIKE ?1 OR subreddit LIKE ?1
+         ORDER BY timestamp DESC",
+        )?;
+
+        let search_pattern = format!("%{}%", search_term);
+        let posts = stmt.query_map([search_pattern], |row| {
+            Ok(PostDataWrapper {
+                id: row.get(0)?,
+                timestamp: row.get(1)?,
+                formatted_date: row.get(2)?,
+                title: row.get(3)?,
+                url: row.get(4)?,
+                relevance: row.get(5)?,
+                subreddit: row.get(6)?,
+                permalink: row.get(7)?,
+            })
+        })?;
+
+        posts.collect()
+    }
+
+    pub fn get_post_comments(&self, post_id: &str) -> RusqliteResult<Vec<CommentDataWrapper>> {
+        let db = DB::new()?;
+        db.get_post_comments(post_id)
+    }
+
+    pub fn display_recent_posts(&self, limit: i64) -> RusqliteResult<()> {
+        let posts = self.get_recent_posts(limit)?;
+
+        println!("=== MOST RECENT {} POSTS ===", limit);
+        for (i, post) in posts.iter().enumerate() {
+            println!(
+                "{}. [{}] {} - r/{}",
+                i + 1,
+                post.relevance,
+                post.title,
+                post.subreddit
+            );
+            println!("   URL: {}", post.url);
+            println!("   Date: {}", post.formatted_date);
+            println!();
+        }
+
+        Ok(())
+    }
+
+    // You might also want to add a function to display all posts for debugging
+    pub fn display_all_posts(&self) -> RusqliteResult<()> {
+        let posts = self.get_all_posts()?;
+
+        println!("=== ALL POSTS IN DATABASE ({} total) ===", posts.len());
+        for (i, post) in posts.iter().enumerate() {
+            println!(
+                "{}. [{}] {} - r/{}",
+                i + 1,
+                post.relevance,
+                post.title,
+                post.subreddit
+            );
+            println!("   URL: {}", post.url);
+            println!("   Date: {}", post.formatted_date);
+            println!();
+        }
+
+        Ok(())
+    }
+}

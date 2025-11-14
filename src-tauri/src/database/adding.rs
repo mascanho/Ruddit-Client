@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use directories::BaseDirs;
-use rusqlite::{Connection, Result as RusqliteResult, params};
+use rusqlite::{params, Connection, Result as RusqliteResult};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -82,6 +82,28 @@ impl DB {
         Ok(())
     }
 
+    pub fn create_current_search_tables(&self) -> RusqliteResult<()> {
+        // Create posts table if it doesn't exist
+        self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS subreddit_search (
+                id INTEGER PRIMARY KEY,
+                timestamp INTEGER NOT NULL,
+                formatted_date TEXT NOT NULL,
+                title TEXT NOT NULL,
+                url TEXT NOT NULL,
+                relevance TEXT NOT NULL DEFAULT '',
+                subreddit TEXT NOT NULL DEFAULT '',
+                permalink TEXT NOT NULL DEFAULT ''
+            )",
+            [],
+        )?;
+
+        // Create comments table
+        self.create_comments_table()?;
+
+        Ok(())
+    }
+
     pub fn create_comments_table(&self) -> RusqliteResult<()> {
         // Create comments table if it doesn't exist
         self.conn.execute(
@@ -132,6 +154,42 @@ impl DB {
         Ok(())
     }
 
+    pub fn clear_current_search_results() -> RusqliteResult<()> {
+        let db = DB::new()?;
+        db.conn.execute("DELETE FROM subreddit_search", [])?;
+        Ok(())
+    }
+
+    pub fn replace_current_results(&mut self, results: &[PostDataWrapper]) -> RusqliteResult<()> {
+        let tx = self.conn.transaction()?;
+
+        // First, clear all existing results
+        // tx.execute("DELETE FROM subreddit_search", [])?;
+
+        {
+            let mut stmt = tx.prepare(
+                "INSERT INTO subreddit_search
+            (timestamp, formatted_date, title, url, relevance, subreddit, permalink)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            )?;
+
+            for result in results {
+                stmt.execute(params![
+                    result.timestamp,
+                    result.formatted_date,
+                    result.title,
+                    result.url,
+                    result.relevance,
+                    result.subreddit,
+                    result.permalink
+                ])?;
+            }
+        }
+
+        tx.commit()?;
+        println!("Replaced with {} results", results.len());
+        Ok(())
+    }
     pub fn append_comments(&mut self, comments: &[CommentDataWrapper]) -> RusqliteResult<()> {
         let tx = self.conn.transaction()?;
 

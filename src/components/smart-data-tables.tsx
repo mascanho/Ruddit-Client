@@ -2,7 +2,13 @@
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Settings2, TrendingUp, AlertCircle } from "lucide-react";
+import {
+  Settings2,
+  TrendingUp,
+  AlertCircle,
+  Play,
+  StopCircle,
+} from "lucide-react";
 import { RedditTable } from "./reddit-table";
 import { MessagesTable } from "./messages-table";
 import { AppSettingsDialog, useAppSettings } from "./app-settings";
@@ -11,6 +17,7 @@ import { AIDataChat } from "./ai-data-chat";
 import { LeadsGenerator } from "./leads-generator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useRedditPostsTab } from "@/store/store";
 
 export type Message = {
   id: string;
@@ -42,6 +49,7 @@ export function SmartDataTables() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { settings } = useAppSettings();
   const { toast } = useToast();
+  // const { redditPosts, setRedditPosts() } = useRedditPostsTab();
 
   const [subredditsModified, setSubredditsModified] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
@@ -119,13 +127,29 @@ export function SmartDataTables() {
             Lead Generation and Brand Monitoring
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setSettingsOpen(true)}
-        >
-          <Settings2 className="h-4 w-4" />
-        </Button>
+        <section className="flex space-x-2  justify-between">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Play className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <StopCircle className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings2 className="h-4 w-4" />
+          </Button>
+        </section>
       </div>
 
       <Tabs

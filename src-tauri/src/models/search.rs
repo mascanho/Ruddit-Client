@@ -1,0 +1,272 @@
+use base64::{engine::general_purpose, Engine as _};
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
+
+use crate::database::{self, adding::PostDataWrapper};
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RedditPost {
+    id: String,
+    title: String,
+    url: String,
+    created_utc: f64,
+    subreddit: String,
+    permalink: String,
+    selftext: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum RedditData {
+    Post(RedditPost),
+    Comment(RedditComment),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RedditComment {
+    id: String,
+    body: String,
+    author: String,
+    created_utc: f64,
+    score: i32,
+    permalink: String,
+    parent_id: String,
+    #[serde(default)]
+    replies: serde_json::Value,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+struct RedditListingData {
+    children: Vec<RedditListingChild>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct RedditListingChild {
+    data: RedditData,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+struct RedditListing {
+    data: RedditListingData,
+}
+
+// Define a custom error type for better error handling
+#[derive(Debug)]
+#[allow(dead_code)]
+pub enum RedditError {
+    Reqwest(reqwest::Error),
+    TokenExtraction,
+    HttpError(u16, String), // Add this variant
+    ParseError(String),
+}
+
+impl From<reqwest::Error> for RedditError {
+    fn from(e: reqwest::Error) -> Self {
+        RedditError::Reqwest(e)
+    }
+}
+
+pub struct AppState {
+    pub data: Vec<PostDataWrapper>,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl AppState {
+    pub fn new() -> Self {
+        // Initialize database connection
+        let db = database::adding::DB::new()
+            .map_err(|_e| RedditError::TokenExtraction)
+            .unwrap();
+
+        // Get data from database
+        let reddits = db
+            .get_db_results()
+            .map_err(|_e| RedditError::TokenExtraction)
+            .unwrap();
+
+        let vec = reddits;
+
+        Self { data: vec }
+    }
+}
+
+// Function to get access token from Reddit API
+pub async fn get_access_token(
+    client_id: String,
+    client_secret: String,
+) -> Result<String, RedditError> {
+    let credentials = format!("{}:{}", client_id, client_secret);
+    let encoded = general_purpose::STANDARD.encode(credentials);
+
+    let client = Client::new();
+    let response = client
+        .post("https://www.reddit.com/api/v1/access_token")
+        .header("Authorization", format!("Basic {}", encoded))
+        .header("User-Agent", "RudditApp/0.1 by Ruddit")
+        .form(&[("grant_type", "client_credentials")])
+        .send()
+        .await?;
+
+    let json: serde_json::Value = response.json().await?;
+    json["access_token"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or(RedditError::TokenExtraction)
+}
+
+#[derive(Debug, Deserialize)]
+struct SubredditListing {
+    data: SubredditData,
+}
+
+#[derive(Debug, Deserialize)]
+struct SubredditData {
+    children: Vec<SubredditChild>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SubredditChild {
+    data: RedditData,
+}
+
+// Update your function
+pub async fn get_subreddit_posts(
+    access_token: &str,
+    subreddit: &str,
+    relevance: &str,
+) -> Result<Vec<PostDataWrapper>, RedditError> {
+    let client = Client::new();
+
+    // Clean the subreddit name - remove "r/" if present
+    let subreddit_clean = subreddit.trim_start_matches("r/");
+
+    let url = format!(
+        "https://oauth.reddit.com/r/{}/{}?limit=100",
+        subreddit_clean, relevance
+    );
+
+    println!("Fetching from URL: {}", url);
+
+    let response = client
+        .get(&url)
+        .header("Authorization", format!("Bearer {}", access_token))
+        .header("User-Agent", "RustRedditApp/0.1 by YourUsername")
+        .send()
+        .await
+        .map_err(|e| {
+            eprintln!("Request failed: {}", e);
+            RedditError::Reqwest(e)
+        })?;
+
+    // Check response status
+    if !response.status().is_success() {
+        let status = response.status();
+        let error_text = response.text().await.unwrap_or_default();
+        eprintln!("HTTP Error {}: {}", status, error_text);
+        return Err(RedditError::HttpError(status.as_u16(), error_text));
+    }
+
+    let response_text = response.text().await.map_err(RedditError::Reqwest)?;
+
+    // Debug: print the beginning of the response
+    println!(
+        "Response preview: {}",
+        &response_text[..std::cmp::min(500, response_text.len())]
+    );
+
+    // Try to parse the response
+    let listing: RedditListing = serde_json::from_str(&response_text).map_err(|e| {
+        eprintln!("JSON parse error: {}", e);
+        eprintln!("Full response: {}", response_text);
+        RedditError::ParseError(e.to_string())
+    })?;
+
+    let posts: Vec<PostDataWrapper> = listing
+        .data
+        .children
+        .into_iter()
+        .filter_map(|child| {
+            if let RedditData::Post(post) = child.data {
+                Some(PostDataWrapper {
+                    id: post.id.parse().unwrap_or(0),
+                    title: post.title.clone(),
+                    url: post.url.clone(),
+                    timestamp: post.created_utc as i64,
+                    formatted_date: database::adding::DB::format_timestamp(post.created_utc as i64)
+                        .expect("Failed to format timestamp"),
+                    relevance: relevance.to_string(),
+                    subreddit: post.subreddit.clone(),
+                    permalink: format!("https://reddit.com{}", post.permalink),
+                })
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    println!("Processed {} posts from r/{}", posts.len(), subreddit_clean);
+    Ok(posts)
+}
+
+pub async fn search_subreddit_posts(
+    access_token: &str,
+    query: &str,
+    relevance: &str, // This should be "hot", "top", or "new"
+) -> Result<Vec<PostDataWrapper>, RedditError> {
+    let client = Client::new();
+
+    // Include the sort parameter in the URL
+    let url = format!(
+        "https://oauth.reddit.com/search?q={}&sort={}&limit=100&t=all",
+        query, relevance
+    );
+
+    println!("Making request to: {}", url); // Debug log
+
+    let response = client
+        .get(&url)
+        .header("Authorization", format!("Bearer {}", access_token))
+        .header("User-Agent", "RustRedditApp/0.1 by YourUsername")
+        .send()
+        .await?;
+
+    let listing: RedditListing = response.json().await?;
+
+    // Debug: print how many posts were returned
+    println!(
+        "API returned {} posts for sort: {}",
+        listing.data.children.len(),
+        relevance
+    );
+
+    let posts: Vec<PostDataWrapper> = listing
+        .data
+        .children
+        .into_iter()
+        .filter_map(|child| {
+            if let RedditData::Post(post) = &child.data {
+                Some(PostDataWrapper {
+                    id: post.id.parse().unwrap_or(0),
+                    title: post.title.clone(),
+                    url: post.url.clone(),
+                    timestamp: post.created_utc as i64,
+                    formatted_date: database::adding::DB::format_timestamp(post.created_utc as i64)
+                        .expect("Failed to format timestamp"),
+                    relevance: relevance.to_string(), // Store which sort type found this
+                    subreddit: post.subreddit.clone(),
+                    permalink: format!("https://reddit.com{}", post.permalink.clone()),
+                })
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    println!("Processed {} posts for sort: {}", posts.len(), relevance);
+    Ok(posts)
+}

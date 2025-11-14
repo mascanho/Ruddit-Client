@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import { useState } from "react";
@@ -19,6 +20,9 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAppSettings } from "./app-settings";
+// For Tauri v2 (latest)
+import { invoke } from "@tauri-apps/api/core";
+import { useRedditPostsTab, useSubredditsStore } from "@/store/store";
 
 type SearchResult = {
   id: string;
@@ -46,6 +50,19 @@ export function RedditSearch({
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const { toast } = useToast();
   const { settings } = useAppSettings();
+  const { setSubreddits, subreddits } = useSubredditsStore();
+  const { redditPosts, setRedditPosts } = useRedditPostsTab();
+
+  async function handleFetchSubreddits() {
+    try {
+      await invoke("get_all_searched_posts").then((subreddits) => {
+        setSubreddits(subreddits);
+        console.log("Subreddits:", subreddits);
+      });
+    } catch (error) {
+      console.error("Error fetching subreddits:", error);
+    }
+  }
 
   const toggleSort = (sort: SortType) => {
     setSelectedSorts((prev) => {
@@ -58,82 +75,33 @@ export function RedditSearch({
     });
   };
 
-  const generateMockResults = (
-    searchQuery: string,
-    sortType: SortType,
-  ): SearchResult[] => {
-    const templates = [
-      {
-        titleTemplate: `How to implement ${searchQuery} in production`,
-        subreddits: ["webdev", "programming", "javascript"],
-      },
-      {
-        titleTemplate: `Best practices for ${searchQuery}`,
-        subreddits: ["coding", "learnprogramming", "typescript"],
-      },
-      {
-        titleTemplate: `${searchQuery} performance optimization tips`,
-        subreddits: ["nextjs", "react", "webdev"],
-      },
-      {
-        titleTemplate: `Understanding ${searchQuery} - A comprehensive guide`,
-        subreddits: ["programming", "webdev", "javascript"],
-      },
-      {
-        titleTemplate: `${searchQuery} vs alternatives - What should you choose?`,
-        subreddits: ["webdev", "programming", "coding"],
-      },
-    ];
-
-    let relevanceModifier = 0;
-    if (sortType === "hot") {
-      relevanceModifier = 15;
-    } else if (sortType === "top") {
-      relevanceModifier = 20;
-    } else if (sortType === "new") {
-      relevanceModifier = -10;
-    }
-
-    return templates.map((template, index) => ({
-      id: `search_${sortType}_${Date.now()}_${index}`,
-      title: template.titleTemplate,
-      subreddit:
-        template.subreddits[
-          Math.floor(Math.random() * template.subreddits.length)
-        ],
-      url: `https://reddit.com/r/${template.subreddits[0]}/post${index}`,
-      relevance: Math.max(
-        0,
-        Math.min(100, Math.floor(Math.random() * 30) + 60 + relevanceModifier),
-      ),
-      snippet: `Discussion about ${searchQuery} and its applications in modern web development...`,
-    }));
-  };
-
   // HANDLE THE SEARCH FUNCTION
   const handleSearch = async () => {
     if (!query.trim()) return;
 
     setIsSearching(true);
     setCurrentPage(1);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Generate results for each selected sort type
-    const allResults: SearchResult[] = [];
-    selectedSorts.forEach((sortType) => {
-      const mockResults = generateMockResults(query, sortType);
-      allResults.push(...mockResults);
-    });
+    try {
+      // Call Tauri command to query Reddit and store in database
+      const result: string = await invoke("get_reddit_results", {
+        relevance: selectedSorts,
+        query: query.trim(),
+      });
 
-    setResults(allResults);
-    setIsSearching(false);
+      console.log("Database result:", result);
+    } catch (error) {
+      console.error("Search error:", error);
 
-    toast({
-      title: "Search complete",
-      description: `Found ${allResults.length} results across ${selectedSorts.join(", ")} for "${query}"`,
-    });
+      toast({
+        title: "Search completed",
+        description: `Showing ${allResults.length} results for "${query}"`,
+      });
+    } finally {
+      setIsSearching(false);
+      handleFetchSubreddits();
+    }
   };
-
   const addToTable = (result: SearchResult) => {
     onAddResults([
       {
@@ -156,7 +124,7 @@ export function RedditSearch({
 
   const addAllToTable = () => {
     onAddResults(
-      results.map((result) => ({
+      subreddits.map((result) => ({
         id: result.id,
         date: new Date().toISOString().split("T")[0],
         title: result.title,
@@ -166,10 +134,10 @@ export function RedditSearch({
       })),
     );
 
-    onNotifyNewPosts(results.length);
+    onNotifyNewPosts(subreddits.length);
 
     toast({
-      title: `${results.length} posts added to Reddit Posts`,
+      title: `${subreddits.length} posts added to Reddit Posts`,
       description: "All search results have been added to your table",
     });
 
@@ -186,10 +154,10 @@ export function RedditSearch({
     }
   };
 
-  const totalPages = Math.ceil(results.length / rowsPerPage);
+  const totalPages = Math.ceil(subreddits.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
-  const paginatedResults = results.slice(startIndex, endIndex);
+  const paginatedResults = subreddits.slice(startIndex, endIndex);
 
   return (
     <Card className="p-6">
@@ -266,12 +234,12 @@ export function RedditSearch({
           </Button>
         </div>
 
-        {results.length > 0 && (
+        {subreddits.length > 0 && (
           <>
             <div className="flex items-center justify-between pt-4 border-t">
               <div className="flex items-center gap-2">
                 <p className="text-sm text-muted-foreground">
-                  {results.length} results found
+                  {subreddits.length} results found
                 </p>
                 {selectedSorts.map((sort) => (
                   <Badge key={sort} variant="secondary" className="text-xs">
