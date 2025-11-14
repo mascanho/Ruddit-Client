@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Ruddit",
   "version": "0.0.1",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.ruddit",
   "build": {
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000",

@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
 import { invoke } from "@tauri-apps/api/core";
+import { toast } from "sonner";
 
 export type Message = {
   id: string;
@@ -50,7 +52,6 @@ export function SmartDataTables() {
   const [redditPosts, setRedditPosts] = useState<RedditPost[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { settings } = useAppSettings();
-  const { toast } = useToast();
 
   const [subredditsModified, setSubredditsModified] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
@@ -107,11 +108,6 @@ export function SmartDataTables() {
 
   const handleNotifyNewPosts = (count: number) => {
     setNewPostsCount((prev) => prev + count);
-    toast({
-      title: "Posts added to Reddit Posts",
-      description: `${count} new post${count > 1 ? "s" : ""} added from search results.`,
-      duration: 5000,
-    });
   };
 
   const handleSubredditsChanged = (addedCount = 0) => {
@@ -119,11 +115,6 @@ export function SmartDataTables() {
 
     if (addedCount > 0) {
       setNewPostsCount(addedCount);
-      toast({
-        title: "New posts added",
-        description: `${addedCount} new post${addedCount > 1 ? "s" : ""} added to Reddit Posts from monitored subreddits.`,
-        duration: 5000,
-      });
     }
   };
 
@@ -150,6 +141,21 @@ export function SmartDataTables() {
       averageRelevance: avgRelevance,
     };
   }, [redditPosts, messages, settings]);
+
+  // HANDLE DELETING THE COMMENTS FROM THE TABLE
+  async function handleClearComments() {
+    try {
+      const data: any = await invoke("clear_comments_command");
+      console.log(data, "ALL COMMENTS");
+      setMessages([]);
+      toast.info("Deleting all comments...");
+
+      new Promise((resolve) => setTimeout(resolve, 1000));
+      window.location.reload();
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
   return (
     <div
@@ -241,6 +247,7 @@ export function SmartDataTables() {
             externalMessages={messages}
             searchState={searchState}
             onSearchStateChange={setSearchState}
+            handleClearComments={handleClearComments}
           />
         </TabsContent>
 

@@ -251,3 +251,11 @@ pub fn get_all_comments_command() -> Result<Vec<CommentDataWrapper>, String> {
     let reader = DBReader::new();
     reader.get_all_comments().map_err(|e| e.to_string())
 }
+
+// CLEAR THE COMMENTS TABLE
+#[tauri::command]
+pub fn clear_comments_command() -> Result<String, String> {
+    let db = database::adding::DB::new().unwrap();
+    db.clear_comments_database().unwrap();
+    Ok("Cleared comments".to_string())
+}

@@ -322,4 +322,10 @@ impl DB {
         self.conn.execute("DELETE FROM reddit_comments", [])?;
         Ok(())
     }
+
+    // CLEAR JUST THE COMMENTS DATABSE
+    pub fn clear_comments_database(&self) -> RusqliteResult<()> {
+        self.conn.execute("DELETE FROM reddit_comments", [])?;
+        Ok(())
+    }
 }
