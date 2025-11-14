@@ -219,6 +219,7 @@ impl DB {
         println!("Replaced with {} results", results.len());
         Ok(())
     }
+
     pub fn append_comments(&mut self, comments: &[CommentDataWrapper]) -> RusqliteResult<()> {
         let tx = self.conn.transaction()?;
 

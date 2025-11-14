@@ -120,8 +120,16 @@ export function RedditSearch({
         },
       });
 
+      // Automatically download the comments for the single post
+
+      console.log("Post ID:", singlePost.url);
+
       // Now singlePost should match PostDataWrapper format
       addSingleSubreddit(singlePost);
+
+      await invoke("get_post_comments_command", {
+        url: singlePost?.url,
+      });
 
       // Show toaster
       toast.info(`Added ${singlePost.title} post to table`, {

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::database;
 use crate::database::adding::PostDataWrapper;
 use crate::database::read::DBReader;
-use crate::models::search::{get_access_token, get_subreddit_posts, search_subreddit_posts};
+use crate::models::search::{self, get_access_token, get_subreddit_posts, search_subreddit_posts};
 use crate::settings::api_keys;
 use crate::settings::api_keys::AppConfig;
 
@@ -235,4 +235,12 @@ pub fn remove_single_reddit_command(post: i64) -> Result<(), String> {
     let db = database::adding::DB::new().unwrap();
     db.remove_single_reddit(&post).unwrap();
     Ok(())
+}
+
+// FETCH THE COMMENTS FOR A POST THAT GETS ADDED
+#[tauri::command]
+pub async fn get_post_comments_command(url: String) -> Result<String, String> {
+    let results = search::get_post_comments(&url).await.unwrap();
+
+    Ok("Fetched comments".to_string())
 }

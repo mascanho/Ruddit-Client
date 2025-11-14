@@ -2,7 +2,13 @@ use base64::{engine::general_purpose, Engine as _};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-use crate::database::{self, adding::PostDataWrapper};
+use crate::{
+    database::{
+        self,
+        adding::{CommentDataWrapper, PostDataWrapper},
+    },
+    settings::api_keys::{self, AppConfig},
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RedditPost {
@@ -46,7 +52,7 @@ pub struct RedditListingChild {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-struct RedditListing {
+pub struct RedditListing {
     data: RedditListingData,
 }
 
@@ -269,4 +275,149 @@ pub async fn search_subreddit_posts(
 
     println!("Processed {} posts for sort: {}", posts.len(), relevance);
     Ok(posts)
+}
+
+#[derive(Debug, Deserialize)]
+struct CommentResponse {
+    data: CommentResponseData,
+}
+
+#[derive(Debug, Deserialize)]
+struct CommentResponseData {
+    children: Vec<CommentChild>,
+}
+
+#[derive(Debug, Deserialize)]
+struct CommentChild {
+    data: CommentData,
+}
+
+#[derive(Debug, Deserialize)]
+struct CommentData {
+    id: String,
+    body: String,
+    author: String,
+    created_utc: f64,
+    score: i32,
+    permalink: String,
+    parent_id: String,
+    #[serde(default)]
+    replies: serde_json::Value,
+}
+
+// handle post comment fetch
+pub async fn get_post_comments(url: &str) -> Result<Vec<CommentDataWrapper>, RedditError> {
+    let client = Client::new();
+
+    let post_id = extract_post_id_from_url(url).unwrap();
+    println!("Post ID: {}", post_id);
+
+    let url = format!("https://oauth.reddit.com/comments/{}", post_id);
+
+    // Read config
+    let config = api_keys::ConfigDirs::read_config().unwrap_or_else(|err| {
+        eprintln!("Warning: using default config because: {err}");
+        AppConfig::default()
+    });
+
+    let api_keys = config.api_keys;
+    let client_id = api_keys.reddit_api_id;
+    let client_secret = api_keys.reddit_api_secret;
+
+    // Get token
+    let token = match get_access_token(client_id, client_secret).await {
+        Ok(t) if !t.is_empty() => t,
+        Ok(_) => {
+            eprintln!("Empty access token received");
+            api_keys::ConfigDirs::edit_config_file().unwrap();
+            return Ok(Vec::new());
+        }
+        Err(e) => {
+            eprintln!("Failed to retrieve access token: {:?}", e);
+            api_keys::ConfigDirs::edit_config_file().unwrap();
+            return Ok(Vec::new());
+        }
+    };
+
+    println!("Fetching comments from URL: {}", url);
+
+    let response = client
+        .get(&url)
+        .header("Authorization", format!("Bearer {}", token))
+        .header("User-Agent", "RustRedditApp/0.1 by YourUsername")
+        .send()
+        .await
+        .map_err(RedditError::Reqwest)?;
+
+    // Check response status
+    if !response.status().is_success() {
+        let status = response.status();
+        let error_text = response.text().await.unwrap_or_default();
+        eprintln!("HTTP Error {}: {}", status, error_text);
+        return Err(RedditError::HttpError(status.as_u16(), error_text));
+    }
+
+    // The Reddit comments endpoint returns an array with two elements:
+    // [0] = post data, [1] = comments data
+    let response_data: Vec<serde_json::Value> =
+        response.json().await.map_err(RedditError::Reqwest)?;
+
+    if response_data.len() < 2 {
+        println!(
+            "Warning: Unexpected response format - expected 2 listings, got {}",
+            response_data.len()
+        );
+        return Ok(Vec::new());
+    }
+
+    // Parse the comments from the second element
+    let comments_data: CommentResponse =
+        serde_json::from_value(response_data[1].clone()).map_err(|e| {
+            eprintln!("Failed to parse comments: {}", e);
+            RedditError::ParseError(e.to_string())
+        })?;
+
+    // Convert to CommentDataWrapper
+    let comments: Vec<CommentDataWrapper> = comments_data
+        .data
+        .children
+        .into_iter()
+        .map(|child| {
+            let data = child.data;
+            CommentDataWrapper {
+                id: data.id,
+                post_id: post_id.to_string(),
+                body: data.body,
+                author: data.author,
+                timestamp: data.created_utc as i64,
+                formatted_date: database::adding::DB::format_timestamp(data.created_utc as i64)
+                    .expect("Failed to format timestamp"),
+                score: data.score,
+                permalink: data.permalink,
+                parent_id: data.parent_id,
+                subreddit: "".to_string(), // You might need to extract this from the URL
+                post_title: "".to_string(), // You might need to get this from the post data
+            }
+        })
+        .collect();
+
+    println!("Successfully fetched {} comments", comments.len());
+
+    // Save to database
+    let mut db = database::adding::DB::new().unwrap();
+    db.append_comments(&comments).unwrap();
+
+    Ok(comments)
+}
+
+fn extract_post_id_from_url(url: &str) -> Option<String> {
+    let parts: Vec<&str> = url.split("/comments/").collect();
+    if parts.len() > 1 {
+        let post_part = parts[1];
+        let post_id = post_part.split('/').next().unwrap_or("");
+        if !post_id.is_empty() {
+            return Some(post_id.to_string());
+        }
+    }
+    None
 }

@@ -27,7 +27,8 @@ async fn main() {
             commands::get_all_searched_posts,
             commands::save_single_reddit_command,
             commands::clear_saved_reddits,
-            commands::remove_single_reddit_command
+            commands::remove_single_reddit_command,
+            commands::get_post_comments_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
