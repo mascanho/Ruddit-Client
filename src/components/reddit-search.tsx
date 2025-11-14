@@ -22,7 +22,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useAppSettings } from "./app-settings";
 // For Tauri v2 (latest)
 import { invoke } from "@tauri-apps/api/core";
-import { useRedditPostsTab, useSubredditsStore } from "@/store/store";
+import {
+  useAddSingleSubReddit,
+  useRedditPostsTab,
+  useSubredditsStore,
+} from "@/store/store";
 
 type SearchResult = {
   id: string;
@@ -52,6 +56,7 @@ export function RedditSearch({
   const { settings } = useAppSettings();
   const { setSubreddits, subreddits } = useSubredditsStore();
   const { redditPosts, setRedditPosts } = useRedditPostsTab();
+  const { addSingleSubreddit } = useAddSingleSubReddit();
 
   async function handleFetchSubreddits() {
     try {
@@ -92,17 +97,14 @@ export function RedditSearch({
       console.log("Database result:", result);
     } catch (error) {
       console.error("Search error:", error);
-
-      toast({
-        title: "Search completed",
-        description: `Showing ${allResults.length} results for "${query}"`,
-      });
     } finally {
       setIsSearching(false);
       handleFetchSubreddits();
     }
   };
-  const addToTable = (result: SearchResult) => {
+
+  // ADD SINGLE SUBREDDIT TO REDDIT POSTS TABLE
+  const addToTable = async (result: SearchResult) => {
     onAddResults([
       {
         id: result.id,
@@ -114,6 +116,29 @@ export function RedditSearch({
       },
     ]);
 
+    try {
+      // TAURI COMMAND TO SEND TO BE
+      const singlePost = await invoke("save_single_reddit_command", {
+        post: {
+          id: parseInt(result.id), // Convert to number to match i64
+          timestamp: Math.floor(Date.now() / 1000),
+          formatted_date: new Date().toISOString().split("T")[0], // Proper date format
+          title: result.title,
+          url: result.url,
+          relevance: result.relevance.toString(), // Convert to string
+          subreddit: result.subreddit,
+          permalink: result.url,
+        },
+      });
+
+      // Now singlePost should match PostDataWrapper format
+      addSingleSubreddit(singlePost);
+
+      console.log("Single post:", singlePost);
+    } catch (err) {
+      console.error(err);
+    }
+
     onNotifyNewPosts(1);
 
     toast({
@@ -121,7 +146,6 @@ export function RedditSearch({
       description: `"${result.title.substring(0, 50)}..." has been added`,
     });
   };
-
   const addAllToTable = () => {
     onAddResults(
       subreddits.map((result) => ({

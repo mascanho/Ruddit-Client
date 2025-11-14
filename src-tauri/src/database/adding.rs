@@ -60,6 +60,28 @@ impl DB {
         Ok(DB { conn })
     }
 
+    // SAVE SINGLE REDDIT POST
+    pub fn save_single_reddit(&self, post: &PostDataWrapper) -> RusqliteResult<()> {
+        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, relevance, subreddit, permalink)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+        self.conn.execute(
+            query,
+            params![
+                post.id,
+                post.timestamp,
+                post.formatted_date,
+                post.title,
+                post.url,
+                post.relevance,
+                post.subreddit,
+                post.permalink
+            ],
+        )?;
+
+        Ok(())
+    }
+
     pub fn create_tables(&self) -> RusqliteResult<()> {
         // Create posts table if it doesn't exist
         self.conn.execute(

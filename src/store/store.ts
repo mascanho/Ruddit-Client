@@ -1,9 +1,15 @@
 import { create } from "zustand";
 
-interface Subreddit {
-  id: string;
-  name: string;
-  // add other properties as needed
+// This should match your Rust PostDataWrapper
+interface PostDataWrapper {
+  id: number; // i64 in Rust
+  timestamp: number; // i64 in Rust
+  formatted_date: string;
+  title: string;
+  url: string;
+  relevance: string; // Changed from number to string
+  subreddit: string;
+  permalink: string;
 }
 
 interface RedditPost {
@@ -13,12 +19,11 @@ interface RedditPost {
   url: string;
   relevance: number;
   snippet: string;
-  // add other properties as needed
 }
 
 interface SubredditsStore {
-  subreddits: Subreddit[];
-  setSubreddits: (subreddits: Subreddit[]) => void;
+  subreddits: PostDataWrapper[]; // Changed from Subreddit[] to PostDataWrapper[]
+  setSubreddits: (subreddits: PostDataWrapper[]) => void;
 }
 
 interface RedditPostsTabStore {
@@ -26,9 +31,15 @@ interface RedditPostsTabStore {
   setRedditPosts: (redditPosts: RedditPost[]) => void;
 }
 
+interface SingleSubredditTable {
+  subRedditsSaved: PostDataWrapper[]; // Changed to match backend format
+  setSingleSubreddit: (subreddits: PostDataWrapper[]) => void;
+  addSingleSubreddit: (subreddit: PostDataWrapper) => void; // Changed parameter type
+}
+
 const useSubredditsStore = create<SubredditsStore>((set) => ({
   subreddits: [],
-  setSubreddits: (subreddits: Subreddit[]) => set({ subreddits }),
+  setSubreddits: (subreddits: PostDataWrapper[]) => set({ subreddits }),
 }));
 
 const useRedditPostsTab = create<RedditPostsTabStore>((set) => ({
@@ -36,4 +47,18 @@ const useRedditPostsTab = create<RedditPostsTabStore>((set) => ({
   setRedditPosts: (redditPosts: RedditPost[]) => set({ redditPosts }),
 }));
 
-export { useSubredditsStore, useRedditPostsTab };
+const useAddSingleSubReddit = create<SingleSubredditTable>((set, get) => ({
+  subRedditsSaved: [],
+  setSingleSubreddit: (subRedditsSaved: PostDataWrapper[]) =>
+    set({ subRedditsSaved }),
+  addSingleSubreddit: (subreddit: PostDataWrapper) => {
+    const current = get().subRedditsSaved || [];
+    const exists = current.some((s) => s.id === subreddit.id);
+    if (!exists) {
+      set({ subRedditsSaved: [...current, subreddit] });
+    }
+  },
+}));
+
+export { useSubredditsStore, useRedditPostsTab, useAddSingleSubReddit };
+export type { PostDataWrapper, RedditPost };

@@ -212,3 +212,11 @@ pub fn get_all_searched_posts() -> Result<Vec<PostDataWrapper>, String> {
     let reader = DBReader::new();
     reader.get_all_searched_posts().map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn save_single_reddit_command(post: PostDataWrapper) -> Result<PostDataWrapper, String> {
+    let db = database::adding::DB::new().unwrap();
+
+    db.save_single_reddit(&post).unwrap();
+    Ok(post)
+}

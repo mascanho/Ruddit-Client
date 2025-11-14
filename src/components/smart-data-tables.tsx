@@ -17,7 +17,7 @@ import { AIDataChat } from "./ai-data-chat";
 import { LeadsGenerator } from "./leads-generator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useRedditPostsTab } from "@/store/store";
+import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
 
 export type Message = {
   id: string;
@@ -49,7 +49,6 @@ export function SmartDataTables() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { settings } = useAppSettings();
   const { toast } = useToast();
-  // const { redditPosts, setRedditPosts() } = useRedditPostsTab();
 
   const [subredditsModified, setSubredditsModified] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
@@ -60,6 +59,8 @@ export function SmartDataTables() {
     redditRelevance: "all",
     messagesSearch: "",
   });
+
+  const { subRedditsSaved } = useAddSingleSubReddit();
 
   const handleAddComments = (comments: Message[]) => {
     setMessages((prev) => [...prev, ...comments]);
@@ -194,7 +195,7 @@ export function SmartDataTables() {
         <TabsContent value="reddit" className="space-y-4">
           <RedditTable
             onAddComments={handleAddComments}
-            externalPosts={redditPosts}
+            externalPosts={subRedditsSaved}
             searchState={searchState}
             onSearchStateChange={setSearchState}
           />
