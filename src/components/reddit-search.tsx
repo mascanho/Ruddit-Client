@@ -121,8 +121,8 @@ export function RedditSearch({
       const singlePost = await invoke("save_single_reddit_command", {
         post: {
           id: parseInt(result.id), // Convert to number to match i64
-          timestamp: Math.floor(Date.now() / 1000),
-          formatted_date: new Date().toISOString().split("T")[0], // Proper date format
+          timestamp: result.timestamp,
+          formatted_date: result.formatted_date,
           title: result.title,
           url: result.url,
           relevance: result.relevance.toString(), // Convert to string
@@ -309,6 +309,13 @@ export function RedditSearch({
                         >
                           {result.relevance}% relevant
                         </Badge>
+
+                        <div className="flex space-x-2 items-center">
+                          <span className="text-black font-semibold">
+                            Posted on:{" "}
+                          </span>
+                          <span>{result?.formatted_date}</span>
+                        </div>
                       </div>
                     </div>
                     <Button

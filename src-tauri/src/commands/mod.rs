@@ -220,3 +220,11 @@ pub fn save_single_reddit_command(post: PostDataWrapper) -> Result<PostDataWrapp
     db.save_single_reddit(&post).unwrap();
     Ok(post)
 }
+
+// CLEAR SAVED REDDITS TABLE
+#[tauri::command]
+pub fn clear_saved_reddits() -> Result<String, String> {
+    let db = database::adding::DB::new().unwrap();
+    db.clear_database().unwrap();
+    Ok("Cleared saved reddits".to_string())
+}

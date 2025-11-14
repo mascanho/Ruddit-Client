@@ -209,7 +209,7 @@ pub async fn get_subreddit_posts(
         })
         .collect();
 
-    println!("Processed {} posts from r/{}", posts.len(), subreddit_clean);
+    println!("Processed {} ", subreddit_clean);
     Ok(posts)
 }
 

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,7 @@ import { LeadsGenerator } from "./leads-generator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
+import { invoke } from "@tauri-apps/api/core";
 
 export type Message = {
   id: string;
@@ -34,6 +35,7 @@ export type RedditPost = {
   url: string;
   relevance: number;
   subreddit: string;
+  formatted_date: string;
 };
 
 export type SearchState = {
@@ -52,6 +54,7 @@ export function SmartDataTables() {
 
   const [subredditsModified, setSubredditsModified] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
+  const [allSavedPosts, setAllSavedPosts] = useState([]);
 
   const [searchState, setSearchState] = useState<SearchState>({
     redditSearch: "",
@@ -61,6 +64,22 @@ export function SmartDataTables() {
   });
 
   const { subRedditsSaved } = useAddSingleSubReddit();
+
+  // GET ALL THE SAVED POSTS FROM DB AND SHOW IN THE FRONT END TABLE
+
+  async function getAllRedditsSaved() {
+    try {
+      const data: any = await invoke("get_all_posts");
+      console.log(data, "ALL SAVED POSTS");
+      setAllSavedPosts(data);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  useEffect(() => {
+    getAllRedditsSaved();
+  }, [redditPosts, subRedditsSaved]);
 
   const handleAddComments = (comments: Message[]) => {
     setMessages((prev) => [...prev, ...comments]);
@@ -195,7 +214,7 @@ export function SmartDataTables() {
         <TabsContent value="reddit" className="space-y-4">
           <RedditTable
             onAddComments={handleAddComments}
-            externalPosts={subRedditsSaved}
+            externalPosts={allSavedPosts}
             searchState={searchState}
             onSearchStateChange={setSearchState}
           />

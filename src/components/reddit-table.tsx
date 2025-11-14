@@ -1,10 +1,17 @@
-"use client"
+"use client";
 
-import { useState, useMemo, useEffect } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useState, useMemo, useEffect } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,8 +19,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +36,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 import {
   Search,
   MoreVertical,
@@ -35,22 +48,35 @@ import {
   MessageCircle,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react"
-import { Card } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { useToast } from "@/hooks/use-toast"
-import type { Message, SearchState, RedditPost } from "./smart-data-tables"
-import { useAppSettings } from "./app-settings"
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import type { Message, SearchState, RedditPost } from "./smart-data-tables";
+import { useAppSettings } from "./app-settings";
+import { invoke } from "@tauri-apps/api/core";
+import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
+import { useSonner } from "sonner";
 
-const initialData: RedditPost[] = [] // Declare initialData here
+const initialData: RedditPost[] = []; // Declare initialData here
 
-type SortField = keyof RedditPost | null
-type SortDirection = "asc" | "desc"
+type SortField = keyof RedditPost | null;
+type SortDirection = "asc" | "desc";
 
-const generateMockComments = (postId: string, postTitle: string, subreddit: string): Message[] => {
-  const commentCount = Math.floor(Math.random() * 8) + 3 // 3-10 comments
-  const comments: Message[] = []
+const generateMockComments = (
+  postId: string,
+  postTitle: string,
+  subreddit: string,
+): Message[] => {
+  const commentCount = Math.floor(Math.random() * 8) + 3; // 3-10 comments
+  const comments: Message[] = [];
 
   const sampleComments = [
     "This is really helpful, thanks for sharing!",
@@ -63,7 +89,7 @@ const generateMockComments = (postId: string, postTitle: string, subreddit: stri
     "Commenting to follow this thread.",
     "This is exactly what I needed today.",
     "Thanks! This solved my problem.",
-  ]
+  ];
 
   const usernames = [
     "techie_sam",
@@ -74,20 +100,23 @@ const generateMockComments = (postId: string, postTitle: string, subreddit: stri
     "web_guru",
     "frontend_pro",
     "backend_ace",
-  ]
+  ];
 
   for (let i = 0; i < commentCount; i++) {
     comments.push({
       id: `comment_${postId}_${i}`,
       username: usernames[Math.floor(Math.random() * usernames.length)],
-      message: sampleComments[Math.floor(Math.random() * sampleComments.length)],
-      date: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      message:
+        sampleComments[Math.floor(Math.random() * sampleComments.length)],
+      date: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
       source: `r/${subreddit} - ${postTitle}`,
-    })
+    });
   }
 
-  return comments
-}
+  return comments;
+};
 
 export function RedditTable({
   onAddComments,
@@ -95,157 +124,204 @@ export function RedditTable({
   searchState,
   onSearchStateChange,
 }: {
-  onAddComments: (comments: Message[]) => void
-  externalPosts?: RedditPost[]
-  searchState: SearchState
-  onSearchStateChange: (state: SearchState) => void
+  onAddComments: (comments: Message[]) => void;
+  externalPosts?: RedditPost[];
+  searchState: SearchState;
+  onSearchStateChange: (state: SearchState) => void;
 }) {
-  const [data, setData] = useState<RedditPost[]>(initialData)
-  const { settings } = useAppSettings()
+  const [data, setData] = useState<RedditPost[]>(initialData);
+  const { settings } = useAppSettings();
 
-  const searchQuery = searchState.redditSearch
-  const setSearchQuery = (value: string) => onSearchStateChange({ ...searchState, redditSearch: value })
-  const subredditFilter = searchState.redditSubreddit
-  const setSubredditFilter = (value: string) => onSearchStateChange({ ...searchState, redditSubreddit: value })
-  const relevanceFilter = searchState.redditRelevance
-  const setRelevanceFilter = (value: string) => onSearchStateChange({ ...searchState, redditRelevance: value })
+  const searchQuery = searchState.redditSearch;
+  const setSearchQuery = (value: string) =>
+    onSearchStateChange({ ...searchState, redditSearch: value });
+  const subredditFilter = searchState.redditSubreddit;
+  const setSubredditFilter = (value: string) =>
+    onSearchStateChange({ ...searchState, redditSubreddit: value });
+  const relevanceFilter = searchState.redditRelevance;
+  const setRelevanceFilter = (value: string) =>
+    onSearchStateChange({ ...searchState, redditRelevance: value });
 
   const [sortField, setSortField] = useState<SortField>(
-    settings.defaultSortField === "none" ? null : (settings.defaultSortField as SortField),
-  )
-  const [sortDirection, setSortDirection] = useState<SortDirection>(settings.defaultSortDirection)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [selectedPost, setSelectedPost] = useState<RedditPost | null>(null)
-  const [commentsPost, setCommentsPost] = useState<RedditPost | null>(null)
-  const [comments, setComments] = useState<Message[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [rowsPerPage, setRowsPerPage] = useState(settings.rowsPerPage)
-  const { toast } = useToast()
+    settings.defaultSortField === "none"
+      ? null
+      : (settings.defaultSortField as SortField),
+  );
+  const [sortDirection, setSortDirection] = useState<SortDirection>(
+    settings.defaultSortDirection,
+  );
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedPost, setSelectedPost] = useState<RedditPost | null>(null);
+  const [commentsPost, setCommentsPost] = useState<RedditPost | null>(null);
+  const [comments, setComments] = useState<Message[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(settings.rowsPerPage);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (externalPosts.length > 0) {
       setData((prev) => {
-        const existingIds = new Set(prev.map((p) => p.id))
-        const newPosts = externalPosts.filter((p) => !existingIds.has(p.id))
+        const existingIds = new Set(prev.map((p) => p.id));
+        const newPosts = externalPosts.filter((p) => !existingIds.has(p.id));
 
         if (newPosts.length > 0) {
           toast({
             title: "New posts added",
             description: `${newPosts.length} new post${newPosts.length > 1 ? "s" : ""} added to Reddit Posts`,
             duration: 3000,
-          })
+          });
         }
 
-        return [...prev, ...newPosts]
-      })
+        return [...prev, ...newPosts];
+      });
     }
-  }, [externalPosts, toast])
+  }, [externalPosts, toast]);
 
   const subreddits = useMemo(() => {
-    return Array.from(new Set(data.map((post) => post.subreddit)))
-  }, [data])
+    return Array.from(new Set(data.map((post) => post.subreddit)));
+  }, [data]);
 
   const filteredAndSortedData = useMemo(() => {
     const filtered = data.filter((post) => {
       const matchesSearch =
         post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.subreddit.toLowerCase().includes(searchQuery.toLowerCase())
+        post.subreddit.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesSubreddit = subredditFilter === "all" || post.subreddit === subredditFilter
+      const matchesSubreddit =
+        subredditFilter === "all" || post.subreddit === subredditFilter;
 
       const matchesRelevance =
         relevanceFilter === "all" ||
         (relevanceFilter === "high" && post.relevance >= 80) ||
-        (relevanceFilter === "medium" && post.relevance >= 60 && post.relevance < 80) ||
-        (relevanceFilter === "low" && post.relevance < 60)
+        (relevanceFilter === "medium" &&
+          post.relevance >= 60 &&
+          post.relevance < 80) ||
+        (relevanceFilter === "low" && post.relevance < 60);
 
-      return matchesSearch && matchesSubreddit && matchesRelevance
-    })
+      return matchesSearch && matchesSubreddit && matchesRelevance;
+    });
 
     if (sortField) {
       filtered.sort((a, b) => {
-        const aValue = a[sortField]
-        const bValue = b[sortField]
+        const aValue = a[sortField];
+        const bValue = b[sortField];
 
         if (typeof aValue === "string" && typeof bValue === "string") {
-          return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
+          return sortDirection === "asc"
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
         }
 
         if (typeof aValue === "number" && typeof bValue === "number") {
-          return sortDirection === "asc" ? aValue - bValue : bValue - aValue
+          return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
         }
 
-        return 0
-      })
+        return 0;
+      });
     }
 
-    return filtered
-  }, [data, searchQuery, subredditFilter, relevanceFilter, sortField, sortDirection])
+    return filtered;
+  }, [
+    data,
+    searchQuery,
+    subredditFilter,
+    relevanceFilter,
+    sortField,
+    sortDirection,
+  ]);
 
   const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage
-    const endIndex = startIndex + rowsPerPage
-    return filteredAndSortedData.slice(startIndex, endIndex)
-  }, [filteredAndSortedData, currentPage, rowsPerPage])
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return filteredAndSortedData.slice(startIndex, endIndex);
+  }, [filteredAndSortedData, currentPage, rowsPerPage]);
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / rowsPerPage)
+  const totalPages = Math.ceil(filteredAndSortedData.length / rowsPerPage);
 
   useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery, subredditFilter, relevanceFilter])
+    setCurrentPage(1);
+  }, [searchQuery, subredditFilter, relevanceFilter]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      setSortField(field)
-      setSortDirection("desc")
+      setSortField(field);
+      setSortDirection("desc");
     }
-  }
+  };
 
   const handleDelete = (id: string) => {
     if (!settings.confirmDelete) {
-      setData(data.filter((post) => post.id !== id))
-      return
+      setData(data.filter((post) => post.id !== id));
+      return;
     }
-    setData(data.filter((post) => post.id !== id))
-    setDeleteId(null)
-  }
+    setData(data.filter((post) => post.id !== id));
+    setDeleteId(null);
+  };
 
   const handleGetComments = (post: RedditPost) => {
-    const generatedComments = generateMockComments(post.id, post.title, post.subreddit)
-    setComments(generatedComments)
-    setCommentsPost(post)
+    const generatedComments = generateMockComments(
+      post.id,
+      post.title,
+      post.subreddit,
+    );
+    setComments(generatedComments);
+    setCommentsPost(post);
 
-    onAddComments(generatedComments)
+    onAddComments(generatedComments);
 
     toast({
       title: "Comments loaded",
       description: `${generatedComments.length} comments added to Messages tab`,
-    })
-  }
+    });
+  };
 
   const clearFilters = () => {
-    setSearchQuery("")
-    setSubredditFilter("all")
-    setRelevanceFilter("all")
-    setSortField(null)
-    setCurrentPage(1)
-  }
+    setSearchQuery("");
+    setSubredditFilter("all");
+    setRelevanceFilter("all");
+    setSortField(null);
+    setCurrentPage(1);
+  };
 
   const getRelevanceBadge = (relevance: number) => {
     if (relevance >= 80) {
-      return <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20">High</Badge>
+      return (
+        <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20">
+          High
+        </Badge>
+      );
     }
     if (relevance >= 60) {
       return (
-        <Badge className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/20">Medium</Badge>
-      )
+        <Badge className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/20">
+          Medium
+        </Badge>
+      );
     }
-    return <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20">Low</Badge>
-  }
+    return (
+      <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20">
+        Low
+      </Badge>
+    );
+  };
 
-  const hasActiveFilters = searchQuery || subredditFilter !== "all" || relevanceFilter !== "all" || sortField
+  const hasActiveFilters =
+    searchQuery ||
+    subredditFilter !== "all" ||
+    relevanceFilter !== "all" ||
+    sortField;
+
+  const { clearSavedSubredditsTable } = useAddSingleSubReddit();
+  async function clearSavedRedditsTable() {
+    try {
+      await invoke("clear_saved_reddits");
+      await window.location.reload();
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
   return (
     <>
@@ -285,11 +361,16 @@ export function RedditTable({
                 <SelectItem value="low">Low (&lt;60)</SelectItem>
               </SelectContent>
             </Select>
-            {hasActiveFilters && (
-              <Button variant="outline" size="icon" onClick={clearFilters}>
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+
+            <Button variant="destructive" onClick={clearSavedRedditsTable}>
+              Clear Table
+            </Button>
+
+            {/* {hasActiveFilters && ( */}
+            {/*   <Button variant="outline" size="icon" onClick={clearFilters}> */}
+            {/*     <X className="h-4 w-4" /> */}
+            {/*   </Button> */}
+            {/* )} */}
           </div>
 
           <div className="text-sm text-muted-foreground">
@@ -304,33 +385,59 @@ export function RedditTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[60px] bg-background sticky top-0 z-10">#</TableHead>
+                  <TableHead className="w-[60px] bg-background sticky top-0 z-10">
+                    #
+                  </TableHead>
                   <TableHead className="w-[110px] bg-background sticky top-0 z-10">
-                    <Button variant="ghost" size="sm" className="-ml-3 h-8" onClick={() => handleSort("date")}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-3 h-8"
+                      onClick={() => handleSort("date")}
+                    >
                       Date
                       <ArrowUpDown className="ml-2 h-3 w-3" />
                     </Button>
                   </TableHead>
                   <TableHead className="min-w-[300px] bg-background sticky top-0 z-10">
-                    <Button variant="ghost" size="sm" className="-ml-3 h-8" onClick={() => handleSort("title")}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-3 h-8"
+                      onClick={() => handleSort("title")}
+                    >
                       Title
                       <ArrowUpDown className="ml-2 h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[100px] bg-background sticky top-0 z-10">URL</TableHead>
+                  <TableHead className="w-[100px] bg-background sticky top-0 z-10">
+                    URL
+                  </TableHead>
                   <TableHead className="w-[180px] bg-background sticky top-0 z-10">
-                    <Button variant="ghost" size="sm" className="-ml-3 h-8" onClick={() => handleSort("relevance")}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-3 h-8"
+                      onClick={() => handleSort("relevance")}
+                    >
                       Relevance
                       <ArrowUpDown className="ml-2 h-3 w-3" />
                     </Button>
                   </TableHead>
                   <TableHead className="w-[150px] bg-background sticky top-0 z-10">
-                    <Button variant="ghost" size="sm" className="-ml-3 h-8" onClick={() => handleSort("subreddit")}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-3 h-8"
+                      onClick={() => handleSort("subreddit")}
+                    >
                       Subreddit
                       <ArrowUpDown className="ml-2 h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[70px] bg-background sticky top-0 z-10">Actions</TableHead>
+                  <TableHead className="w-[70px] bg-background sticky top-0 z-10">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
             </Table>
@@ -342,7 +449,10 @@ export function RedditTable({
             <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={7}
+                    className="h-24 text-center text-muted-foreground"
+                  >
                     No posts found.
                   </TableCell>
                 </TableRow>
@@ -355,9 +465,14 @@ export function RedditTable({
                     <TableCell className="text-muted-foreground text-sm font-medium w-[60px]">
                       {(currentPage - 1) * rowsPerPage + index + 1}
                     </TableCell>
-                    <TableCell className="font-mono text-sm w-[110px]">{post.date}</TableCell>
+                    <TableCell className="font-mono text-sm w-[110px]">
+                      {post?.formatted_date.slice(0, 10).trim()}
+                    </TableCell>
                     <TableCell className="min-w-[300px]">
-                      <div className="line-clamp-2 font-medium">{post.title}</div>
+                      <div className="line-clamp-2 font-medium">
+                        {post.title.slice(0, 100)}
+                        {post.title.length > 100 && "..."}
+                      </div>
                     </TableCell>
                     <TableCell className="w-[100px]">
                       <a
@@ -373,7 +488,9 @@ export function RedditTable({
                     <TableCell className="w-[180px]">
                       <div className="flex items-center gap-2">
                         {getRelevanceBadge(post.relevance)}
-                        <span className="text-sm text-muted-foreground">{post.relevance}%</span>
+                        <span className="text-sm text-muted-foreground">
+                          {post.relevance}%
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="w-[150px]">
@@ -384,23 +501,36 @@ export function RedditTable({
                     <TableCell className="w-[70px]">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleGetComments(post)}>
+                          <DropdownMenuItem
+                            onClick={() => handleGetComments(post)}
+                          >
                             <MessageCircle className="mr-2 h-4 w-4" />
                             Get Comments
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setSelectedPost(post)}>
+                          <DropdownMenuItem
+                            onClick={() => setSelectedPost(post)}
+                          >
                             <Info className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <a href={post.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                            <a
+                              href={post.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center"
+                            >
                               <ExternalLink className="mr-2 h-4 w-4" />
                               Open Link
                             </a>
@@ -426,12 +556,14 @@ export function RedditTable({
         {filteredAndSortedData.length > 0 && (
           <div className="flex items-center justify-between px-6 py-4 border-t">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Rows per page:</span>
+              <span className="text-sm text-muted-foreground">
+                Rows per page:
+              </span>
               <Select
                 value={rowsPerPage.toString()}
                 onValueChange={(v) => {
-                  setRowsPerPage(Number(v))
-                  setCurrentPage(1)
+                  setRowsPerPage(Number(v));
+                  setCurrentPage(1);
                 }}
               >
                 <SelectTrigger className="w-[80px]">
@@ -451,7 +583,12 @@ export function RedditTable({
                 Page {currentPage} of {totalPages}
               </span>
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
                   <ChevronLeft className="h-4 w-4" />
                   <ChevronLeft className="h-4 w-4 -ml-3" />
                 </Button>
@@ -487,12 +624,16 @@ export function RedditTable({
       </Card>
 
       {settings.confirmDelete && (
-        <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialog
+          open={deleteId !== null}
+          onOpenChange={() => setDeleteId(null)}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the post from your data.
+                This action cannot be undone. This will permanently delete the
+                post from your data.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -508,7 +649,10 @@ export function RedditTable({
         </AlertDialog>
       )}
 
-      <AlertDialog open={selectedPost !== null} onOpenChange={() => setSelectedPost(null)}>
+      <AlertDialog
+        open={selectedPost !== null}
+        onOpenChange={() => setSelectedPost(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Post Details</AlertDialogTitle>
@@ -516,28 +660,38 @@ export function RedditTable({
           {selectedPost && (
             <div className="space-y-4">
               <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Title</div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">
+                  Title
+                </div>
                 <div className="text-sm">{selectedPost.title}</div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Date</div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">
+                  Date
+                </div>
                 <div className="text-sm font-mono">{selectedPost.date}</div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Subreddit</div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">
+                  Subreddit
+                </div>
                 <Badge variant="outline" className="font-mono">
                   r/{selectedPost.subreddit}
                 </Badge>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Relevance Score</div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">
+                  Relevance Score
+                </div>
                 <div className="flex items-center gap-2">
                   {getRelevanceBadge(selectedPost.relevance)}
                   <span className="text-sm">{selectedPost.relevance}%</span>
                 </div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">URL</div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">
+                  URL
+                </div>
                 <a
                   href={selectedPost.url}
                   target="_blank"
@@ -550,12 +704,17 @@ export function RedditTable({
             </div>
           )}
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setSelectedPost(null)}>Close</AlertDialogAction>
+            <AlertDialogAction onClick={() => setSelectedPost(null)}>
+              Close
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={commentsPost !== null} onOpenChange={() => setCommentsPost(null)}>
+      <Dialog
+        open={commentsPost !== null}
+        onOpenChange={() => setCommentsPost(null)}
+      >
         <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -564,12 +723,16 @@ export function RedditTable({
             </DialogTitle>
             {commentsPost && (
               <DialogDescription className="space-y-1">
-                <div className="font-medium text-foreground line-clamp-2">{commentsPost.title}</div>
+                <div className="font-medium text-foreground line-clamp-2">
+                  {commentsPost.title}
+                </div>
                 <div className="flex items-center gap-2 text-xs">
                   <Badge variant="outline" className="font-mono">
                     r/{commentsPost.subreddit}
                   </Badge>
-                  <span className="text-muted-foreground">{comments.length} comments</span>
+                  <span className="text-muted-foreground">
+                    {comments.length} comments
+                  </span>
                 </div>
               </DialogDescription>
             )}
@@ -587,23 +750,31 @@ export function RedditTable({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm">{comment.username}</span>
+                        <span className="font-medium text-sm">
+                          {comment.username}
+                        </span>
                         <span className="text-xs text-muted-foreground">•</span>
-                        <span className="text-xs text-muted-foreground">{comment.date}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {comment.date}
+                        </span>
                       </div>
-                      <p className="text-sm leading-relaxed">{comment.message}</p>
+                      <p className="text-sm leading-relaxed">
+                        {comment.message}
+                      </p>
                     </div>
                   </div>
                 </Card>
               ))}
 
               {comments.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">No comments available</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  No comments available
+                </div>
               )}
             </div>
           </ScrollArea>
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

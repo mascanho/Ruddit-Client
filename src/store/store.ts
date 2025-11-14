@@ -19,6 +19,7 @@ interface RedditPost {
   url: string;
   relevance: number;
   snippet: string;
+  formatted_date: string;
 }
 
 interface SubredditsStore {
@@ -35,6 +36,7 @@ interface SingleSubredditTable {
   subRedditsSaved: PostDataWrapper[]; // Changed to match backend format
   setSingleSubreddit: (subreddits: PostDataWrapper[]) => void;
   addSingleSubreddit: (subreddit: PostDataWrapper) => void; // Changed parameter type
+  clearSavedSubredditsTable: () => void; // Add this method to clear the table
 }
 
 const useSubredditsStore = create<SubredditsStore>((set) => ({
@@ -58,6 +60,7 @@ const useAddSingleSubReddit = create<SingleSubredditTable>((set, get) => ({
       set({ subRedditsSaved: [...current, subreddit] });
     }
   },
+  clearSavedSubredditsTable: () => set({ subRedditsSaved: [] }),
 }));
 
 export { useSubredditsStore, useRedditPostsTab, useAddSingleSubReddit };
