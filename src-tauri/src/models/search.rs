@@ -293,7 +293,7 @@ struct CommentChild {
 }
 
 #[derive(Debug, Deserialize)]
-struct CommentData {
+pub struct CommentData {
     id: String,
     body: String,
     author: String,
@@ -306,13 +306,37 @@ struct CommentData {
 }
 
 // handle post comment fetch
+// handle post comment fetch
 pub async fn get_post_comments(url: &str) -> Result<Vec<CommentDataWrapper>, RedditError> {
     let client = Client::new();
 
-    let post_id = extract_post_id_from_url(url).unwrap();
-    println!("Post ID: {}", post_id);
+    // Extract post ID and handle the None case properly
+    let post_id = match extract_post_id_from_url(url) {
+        Some(id) => id,
+        None => {
+            eprintln!("Failed to extract post ID from URL: {}", url);
+            // Create a single error comment if you want to indicate failure
+            let error_comment = CommentDataWrapper {
+                id: "error".to_string(),
+                post_id: "error".to_string(),
+                body: "Failed to extract post ID from URL".to_string(),
+                author: "system".to_string(),
+                timestamp: 0,
+                formatted_date: "1970-01-01 00:00:00".to_string(),
+                score: 0,
+                permalink: "".to_string(),
+                parent_id: "".to_string(),
+                subreddit: "".to_string(),
+                post_title: "".to_string(),
+            };
+            return Ok(vec![error_comment]);
+        }
+    };
 
-    let url = format!("https://oauth.reddit.com/comments/{}", post_id);
+    // Extract subreddit
+    let subreddit = extract_subreddit_from_url(url).unwrap_or("unknown".to_string());
+
+    let api_url = format!("https://oauth.reddit.com/comments/{}", post_id);
 
     // Read config
     let config = api_keys::ConfigDirs::read_config().unwrap_or_else(|err| {
@@ -339,10 +363,10 @@ pub async fn get_post_comments(url: &str) -> Result<Vec<CommentDataWrapper>, Red
         }
     };
 
-    println!("Fetching comments from URL: {}", url);
+    println!("Fetching comments from URL: {}", api_url);
 
     let response = client
-        .get(&url)
+        .get(&api_url)
         .header("Authorization", format!("Bearer {}", token))
         .header("User-Agent", "RustRedditApp/0.1 by YourUsername")
         .send()
@@ -395,7 +419,7 @@ pub async fn get_post_comments(url: &str) -> Result<Vec<CommentDataWrapper>, Red
                 score: data.score,
                 permalink: data.permalink,
                 parent_id: data.parent_id,
-                subreddit: "".to_string(), // You might need to extract this from the URL
+                subreddit: subreddit.clone(),
                 post_title: "".to_string(), // You might need to get this from the post data
             }
         })
@@ -409,7 +433,6 @@ pub async fn get_post_comments(url: &str) -> Result<Vec<CommentDataWrapper>, Red
 
     Ok(comments)
 }
-
 fn extract_post_id_from_url(url: &str) -> Option<String> {
     let parts: Vec<&str> = url.split("/comments/").collect();
     if parts.len() > 1 {
@@ -417,6 +440,18 @@ fn extract_post_id_from_url(url: &str) -> Option<String> {
         let post_id = post_part.split('/').next().unwrap_or("");
         if !post_id.is_empty() {
             return Some(post_id.to_string());
+        }
+    }
+    None
+}
+
+fn extract_subreddit_from_url(url: &str) -> Option<String> {
+    let parts: Vec<&str> = url.split("/r/").collect();
+    if parts.len() > 1 {
+        let subreddit_part = parts[1];
+        let subreddit = subreddit_part.split('/').next().unwrap_or("");
+        if !subreddit.is_empty() {
+            return Some(subreddit.to_string());
         }
     }
     None

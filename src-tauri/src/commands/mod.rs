@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::database;
-use crate::database::adding::PostDataWrapper;
+use crate::database::adding::{CommentDataWrapper, PostDataWrapper};
 use crate::database::read::DBReader;
 use crate::models::search::{self, get_access_token, get_subreddit_posts, search_subreddit_posts};
 use crate::settings::api_keys;
@@ -243,4 +243,11 @@ pub async fn get_post_comments_command(url: String) -> Result<String, String> {
     let results = search::get_post_comments(&url).await.unwrap();
 
     Ok("Fetched comments".to_string())
+}
+
+// GET ALL THE COMMMENTS THAT EXIST IN THE DATABASE
+#[tauri::command]
+pub fn get_all_comments_command() -> Result<Vec<CommentDataWrapper>, String> {
+    let reader = DBReader::new();
+    reader.get_all_comments().map_err(|e| e.to_string())
 }

@@ -65,6 +65,22 @@ export function SmartDataTables() {
 
   const { subRedditsSaved } = useAddSingleSubReddit();
 
+  // GET ALL THE COMMENTS FROM DB AND SHOW IN THE FRONT END TABLE
+
+  async function getAllComments() {
+    try {
+      const data: any = await invoke("get_all_comments_command");
+      console.log(data, "ALL COMMENTS");
+      setMessages(data);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  useEffect(() => {
+    getAllComments();
+  }, [allSavedPosts]);
+
   // GET ALL THE SAVED POSTS FROM DB AND SHOW IN THE FRONT END TABLE
 
   async function getAllRedditsSaved() {

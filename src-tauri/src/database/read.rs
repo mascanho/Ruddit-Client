@@ -220,4 +220,32 @@ impl DBReader {
 
         Ok(())
     }
+
+    // GET ALL COMMENTS
+    pub fn get_all_comments(&self) -> RusqliteResult<Vec<CommentDataWrapper>> {
+        let db = DB::new()?;
+        let mut stmt = db.conn.prepare(
+        "SELECT id, post_id, body, author, timestamp, formatted_date, score, permalink, parent_id, subreddit, post_title
+         FROM reddit_comments
+         ORDER BY timestamp DESC",
+    )?;
+
+        let comments = stmt.query_map([], |row| {
+            Ok(CommentDataWrapper {
+                id: row.get(0)?,
+                post_id: row.get(1)?,
+                body: row.get(2)?,
+                author: row.get(3)?,
+                timestamp: row.get(4)?,
+                formatted_date: row.get(5)?,
+                score: row.get(6)?,
+                permalink: row.get(7)?,
+                parent_id: row.get(8)?,
+                subreddit: row.get(9)?,
+                post_title: row.get(10)?,
+            })
+        })?;
+
+        comments.collect()
+    }
 }
