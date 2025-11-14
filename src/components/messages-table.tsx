@@ -49,7 +49,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import type { Message, SearchState } from "./smart-data-tables";
 import { useAppSettings } from "./app-settings";
 
@@ -92,7 +91,6 @@ export function MessagesTable({
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(settings.rowsPerPage);
-  const { toast } = useToast();
 
   const filteredAndSortedData = useMemo(() => {
     const filtered = data.filter((message) => {
@@ -181,7 +179,7 @@ export function MessagesTable({
       <Card className="p-6">
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
+            <div className="relative flex-1 flex space-x-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by username, message, or ID..."
@@ -189,6 +187,9 @@ export function MessagesTable({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
+              <Button variant="destructive" onClick={() => setData([])}>
+                Clear Messages
+              </Button>
             </div>
             {hasActiveFilters && (
               <Button variant="outline" size="icon" onClick={clearFilters}>
