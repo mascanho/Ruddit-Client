@@ -239,8 +239,8 @@ pub fn remove_single_reddit_command(post: i64) -> Result<(), String> {
 
 // FETCH THE COMMENTS FOR A POST THAT GETS ADDED
 #[tauri::command]
-pub async fn get_post_comments_command(url: String) -> Result<String, String> {
-    let results = search::get_post_comments(&url).await.unwrap();
+pub async fn get_post_comments_command(url: String, title: String) -> Result<String, String> {
+    let _results = search::get_post_comments(&url, &title).await.unwrap();
 
     Ok("Fetched comments".to_string())
 }

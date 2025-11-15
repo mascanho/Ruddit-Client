@@ -306,7 +306,10 @@ pub struct CommentData {
 }
 
 // handle post comment fetch
-pub async fn get_post_comments(url: &str) -> Result<Vec<CommentDataWrapper>, RedditError> {
+pub async fn get_post_comments(
+    url: &str,
+    post_title: &str,
+) -> Result<Vec<CommentDataWrapper>, RedditError> {
     let client = Client::new();
 
     // Extract post ID and handle the None case properly
@@ -419,7 +422,7 @@ pub async fn get_post_comments(url: &str) -> Result<Vec<CommentDataWrapper>, Red
                 permalink: data.permalink,
                 parent_id: data.parent_id,
                 subreddit: subreddit.clone(),
-                post_title: "".to_string(), // You might need to get this from the post data
+                post_title: post_title.to_string(),
             }
         })
         .collect();

@@ -138,13 +138,14 @@ export function RedditSearch({
 
       // Automatically download the comments for the single post
 
-      console.log("Post ID:", singlePost.url);
+      console.log("Post Title:", singlePost.title);
 
       // Now singlePost should match PostDataWrapper format
       addSingleSubreddit(singlePost);
 
       await invoke("get_post_comments_command", {
         url: singlePost?.url,
+        title: singlePost?.title,
       });
 
       // Show toaster

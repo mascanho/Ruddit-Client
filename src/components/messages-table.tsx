@@ -222,6 +222,17 @@ export function MessagesTable({
                       className="-ml-3 h-8"
                       onClick={() => handleSort("message")}
                     >
+                      Topic
+                      <ArrowUpDown className="ml-2 h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="min-w-[300px] bg-background sticky top-0 z-10">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-3 h-8"
+                      onClick={() => handleSort("message")}
+                    >
                       Message
                       <ArrowUpDown className="ml-2 h-3 w-3" />
                     </Button>
@@ -295,6 +306,12 @@ export function MessagesTable({
                             </span>
                           )}
                         </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="min-w-[300px]">
+                      <div className="line-clamp-2 text-sm">
+                        {message?.post_title?.slice(0, 100)}
+                        {message?.post_title?.length > 100 && "..."}
                       </div>
                     </TableCell>
                     <TableCell className="min-w-[300px]">
