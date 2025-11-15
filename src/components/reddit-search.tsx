@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,22 @@ export function RedditSearch({
       console.error("Error fetching subreddits:", error);
     }
   }
+
+  // KEEP THE SEARCH PERSISTING by querying the DB of the search results
+  async function persistSearch() {
+    try {
+      await invoke("get_all_searched_posts").then((subreddits) => {
+        setSubreddits(subreddits);
+        console.log("Subreddits:", subreddits);
+      });
+    } catch (error) {
+      console.error("Error persisting search:", error);
+    }
+  }
+
+  useEffect(() => {
+    persistSearch();
+  }, []);
 
   const toggleSort = (sort: SortType) => {
     setSelectedSorts((prev) => {
@@ -270,7 +286,7 @@ export function RedditSearch({
               </Button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 h-[58epx] max-h-[580px] overflow-scroll">
               {paginatedResults.map((result) => (
                 <Card
                   key={result.id}
@@ -339,7 +355,7 @@ export function RedditSearch({
                       <option value={10}>10</option>
                       <option value={25}>25</option>
                       <option value={50}>50</option>
-                      <option value={100}>100</option>
+                      {/* <option value={100}>100</option> */}
                     </select>
                   </div>
                   <p className="text-sm text-muted-foreground">

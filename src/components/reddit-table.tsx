@@ -393,12 +393,12 @@ export function RedditTable({
         </div>
       </Card>
 
-      <Card>
+      <Card className="p-0 m-0 h-[800px]">
         <div className="border-b">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="m-0 p-0">
               <TableHeader>
-                <TableRow>
+                <TableRow className="m-0 p-0">
                   <TableHead className="w-[60px] bg-background sticky top-0 z-10">
                     #
                   </TableHead>
@@ -458,14 +458,14 @@ export function RedditTable({
           </div>
         </div>
 
-        <div className="max-h-[600px] h-[600px] overflow-y-auto overflow-x-auto">
-          <Table>
-            <TableBody>
+        <div className="max-h-[680px] h-[680px] overflow-y-auto overflow-x-auto p-0">
+          <Table className="p-0 -mt-4 z-20">
+            <TableBody className="p-0 -mt-5 z-20">
               {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={7}
-                    className="h-24 text-center text-muted-foreground"
+                    className="h-2 p-0 text-center text-muted-foreground"
                   >
                     No posts found.
                   </TableCell>
@@ -474,7 +474,7 @@ export function RedditTable({
                 paginatedData.map((post, index) => (
                   <TableRow
                     key={post.id}
-                    className={`group ${settings.tableDensity === "compact" ? "h-10" : settings.tableDensity === "spacious" ? "h-16" : "h-12"}`}
+                    className={`group p-0 m-0 ${settings.tableDensity === "compact" ? "h-10" : settings.tableDensity === "spacious" ? "h-10" : "h-10"}`}
                   >
                     <TableCell className="text-muted-foreground text-sm font-medium w-[60px]">
                       {(currentPage - 1) * rowsPerPage + index + 1}

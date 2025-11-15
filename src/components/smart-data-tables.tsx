@@ -9,6 +9,8 @@ import {
   AlertCircle,
   Play,
   StopCircle,
+  Settings2Icon,
+  Cog,
 } from "lucide-react";
 import { RedditTable } from "./reddit-table";
 import { MessagesTable } from "./messages-table";
@@ -191,6 +193,13 @@ export function SmartDataTables() {
           >
             <Settings2 className="h-4 w-4" />
           </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Cog className="h-4 w-4" />
+          </Button>
         </section>
       </div>
 
@@ -199,7 +208,7 @@ export function SmartDataTables() {
         className="w-full"
         onValueChange={handleTabChange}
       >
-        <TabsList className="grid w-full max-w-full grid-cols-5 mb-6">
+        <TabsList className="grid w-full flex justify-between w-full max-w-full grid-cols-5 mb-6">
           <TabsTrigger value="reddit" className="relative">
             Reddit Posts
             {subredditsModified && (
@@ -225,10 +234,10 @@ export function SmartDataTables() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="leads">
-            <TrendingUp className="h-4 w-4 mr-1" />
-            Leads
-          </TabsTrigger>
+          {/* <TabsTrigger value="leads"> */}
+          {/*   <TrendingUp className="h-4 w-4 mr-1" /> */}
+          {/*   Leads */}
+          {/* </TabsTrigger> */}
           <TabsTrigger value="search">Search</TabsTrigger>
           <TabsTrigger value="ai">AI Assistant</TabsTrigger>
         </TabsList>
