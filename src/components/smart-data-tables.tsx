@@ -11,6 +11,7 @@ import {
   StopCircle,
   Settings2Icon,
   Cog,
+  Database,
 } from "lucide-react";
 import { RedditTable } from "./reddit-table";
 import { MessagesTable } from "./messages-table";
@@ -159,6 +160,24 @@ export function SmartDataTables() {
     }
   }
 
+  async function handleOpenSettings() {
+    try {
+      await invoke("open_settings_commmand");
+      console.log("settings editor");
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function handleOpenDbFolder() {
+    try {
+      await invoke("open_db_folder_command");
+      console.log("Openined DB FODER");
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
   return (
     <div
       className="container mx-auto py-8 px-4 w-full max-w-full"
@@ -173,6 +192,7 @@ export function SmartDataTables() {
         </div>
         <section className="flex space-x-2  justify-between">
           <Button
+            className="cursor-pointer"
             variant="outline"
             size="icon"
             onClick={() => setSettingsOpen(true)}
@@ -180,6 +200,7 @@ export function SmartDataTables() {
             <Play className="h-4 w-4" />
           </Button>
           <Button
+            className="cursor-pointer"
             variant="outline"
             size="icon"
             onClick={() => setSettingsOpen(true)}
@@ -187,6 +208,7 @@ export function SmartDataTables() {
             <StopCircle className="h-4 w-4" />
           </Button>
           <Button
+            className="cursor-pointer"
             variant="outline"
             size="icon"
             onClick={() => setSettingsOpen(true)}
@@ -194,11 +216,20 @@ export function SmartDataTables() {
             <Settings2 className="h-4 w-4" />
           </Button>
           <Button
+            className="cursor-pointer"
             variant="outline"
             size="icon"
-            onClick={() => setSettingsOpen(true)}
+            onClick={handleOpenSettings}
           >
             <Cog className="h-4 w-4" />
+          </Button>
+          <Button
+            className="cursor-pointer"
+            variant="outline"
+            size="icon"
+            onClick={handleOpenDbFolder}
+          >
+            <Database className="h-4 w-4" />
           </Button>
         </section>
       </div>

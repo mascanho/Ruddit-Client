@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+pub mod actions;
 pub mod commands;
 pub mod database;
 pub mod models;
@@ -30,7 +31,9 @@ async fn main() {
             commands::remove_single_reddit_command,
             commands::get_post_comments_command,
             commands::get_all_comments_command,
-            commands::clear_comments_command
+            commands::clear_comments_command,
+            commands::open_settings_commmand,
+            commands::open_db_folder_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

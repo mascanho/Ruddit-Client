@@ -306,7 +306,6 @@ pub struct CommentData {
 }
 
 // handle post comment fetch
-// handle post comment fetch
 pub async fn get_post_comments(url: &str) -> Result<Vec<CommentDataWrapper>, RedditError> {
     let client = Client::new();
 

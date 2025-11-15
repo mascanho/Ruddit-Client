@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::database;
 use crate::database::adding::{CommentDataWrapper, PostDataWrapper};
 use crate::database::read::DBReader;
 use crate::models::search::{self, get_access_token, get_subreddit_posts, search_subreddit_posts};
 use crate::settings::api_keys;
 use crate::settings::api_keys::AppConfig;
+use crate::{actions, commands, database};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct RedditPost {
@@ -258,4 +258,18 @@ pub fn clear_comments_command() -> Result<String, String> {
     let db = database::adding::DB::new().unwrap();
     db.clear_comments_database().unwrap();
     Ok("Cleared comments".to_string())
+}
+
+// Open the settings file with native editor
+#[tauri::command]
+pub fn open_settings_commmand() -> Result<(), String> {
+    api_keys::ConfigDirs::edit_config_file().unwrap();
+    Ok(())
+}
+
+// Open the DB folder
+#[tauri::command]
+pub async fn open_db_folder_command() -> Result<(), String> {
+    actions::open_folder::open_db_folder().await.unwrap();
+    Ok(())
 }
