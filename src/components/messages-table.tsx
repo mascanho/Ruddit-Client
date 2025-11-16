@@ -98,9 +98,9 @@ export function MessagesTable({
   const filteredAndSortedData = useMemo(() => {
     const filtered = data.filter((message) => {
       const matchesSearch =
-        message?.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        message?.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        message?.id.toLowerCase().includes(searchQuery.toLowerCase());
+        message?.author?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        message?.body?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        message?.id?.toLowerCase().includes(searchQuery.toLowerCase());
 
       return matchesSearch;
     });
@@ -293,14 +293,14 @@ export function MessagesTable({
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                           <span className="text-xs font-medium text-primary">
-                            {message?.author.charAt(0).toUpperCase()}
+                            {message?.author?.charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div className="flex flex-col min-w-0">
                           <span className="font-medium truncate">
                             {message?.author}
                           </span>
-                          {message.source && (
+                          {message?.source && (
                             <span className="text-xs text-muted-foreground line-clamp-1">
                               {message?.id}
                             </span>
@@ -498,7 +498,7 @@ export function MessagesTable({
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-xs font-medium text-primary">
-                      {selectedMessage?.author.charAt(0).toUpperCase()}
+                      {selectedMessage?.author?.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <span className="font-medium">{selectedMessage?.author}</span>
