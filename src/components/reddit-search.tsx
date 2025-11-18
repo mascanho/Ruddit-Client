@@ -18,9 +18,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useAppSettings } from "./app-settings";
-// For Tauri v2 (latest)
 import { invoke } from "@tauri-apps/api/core";
 import {
   useAddSingleSubReddit,
@@ -29,7 +27,7 @@ import {
 } from "@/store/store";
 import { toast } from "sonner";
 import moment from "moment";
-import { useOpenUrl } from "@/hooks/useOpenUrl";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 type SearchResult = {
   id: string;
@@ -38,6 +36,8 @@ type SearchResult = {
   url: string;
   relevance: number;
   snippet: string;
+  timestamp?: number;
+  formatted_date?: string;
 };
 
 type SortType = "hot" | "top" | "new";
@@ -51,10 +51,9 @@ export function RedditSearch({
 }) {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<SortType[]>(["hot"]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(100);
   const { settings } = useAppSettings();
   const { setSubreddits, subreddits } = useSubredditsStore();
   const { redditPosts, setRedditPosts } = useRedditPostsTab();
@@ -122,46 +121,58 @@ export function RedditSearch({
   };
 
   // ADD SINGLE SUBREDDIT TO REDDIT POSTS TABLE
-  const addToTable = async (result: SearchResult, relevance: string) => {
+  const addToTable = async (result: SearchResult) => {
     try {
       // TAURI COMMAND TO SEND TO BE
       const singlePost = await invoke("save_single_reddit_command", {
         post: {
-          id: parseInt(result.id), // Convert to number to match i64
-          timestamp: result.timestamp,
-          formatted_date: result.formatted_date,
+          id: parseInt(result.id),
+          timestamp: result.timestamp || Date.now(),
+          formatted_date:
+            result.formatted_date || new Date().toISOString().split("T")[0],
           title: result.title,
           url: result.url,
-          relevance: result.relevance.toString(), // Convert to string
+          relevance: result.relevance.toString(),
           subreddit: result.subreddit,
           permalink: result.url,
         },
       });
 
-      // Automatically download the comments for the single post
-
-      console.log("Post Title:", singlePost.title, "Relevance:", relevance);
+      console.log("Post Title:", singlePost.title);
 
       // Now singlePost should match PostDataWrapper format
       addSingleSubreddit(singlePost);
 
+      // Ensure all parameters are defined
+      if (!singlePost?.url || !singlePost?.title) {
+        throw new Error("Post URL or title is missing");
+      }
+
       await invoke("get_post_comments_command", {
-        url: singlePost?.url || "",
-        title: singlePost?.title || "",
-        relevance: "top" || "",
+        url: singlePost.url,
+        title: singlePost.title,
+        relevance: "top",
       });
 
-      // Show toaster
       toast.info(`Added ${singlePost.title} post to table`, {
         position: "bottom-center",
       });
     } catch (err) {
-      console.error(err);
-      toast.error(err);
+      console.error("Error in addToTable:", err);
+      toast.error(`Failed to add post: ${err.message}`);
     }
 
     onNotifyNewPosts(1);
   };
+
+  const handleOpenInBrowser = async (url: string) => {
+    try {
+      await openUrl(url);
+    } catch (error) {
+      console.error("Failed to open URL:", error);
+    }
+  };
+
   const addAllToTable = () => {
     onAddResults(
       subreddits.map((result) => ({
@@ -175,8 +186,6 @@ export function RedditSearch({
     );
 
     onNotifyNewPosts(subreddits.length);
-
-    setResults([]);
   };
 
   const searchMonitored = () => {
@@ -193,24 +202,6 @@ export function RedditSearch({
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
   const paginatedResults = subreddits.slice(startIndex, endIndex);
-
-  function isColored(relevance: string) {
-    switch (relevance) {
-      case "top":
-        return "bg-green-500";
-      case "hot":
-        return "bg-red-500";
-      case "new":
-      default:
-        return "bg-blue-500";
-    }
-  }
-
-  // HANDLE URL TO OPEN IN THE BROWSER
-  const openUrl = useOpenUrl();
-  const handleOpenInbrowser = (url: any) => {
-    openUrl(url);
-  };
 
   return (
     <Card className="p-6">
@@ -309,13 +300,13 @@ export function RedditSearch({
               </Button>
             </div>
 
-            <div className="space-y-3 h-[58epx] max-h-[580px] overflow-scroll">
+            <div className="space-y-3 max-h-[580px] overflow-y-auto">
               {paginatedResults.map((result) => (
                 <Card
                   key={result.id}
                   className="p-4 hover:bg-accent/50 transition-colors"
                 >
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium mb-1 line-clamp-2">
                         {result.title}
@@ -327,8 +318,16 @@ export function RedditSearch({
                         <Badge variant="outline" className="font-mono text-xs">
                           r/{result.subreddit}
                         </Badge>
-                        <Badge className={isColored(result.relevance)}>
-                          {result.relevance}
+                        <Badge
+                          className={
+                            result.relevance >= 80
+                              ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                              : result.relevance >= 60
+                                ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
+                                : "bg-red-500/10 text-red-600 dark:text-red-400"
+                          }
+                        >
+                          {result.relevance}% relevant
                         </Badge>
 
                         <div className="flex space-x-2 items-center">
@@ -346,22 +345,24 @@ export function RedditSearch({
                         </div>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="cursor-pointer"
-                      onClick={() => handleOpenInbrowser(result.url, "_blank")}
-                    >
-                      View
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addToTable(result, "top")}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="cursor-pointer"
+                        onClick={() => handleOpenInBrowser(result.url)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addToTable(result)}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -385,12 +386,13 @@ export function RedditSearch({
                       <option value={10}>10</option>
                       <option value={25}>25</option>
                       <option value={50}>50</option>
-                      {/* <option value={100}>100</option> */}
+                      <option value={100}>100</option>
                     </select>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Showing {startIndex + 1}-
-                    {Math.min(endIndex, results.length)} of {results.length}
+                    {Math.min(endIndex, subreddits.length)} of{" "}
+                    {subreddits.length}
                   </p>
                 </div>
 
