@@ -55,8 +55,6 @@ impl Default for ApiKeys {
     }
 }
 
-
-
 impl ConfigDirs {
     pub fn new() -> Option<Self> {
         let user_dirs = UserDirs::new()?;

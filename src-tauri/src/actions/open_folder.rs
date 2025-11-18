@@ -28,4 +28,3 @@ pub async fn open_db_folder() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-

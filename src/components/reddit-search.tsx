@@ -29,6 +29,7 @@ import {
 } from "@/store/store";
 import { toast } from "sonner";
 import moment from "moment";
+import { useOpenUrl } from "@/hooks/useOpenUrl";
 
 type SearchResult = {
   id: string;
@@ -193,6 +194,24 @@ export function RedditSearch({
   const endIndex = startIndex + rowsPerPage;
   const paginatedResults = subreddits.slice(startIndex, endIndex);
 
+  function isColored(relevance: string) {
+    switch (relevance) {
+      case "top":
+        return "bg-green-500";
+      case "hot":
+        return "bg-red-500";
+      case "new":
+      default:
+        return "bg-blue-500";
+    }
+  }
+
+  // HANDLE URL TO OPEN IN THE BROWSER
+  const openUrl = useOpenUrl();
+  const handleOpenInbrowser = (url: any) => {
+    openUrl(url);
+  };
+
   return (
     <Card className="p-6">
       <div className="space-y-4">
@@ -296,7 +315,7 @@ export function RedditSearch({
                   key={result.id}
                   className="p-4 hover:bg-accent/50 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium mb-1 line-clamp-2">
                         {result.title}
@@ -308,16 +327,8 @@ export function RedditSearch({
                         <Badge variant="outline" className="font-mono text-xs">
                           r/{result.subreddit}
                         </Badge>
-                        <Badge
-                          className={
-                            result.relevance >= 80
-                              ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                              : result.relevance >= 60
-                                ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
-                                : "bg-red-500/10 text-red-600 dark:text-red-400"
-                          }
-                        >
-                          {result.relevance}% relevant
+                        <Badge className={isColored(result.relevance)}>
+                          {result.relevance}
                         </Badge>
 
                         <div className="flex space-x-2 items-center">
@@ -335,6 +346,14 @@ export function RedditSearch({
                         </div>
                       </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="cursor-pointer"
+                      onClick={() => handleOpenInbrowser(result.url, "_blank")}
+                    >
+                      View
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"

@@ -64,6 +64,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
 import { toast } from "sonner";
 import moment from "moment";
+import { useOpenUrl } from "@/hooks/useOpenUrl";
 
 const initialData: RedditPost[] = []; // Declare initialData here
 
@@ -157,7 +158,7 @@ export function RedditTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(settings.rowsPerPage);
   const [showClearTableDialog, setShowClearTableDialog] = useState(false);
-  const [relevance, setRelevance] = useState("high");
+  const [relevance, setRelevance] = useState("best");
 
   useEffect(() => {
     if (externalPosts.length > 0) {
@@ -268,25 +269,28 @@ export function RedditTable({
   };
 
   const handleGetComments = async (post: RedditPost, relevance: string) => {
-    console.log(relevance);
+    const fetchedComments = (await invoke("get_post_comments_command", {
+      url: post.url,
+      title: post.title,
+      relevance: relevance,
+    })) as Message[];
 
-    async function getComments() {
-      const comments = await invoke("get_post_comments_command", {
-        url: post.url,
-        title: post.title,
-        relevance: relevance,
-      }).then((data: any) => {
-        setComments(data);
-        return data;
-      });
-
-      return comments;
-    }
-
-    let fetchedComments = await getComments();
     setComments(fetchedComments);
-    setCommentsPost(fetchedComments);
+    setCommentsPost(post);
     onAddComments(fetchedComments);
+  };
+
+  const handleRelevanceChange = async (newRelevance: string) => {
+    setRelevance(newRelevance);
+    if (commentsPost) {
+      const newComments = (await invoke("get_post_comments_command", {
+        url: commentsPost.url,
+        title: commentsPost.title,
+        relevance: newRelevance,
+      })) as Message[];
+      setComments(newComments);
+      onAddComments(newComments);
+    }
   };
 
   const clearFilters = () => {
@@ -345,6 +349,13 @@ export function RedditTable({
       console.log(err);
     }
   };
+
+  const openUrl = useOpenUrl();
+
+  const handleOpenInbrowser = (url: any) => {
+    openUrl(url);
+  };
+
   return (
     <>
       <Card className="p-6">
@@ -499,16 +510,11 @@ export function RedditTable({
                         {post.title.length > 100 && "..."}
                       </div>
                     </TableCell>
-                    <TableCell className="w-[100px]">
-                      <a
-                        href={post.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-primary hover:underline text-sm"
-                      >
+                    <TableCell onClick={() => handleOpenInbrowser(post.url)}>
+                      <span className="w-[100px] flex items-center text-blue-800 mt-2 hover:underline cursor-pointer">
                         Link
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                        <ExternalLink className="h-3 w-3 ml-1 hover:underline cursor-pointer" />
+                      </span>
                     </TableCell>
                     <TableCell className="w-[180px]">
                       <div className="flex items-center gap-2">
@@ -770,10 +776,10 @@ export function RedditTable({
               <MessageCircle className="h-5 w-5" />
               Comments
             </DialogTitle>
-            {comments && (
+            {commentsPost && (
               <DialogDescription className="space-y-1">
                 <div className="font-medium text-foreground line-clamp-2">
-                  {comments?.source}
+                  {commentsPost?.title}
                 </div>
                 <div className="flex items-center gap-2 text-xs justify-between">
                   <div className="flex items-center space-x-2">
@@ -789,14 +795,22 @@ export function RedditTable({
 
                   <section className="flex items-center space-x-2">
                     <span className="text-black">Relevance:</span>
-                    <Select value={relevance} onValueChange={setRelevance}>
+                    <Select
+                      value={relevance}
+                      onValueChange={handleRelevanceChange}
+                    >
                       <SelectTrigger size="xs" className="w-[110px]">
-                        <SelectValue placeholder="High" />
+                        <SelectValue placeholder="Best" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="best">Best</SelectItem>
+                        <SelectItem value="top">Top</SelectItem>
+                        <SelectItem value="new">New</SelectItem>
+                        <SelectItem value="controversial">
+                          Controversial
+                        </SelectItem>
+                        <SelectItem value="old">Old</SelectItem>
+                        <SelectItem value="q&a">Q&A</SelectItem>
                       </SelectContent>
                     </Select>{" "}
                   </section>

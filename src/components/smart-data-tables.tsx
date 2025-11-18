@@ -183,14 +183,17 @@ export function SmartDataTables() {
       className="container mx-auto py-8 px-4 w-full max-w-full"
       style={{ fontSize: `${settings.fontSize}px` }}
     >
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Ruddit</h1>
-          <p className="text-muted-foreground">
-            Lead Generation and Brand Monitoring
-          </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div className="flex items-center">
+          <img src="/ruddit-logo.png" alt="logo" className="h-auto w-20" />
+          <section className="ml-3 mt-3">
+            <h1 className="text-4xl font-bold tracking-tight">Ruddit</h1>
+            <p className="text-muted-foreground">
+              Lead Generation and Brand Monitoring
+            </p>
+          </section>
         </div>
-        <section className="flex space-x-2  justify-between">
+        <section className="flex space-x-2   justify-between">
           <Button
             className="cursor-pointer"
             variant="outline"
