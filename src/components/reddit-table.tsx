@@ -157,7 +157,7 @@ export function RedditTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(settings.rowsPerPage);
   const [showClearTableDialog, setShowClearTableDialog] = useState(false);
-  const [relevance, setRelevance] = useState("new");
+  const [relevance, setRelevance] = useState("high");
 
   useEffect(() => {
     if (externalPosts.length > 0) {
@@ -267,11 +267,14 @@ export function RedditTable({
     window.location.reload();
   };
 
-  const handleGetComments = async (post: RedditPost) => {
+  const handleGetComments = async (post: RedditPost, relevance: string) => {
+    console.log(relevance);
+
     async function getComments() {
       const comments = await invoke("get_post_comments_command", {
         url: post.url,
         title: post.title,
+        relevance: relevance,
       }).then((data: any) => {
         setComments(data);
         return data;
@@ -342,13 +345,6 @@ export function RedditTable({
       console.log(err);
     }
   };
-
-  function handleCommentsRelevance(relevance: any, post: any) {
-    if (relevance === "high") {
-      handleGetComments(post);
-    }
-  }
-
   return (
     <>
       <Card className="p-6">
@@ -542,7 +538,7 @@ export function RedditTable({
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => handleGetComments(post)}
+                            onClick={() => handleGetComments(post, relevance)}
                           >
                             <MessageCircle className="mr-2 h-4 w-4" />
                             Get Comments

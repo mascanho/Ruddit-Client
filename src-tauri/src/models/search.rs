@@ -309,6 +309,7 @@ pub struct CommentData {
 pub async fn get_post_comments(
     url: &str,
     post_title: &str,
+    relevance: &str,
 ) -> Result<Vec<CommentDataWrapper>, RedditError> {
     let client = Client::new();
 
@@ -338,7 +339,10 @@ pub async fn get_post_comments(
     // Extract subreddit
     let subreddit = extract_subreddit_from_url(url).unwrap_or("unknown".to_string());
 
-    let api_url = format!("https://oauth.reddit.com/comments/{}?sort=new", post_id);
+    let api_url = format!(
+        "https://oauth.reddit.com/comments/{}?sort={}&limit=500",
+        post_id, relevance
+    );
 
     // Read config
     let config = api_keys::ConfigDirs::read_config().unwrap_or_else(|err| {

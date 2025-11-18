@@ -121,7 +121,7 @@ export function RedditSearch({
   };
 
   // ADD SINGLE SUBREDDIT TO REDDIT POSTS TABLE
-  const addToTable = async (result: SearchResult) => {
+  const addToTable = async (result: SearchResult, relevance: string) => {
     try {
       // TAURI COMMAND TO SEND TO BE
       const singlePost = await invoke("save_single_reddit_command", {
@@ -139,14 +139,15 @@ export function RedditSearch({
 
       // Automatically download the comments for the single post
 
-      console.log("Post Title:", singlePost.title);
+      console.log("Post Title:", singlePost.title, "Relevance:", relevance);
 
       // Now singlePost should match PostDataWrapper format
       addSingleSubreddit(singlePost);
 
       await invoke("get_post_comments_command", {
-        url: singlePost?.url,
-        title: singlePost?.title,
+        url: singlePost?.url || "",
+        title: singlePost?.title || "",
+        relevance: "top" || "",
       });
 
       // Show toaster
@@ -155,6 +156,7 @@ export function RedditSearch({
       });
     } catch (err) {
       console.error(err);
+      toast.error(err);
     }
 
     onNotifyNewPosts(1);
@@ -336,7 +338,7 @@ export function RedditSearch({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => addToTable(result)}
+                      onClick={() => addToTable(result, "top")}
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add

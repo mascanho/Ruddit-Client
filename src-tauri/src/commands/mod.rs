@@ -242,8 +242,11 @@ pub fn remove_single_reddit_command(post: i64) -> Result<(), String> {
 pub async fn get_post_comments_command(
     url: String,
     title: String,
+    relevance: String,
 ) -> Result<Vec<CommentDataWrapper>, String> {
-    let results = search::get_post_comments(&url, &title).await.unwrap();
+    let results = search::get_post_comments(&url, &title, &relevance)
+        .await
+        .unwrap();
 
     Ok(results)
 }
