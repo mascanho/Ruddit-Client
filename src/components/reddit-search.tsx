@@ -28,6 +28,7 @@ import {
   useSubredditsStore,
 } from "@/store/store";
 import { toast } from "sonner";
+import moment from "moment";
 
 type SearchResult = {
   id: string;
@@ -52,7 +53,7 @@ export function RedditSearch({
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<SortType[]>(["hot"]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const { settings } = useAppSettings();
   const { setSubreddits, subreddits } = useSubredditsStore();
   const { redditPosts, setRedditPosts } = useRedditPostsTab();
@@ -322,6 +323,13 @@ export function RedditSearch({
                             Posted on:{" "}
                           </span>
                           <span>{result?.formatted_date}</span>
+                          <span>-</span>
+                          <span>
+                            {moment(
+                              result?.formatted_date,
+                              "YYYY-MM-DD",
+                            ).fromNow()}
+                          </span>
                         </div>
                       </div>
                     </div>
