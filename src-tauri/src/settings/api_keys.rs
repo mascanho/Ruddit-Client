@@ -95,6 +95,17 @@ lead_keywords = ["keyword1", "keyword2"]
 sentiment = ["keyword1", "keyword2"]
 MATCH = "OR"
 
+# Assignees with username and email
+[[assignees]]
+id = "user1"
+name = "Alex"
+email = "alex@company.com"
+
+[[assignees]]
+id = "user2"
+name = "Maria"
+email = "maria@company.com"
+
 "#
         .trim_start();
 

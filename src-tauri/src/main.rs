@@ -4,6 +4,7 @@
 pub mod actions;
 pub mod commands;
 pub mod database;
+pub mod email;
 pub mod models;
 pub mod settings;
 
@@ -35,7 +36,8 @@ async fn main() {
             commands::clear_comments_command,
             commands::open_settings_commmand,
             commands::open_db_folder_command,
-            commands::update_post_notes
+            commands::update_post_notes,
+            commands::update_post_assignee
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

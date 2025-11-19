@@ -126,7 +126,6 @@ export function RedditTable({
   const [showClearTableDialog, setShowClearTableDialog] = useState(false);
   const [relevance, setRelevance] = useState("best");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [editingNotePost, setEditingNotePost] = useState<RedditPost | null>(
     null,
   );
@@ -175,16 +174,41 @@ export function RedditTable({
     });
   };
 
-  const handleAssign = (postId: string, personName: string) => {
-    setAssignments((prev) => ({
-      ...prev,
-      [postId]: personName,
-    }));
+  const handleAssign = async (postId: string, personName: string) => {
+    const postToUpdate = data.find((p) => p.id === postId);
+    if (!postToUpdate) return;
 
-    if (personName !== "unassigned") {
-      const post = data.find((p) => p.id === postId);
-      toast.success(
-        `Post "${post?.title.slice(0, 20)}..." assigned to ${personName}.`,
+    const originalAssignee = postToUpdate.assignee;
+    const assigneeToSave = personName === "unassigned" ? "" : personName;
+
+    // Optimistic update
+    setData((prevData) =>
+      prevData.map((p) =>
+        p.id === postId ? { ...p, assignee: assigneeToSave } : p
+      )
+    );
+
+    try {
+      await invoke("update_post_assignee", {
+        id: parseInt(postId, 10),
+        assignee: assigneeToSave,
+      });
+
+      if (personName !== "unassigned") {
+        toast.success(
+          `Post "${postToUpdate.title.slice(0, 20)}..." assigned to ${personName}.`
+        );
+      } else {
+        toast.info(`Post "${postToUpdate.title.slice(0, 20)}..." unassigned.`);
+      }
+    } catch (error) {
+      console.error("Failed to assign post:", error);
+      toast.error("Failed to assign post");
+      // Revert on error
+      setData((prevData) =>
+        prevData.map((p) =>
+          p.id === postId ? { ...p, assignee: originalAssignee } : p
+        )
       );
     }
   };
@@ -584,7 +608,7 @@ export function RedditTable({
                       </TableCell>
                       <TableCell className="w-[150px] p-3">
                         <Select
-                          value={assignments[post.id] || "unassigned"}
+                          value={post.assignee || "unassigned"}
                           onValueChange={(value) =>
                             handleAssign(post.id, value)
                           }

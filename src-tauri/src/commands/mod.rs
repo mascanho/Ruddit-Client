@@ -239,3 +239,11 @@ pub fn update_post_notes(id: i64, notes: String) -> Result<(), String> {
     db.update_post_notes(id, &notes).map_err(|e| e.to_string())?;
     Ok(())
 }
+
+#[tauri::command]
+pub fn update_post_assignee(id: i64, assignee: String) -> Result<(), String> {
+    let db = database::adding::DB::new().map_err(|e| e.to_string())?;
+    db.update_post_assignee(id, &assignee)
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}

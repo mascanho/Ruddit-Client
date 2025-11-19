@@ -354,6 +354,14 @@ impl DB {
         Ok(())
     }
 
+    pub fn update_post_assignee(&self, id: i64, assignee: &str) -> RusqliteResult<()> {
+        self.conn.execute(
+            "UPDATE reddit_posts SET assignee = ?1 WHERE id = ?2",
+            params![assignee, id],
+        )?;
+        Ok(())
+    }
+
     pub fn clear_database(&self) -> RusqliteResult<()> {
         self.conn.execute("DELETE FROM reddit_posts", [])?;
         self.conn.execute("DELETE FROM reddit_comments", [])?;
