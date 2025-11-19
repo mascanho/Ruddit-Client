@@ -1,4 +1,3 @@
-
 use crate::database::adding::{CommentDataWrapper, PostDataWrapper};
 use crate::database::read::DBReader;
 use crate::models::search::{self, get_access_token, get_subreddit_posts, search_subreddit_posts};
@@ -21,10 +20,13 @@ impl From<reqwest::Error> for RedditError {
 }
 
 #[tauri::command]
-pub async fn get_reddit_results(relevance: Vec<String>, query: String) -> Result<String, String> {
+pub async fn get_reddit_results(
+    sortTypes: Vec<String>, // Changed parameter name
+    query: String,
+) -> Result<Vec<PostDataWrapper>, String> { // Changed return type
     println!(
-        "Querying Reddit for: '{}' with sorts: {:?}",
-        query, relevance
+        "Querying Reddit for: '{}' with sortTypes: {:?}",
+        query, sortTypes
     );
 
     // Read config
@@ -43,12 +45,12 @@ pub async fn get_reddit_results(relevance: Vec<String>, query: String) -> Result
         Ok(_) => {
             eprintln!("Empty access token received");
             api_keys::ConfigDirs::edit_config_file().unwrap();
-            return Ok("config_updated".into());
+            return Err("config_updated".into()); // Return error to indicate config update needed
         }
         Err(e) => {
             eprintln!("Failed to retrieve access token: {:?}", e);
             api_keys::ConfigDirs::edit_config_file().unwrap();
-            return Ok("config_updated".into());
+            return Err("config_updated".into()); // Return error to indicate config update needed
         }
     };
 
@@ -58,72 +60,66 @@ pub async fn get_reddit_results(relevance: Vec<String>, query: String) -> Result
     db.create_current_search_tables().unwrap();
     database::adding::DB::clear_current_search_results().unwrap();
 
-    let mut total_posts_added = 0;
+    let mut all_fetched_posts: Vec<PostDataWrapper> = Vec::new();
 
     // Query Reddit for each sort type - ONE REQUEST PER SORT TYPE
-    for sort_type in relevance {
+    for sort_type in sortTypes { // Use sortTypes here
         println!("Querying with sort type: {}", sort_type);
 
-        // Make ONE request for this sort type
+        let mut posts_for_this_sort: Vec<PostDataWrapper> = Vec::new();
+
         // if query contains "r/" then it's a subreddit search
         if query.starts_with("r/") {
             let result = get_subreddit_posts(&token, &query, &sort_type).await;
             match result {
                 Ok(posts) => {
                     println!("Found {} posts for sort type: {}", posts.len(), sort_type);
-                    // Append to database
-                    match db.replace_current_results(&posts) {
-                        Ok(_) => {
-                            total_posts_added += posts.len();
-                            println!(
-                                "Successfully added {} posts to database for sort type: {}",
-                                posts.len(),
-                                sort_type
-                            );
-                        }
-                        Err(e) => {
-                            eprintln!("Failed to save {} posts to database: {}", posts.len(), e);
-                        }
-                    }
+                    posts_for_this_sort = posts;
                 }
                 Err(e) => {
                     eprintln!("Failed to fetch {} posts: {:?}", sort_type, e);
                     continue;
                 }
             };
-            continue;
+        } else {
+            let result = search_subreddit_posts(&token, &query, &sort_type).await;
+            match result {
+                Ok(posts) => {
+                    println!("Found {} posts for sort type: {}", posts.len(), sort_type);
+                    posts_for_this_sort = posts;
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch {} posts: {:?}", sort_type, e);
+                    continue;
+                }
+            };
         }
 
-        let result = search_subreddit_posts(&token, &query, &sort_type).await;
-
-        match result {
-            Ok(posts) => {
-                println!("Found {} posts for sort type: {}", posts.len(), sort_type);
-
-                // Append to database
-                match db.replace_current_results(&posts) {
-                    Ok(_) => {
-                        total_posts_added += posts.len();
-                        println!(
-                            "Successfully added {} posts to database for sort type: {}",
-                            posts.len(),
-                            sort_type
-                        );
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to save {} posts to database: {}", posts.len(), e);
-                    }
-                }
+        // Append to database
+        match db.replace_current_results(&posts_for_this_sort) {
+            Ok(_) => {
+                println!(
+                    "Successfully added {} posts to database for sort type: {}",
+                    posts_for_this_sort.len(),
+                    sort_type
+                );
+                all_fetched_posts.extend(posts_for_this_sort);
             }
             Err(e) => {
-                eprintln!("Failed to fetch {} posts: {:?}", sort_type, e);
-                continue;
+                eprintln!(
+                    "Failed to save {} posts to database: {}",
+                    posts_for_this_sort.len(),
+                    e
+                );
             }
-        };
+        }
     }
 
-    println!("Total posts added to database: {}", total_posts_added);
-    Ok(format!("Added {} posts to database", total_posts_added))
+    println!(
+        "Total posts added to database: {}",
+        all_fetched_posts.len()
+    );
+    Ok(all_fetched_posts) // Return the fetched posts
 }
 
 #[tauri::command]
@@ -133,10 +129,10 @@ pub fn get_recent_posts(limit: i64) -> Result<Vec<PostDataWrapper>, String> {
 }
 
 #[tauri::command]
-pub fn get_posts_by_relevance(relevance: String) -> Result<Vec<PostDataWrapper>, String> {
+pub fn get_posts_by_sort_type(sort_type: String) -> Result<Vec<PostDataWrapper>, String> { // Renamed
     let reader = DBReader::new();
     reader
-        .get_posts_by_relevance_type(&relevance)
+        .get_posts_by_sort_type(&sort_type) // Updated call
         .map_err(|e| e.to_string())
 }
 
@@ -195,9 +191,9 @@ pub fn remove_single_reddit_command(post: i64) -> Result<(), String> {
 pub async fn get_post_comments_command(
     url: String,
     title: String,
-    relevance: String,
+    sort_type: String, // Renamed from relevance
 ) -> Result<Vec<CommentDataWrapper>, String> {
-    let results = search::get_post_comments(&url, &title, &relevance)
+    let results = search::get_post_comments(&url, &title, &sort_type)
         .await
         .unwrap();
 
@@ -244,6 +240,14 @@ pub fn update_post_notes(id: i64, notes: String) -> Result<(), String> {
 pub fn update_post_assignee(id: i64, assignee: String) -> Result<(), String> {
     let db = database::adding::DB::new().map_err(|e| e.to_string())?;
     db.update_post_assignee(id, &assignee)
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn update_post_engaged_status(id: i64, engaged: i64) -> Result<(), String> {
+    let db = database::adding::DB::new().map_err(|e| e.to_string())?;
+    db.update_post_engaged_status(id, engaged)
         .map_err(|e| e.to_string())?;
     Ok(())
 }

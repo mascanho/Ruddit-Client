@@ -29,12 +29,29 @@ import { toast } from "sonner";
 import moment from "moment";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
+// Define PostDataWrapper type to match Rust struct
+type PostDataWrapper = {
+  id: number; // i64 in Rust
+  timestamp: number; // i64 in Rust
+  formatted_date: string;
+  title: string;
+  url: string;
+  sort_type: string; // Renamed from relevance
+  relevance_score: number; // Added new field
+  subreddit: string;
+  permalink: string;
+  engaged: number; // i64 in Rust (0 or 1)
+  assignee: string;
+  notes: string;
+};
+
 type SearchResult = {
   id: string;
   title: string;
   subreddit: string;
   url: string;
-  relevance: number;
+  relevance_score: number; // Renamed from relevance
+  sort_type: string; // Added new field
   snippet: string;
   timestamp?: number;
   formatted_date?: string;
@@ -61,10 +78,20 @@ export function RedditSearch({
 
   async function handleFetchSubreddits() {
     try {
-      await invoke("get_all_searched_posts").then((subreddits) => {
-        setSubreddits(subreddits);
-        console.log("Subreddits:", subreddits);
-      });
+      const fetchedPosts: PostDataWrapper[] = await invoke("get_all_searched_posts");
+      const mappedResults: SearchResult[] = fetchedPosts.map(post => ({
+        id: post.id.toString(),
+        title: post.title,
+        subreddit: post.subreddit,
+        url: post.url,
+        relevance_score: post.relevance_score,
+        sort_type: post.sort_type,
+        snippet: "", // PostDataWrapper doesn't have snippet
+        timestamp: post.timestamp,
+        formatted_date: post.formatted_date,
+      }));
+      setSubreddits(mappedResults);
+      console.log("Subreddits:", mappedResults);
     } catch (error) {
       console.error("Error fetching subreddits:", error);
     }
@@ -73,10 +100,20 @@ export function RedditSearch({
   // KEEP THE SEARCH PERSISTING by querying the DB of the search results
   async function persistSearch() {
     try {
-      await invoke("get_all_searched_posts").then((subreddits) => {
-        setSubreddits(subreddits);
-        console.log("Subreddits:", subreddits);
-      });
+      const fetchedPosts: PostDataWrapper[] = await invoke("get_all_searched_posts");
+      const mappedResults: SearchResult[] = fetchedPosts.map(post => ({
+        id: post.id.toString(),
+        title: post.title,
+        subreddit: post.subreddit,
+        url: post.url,
+        relevance_score: post.relevance_score,
+        sort_type: post.sort_type,
+        snippet: "", // PostDataWrapper doesn't have snippet
+        timestamp: post.timestamp,
+        formatted_date: post.formatted_date,
+      }));
+      setSubreddits(mappedResults);
+      console.log("Subreddits:", mappedResults);
     } catch (error) {
       console.error("Error persisting search:", error);
     }
@@ -106,17 +143,30 @@ export function RedditSearch({
 
     try {
       // Call Tauri command to query Reddit and store in database
-      const result: string = await invoke("get_reddit_results", {
-        relevance: selectedSorts,
+      const fetchedPosts: PostDataWrapper[] = await invoke("get_reddit_results", {
+        sortTypes: selectedSorts, // Renamed parameter to match Rust backend
         query: query.trim(),
       });
 
-      console.log("Database result:", result);
+      const mappedResults: SearchResult[] = fetchedPosts.map(post => ({
+        id: post.id.toString(),
+        title: post.title,
+        subreddit: post.subreddit,
+        url: post.url,
+        relevance_score: post.relevance_score,
+        sort_type: post.sort_type,
+        snippet: "", // PostDataWrapper doesn't have snippet
+        timestamp: post.timestamp,
+        formatted_date: post.formatted_date,
+      }));
+      setSubreddits(mappedResults);
+      console.log("Search results:", mappedResults);
     } catch (error) {
       console.error("Search error:", error);
+      toast.error(`Search failed: ${error}`);
     } finally {
       setIsSearching(false);
-      handleFetchSubreddits();
+      // handleFetchSubreddits(); // This is now handled by the return of get_reddit_results
     }
   };
 
@@ -124,18 +174,19 @@ export function RedditSearch({
   const addToTable = async (result: SearchResult) => {
     try {
       // TAURI COMMAND TO SEND TO BE
-      const singlePost = await invoke("save_single_reddit_command", {
+      const singlePost: PostDataWrapper = await invoke("save_single_reddit_command", {
         post: {
-          id: parseInt(result.id),
+          id: parseInt(result.id, 10),
           timestamp: result.timestamp || Date.now(),
           formatted_date:
             result.formatted_date || new Date().toISOString().split("T")[0],
           title: result.title,
           url: result.url,
-          relevance: result.relevance.toString(),
+          sort_type: result.sort_type, // Use new field
+          relevance_score: result.relevance_score, // Use new field
           subreddit: result.subreddit,
           permalink: result.url,
-          engaged: false,
+          engaged: 0, // Convert boolean false to i64 0
           assignee: "",
           notes: "",
         },
@@ -154,15 +205,15 @@ export function RedditSearch({
       await invoke("get_post_comments_command", {
         url: singlePost.url,
         title: singlePost.title,
-        relevance: "top",
+        sortType: singlePost.sort_type, // Use new field, camelCase for Tauri
       });
 
       toast.info(`Added ${singlePost.title} post to table`, {
         position: "bottom-center",
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error in addToTable:", err);
-      toast.error(`Failed to add post: ${err.message}`);
+      toast.error(`Failed to add post: ${err.message || err}`);
     }
 
     onNotifyNewPosts(1);
@@ -183,7 +234,8 @@ export function RedditSearch({
         date: new Date().toISOString().split("T")[0],
         title: result.title,
         url: result.url,
-        relevance: result.relevance,
+        relevance_score: result.relevance_score, // Use new field
+        sort_type: result.sort_type, // Use new field
         subreddit: result.subreddit,
       })),
     );
@@ -206,8 +258,8 @@ export function RedditSearch({
   const endIndex = startIndex + rowsPerPage;
   const paginatedResults = subreddits.slice(startIndex, endIndex);
 
-  function isColoredRelevance(relevance: string) {
-    switch (relevance) {
+  function isColoredRelevance(sortType: string) { // Renamed parameter
+    switch (sortType) { // Use new parameter
       case "hot":
         return "bg-red-500";
       case "top":
@@ -335,9 +387,9 @@ export function RedditSearch({
                           r/{result.subreddit}
                         </Badge>
                         <Badge
-                          className={isColoredRelevance(result?.relevance)}
+                          className={isColoredRelevance(result?.sort_type)}
                         >
-                          {result.relevance}
+                          {result.sort_type}
                         </Badge>
 
                         <div className="flex space-x-2 items-center">

@@ -12,10 +12,11 @@ pub struct PostDataWrapper {
     pub formatted_date: String,
     pub title: String,
     pub url: String,
-    pub relevance: String,
+    pub sort_type: String, // Renamed from relevance
+    pub relevance_score: i64, // Added new field
     pub subreddit: String,
     pub permalink: String,
-    pub engaged: bool,
+    pub engaged: i64, // Changed from bool to i64
     pub assignee: String,
     pub notes: String,
 }
@@ -34,7 +35,7 @@ pub struct CommentDataWrapper {
     pub parent_id: String,
     pub subreddit: String,
     pub post_title: String,
-    pub engaged: bool,
+    pub engaged: i64, // Changed from bool to i64
     pub assignee: String,
 }
 
@@ -67,8 +68,8 @@ impl DB {
 
     // SAVE SINGLE REDDIT POST
     pub fn save_single_reddit(&self, post: &PostDataWrapper) -> RusqliteResult<()> {
-        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee, notes)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         self.conn.execute(
             query,
@@ -78,7 +79,8 @@ impl DB {
                 post.formatted_date,
                 post.title,
                 post.url,
-                post.relevance,
+                post.sort_type,
+                post.relevance_score,
                 post.subreddit,
                 post.permalink,
                 post.engaged,
@@ -106,7 +108,8 @@ impl DB {
                 formatted_date TEXT NOT NULL,
                 title TEXT NOT NULL,
                 url TEXT NOT NULL,
-                relevance TEXT NOT NULL DEFAULT '',
+                sort_type TEXT NOT NULL DEFAULT '',
+                relevance_score INTEGER NOT NULL DEFAULT 0,
                 subreddit TEXT NOT NULL DEFAULT '',
                 permalink TEXT NOT NULL DEFAULT '',
                 engaged BOOLEAN,
@@ -131,7 +134,8 @@ impl DB {
                 formatted_date TEXT NOT NULL,
                 title TEXT NOT NULL,
                 url TEXT NOT NULL,
-                relevance TEXT NOT NULL DEFAULT '',
+                sort_type TEXT NOT NULL DEFAULT '',
+                relevance_score INTEGER NOT NULL DEFAULT 0,
                 subreddit TEXT NOT NULL DEFAULT '',
                 permalink TEXT NOT NULL DEFAULT '',
                 engaged BOOLEAN,
@@ -177,8 +181,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT OR IGNORE INTO reddit_posts
-                (timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee, notes)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
             )?;
 
             for result in results {
@@ -187,7 +191,8 @@ impl DB {
                     result.formatted_date,
                     result.title,
                     result.url,
-                    result.relevance,
+                    result.sort_type,
+                    result.relevance_score,
                     result.subreddit,
                     result.permalink,
                     result.engaged,
@@ -217,8 +222,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT INTO subreddit_search
-            (timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee, notes)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
             )?;
 
             for result in results {
@@ -227,7 +232,8 @@ impl DB {
                     result.formatted_date,
                     result.title,
                     result.url,
-                    result.relevance,
+                    result.sort_type,
+                    result.relevance_score,
                     result.subreddit,
                     result.permalink,
                     result.engaged,
@@ -278,7 +284,7 @@ impl DB {
 
     pub fn get_db_results(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee, notes
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes
              FROM reddit_posts
              ORDER BY timestamp DESC",
         )?;
@@ -291,12 +297,13 @@ impl DB {
                     formatted_date: row.get(2)?,
                     title: row.get(3)?,
                     url: row.get(4)?,
-                    relevance: row.get(5)?,
-                    subreddit: row.get(6)?,
-                    permalink: row.get(7)?,
-                    engaged: row.get(8)?,
-                    assignee: row.get(9)?,
-                    notes: row.get(10)?,
+                    sort_type: row.get(5)?, // Updated index
+                    relevance_score: row.get(6)?, // Updated index
+                    subreddit: row.get(7)?,
+                    permalink: row.get(8)?,
+                    engaged: row.get(9)?,
+                    assignee: row.get(10)?,
+                    notes: row.get(11)?,
                 })
             })?
             .collect::<RusqliteResult<Vec<_>>>()?;
@@ -358,6 +365,14 @@ impl DB {
         self.conn.execute(
             "UPDATE reddit_posts SET assignee = ?1 WHERE id = ?2",
             params![assignee, id],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_post_engaged_status(&self, id: i64, engaged: i64) -> RusqliteResult<()> {
+        self.conn.execute(
+            "UPDATE reddit_posts SET engaged = ?1 WHERE id = ?2",
+            params![engaged, id],
         )?;
         Ok(())
     }

@@ -144,7 +144,7 @@ struct SubredditChild {
 pub async fn get_subreddit_posts(
     access_token: &str,
     subreddit: &str,
-    relevance: &str,
+    sort_type: &str, // Renamed from relevance
 ) -> Result<Vec<PostDataWrapper>, RedditError> {
     let client = Client::new();
 
@@ -153,7 +153,7 @@ pub async fn get_subreddit_posts(
 
     let url = format!(
         "https://oauth.reddit.com/r/{}/{}?limit=100",
-        subreddit_clean, relevance
+        subreddit_clean, sort_type // Use sort_type here
     );
 
     println!("Fetching from URL: {}", url);
@@ -205,10 +205,11 @@ pub async fn get_subreddit_posts(
                     timestamp: post.created_utc as i64,
                     formatted_date: database::adding::DB::format_timestamp(post.created_utc as i64)
                         .expect("Failed to format timestamp"),
-                    relevance: relevance.to_string(),
+                    sort_type: sort_type.to_string(), // Use sort_type
+                    relevance_score: 0, // Default to 0 as no score is available in RedditPost
                     subreddit: post.subreddit.clone(),
                     permalink: format!("https://reddit.com{}", post.permalink),
-                    engaged: false,
+                    engaged: 0,
                     assignee: "".to_string(),
                     notes: "".to_string(),
                 })
@@ -225,14 +226,14 @@ pub async fn get_subreddit_posts(
 pub async fn search_subreddit_posts(
     access_token: &str,
     query: &str,
-    relevance: &str, // This should be "hot", "top", or "new"
+    sort_type: &str, // Renamed from relevance
 ) -> Result<Vec<PostDataWrapper>, RedditError> {
     let client = Client::new();
 
     // Include the sort parameter in the URL
     let url = format!(
         "https://oauth.reddit.com/search?q={}&sort={}&limit=100&t=all",
-        query, relevance
+        query, sort_type // Use sort_type here
     );
 
     println!("Making request to: {}", url); // Debug log
@@ -250,7 +251,7 @@ pub async fn search_subreddit_posts(
     println!(
         "API returned {} posts for sort: {}",
         listing.data.children.len(),
-        relevance
+        sort_type // Use sort_type here
     );
 
     let posts: Vec<PostDataWrapper> = listing
@@ -266,10 +267,11 @@ pub async fn search_subreddit_posts(
                     timestamp: post.created_utc as i64,
                     formatted_date: database::adding::DB::format_timestamp(post.created_utc as i64)
                         .expect("Failed to format timestamp"),
-                    relevance: relevance.to_string(), // Store which sort type found this
+                    sort_type: sort_type.to_string(), // Use sort_type
+                    relevance_score: 0, // Default to 0 as no score is available in RedditPost
                     subreddit: post.subreddit.clone(),
                     permalink: format!("https://reddit.com{}", post.permalink.clone()),
-                    engaged: false,
+                    engaged: 0,
                     assignee: "".to_string(),
                     notes: "".to_string(),
                 })
@@ -279,7 +281,7 @@ pub async fn search_subreddit_posts(
         })
         .collect();
 
-    println!("Processed {} posts for sort: {}", posts.len(), relevance);
+    println!("Processed {} posts for sort: {}", posts.len(), sort_type);
     Ok(posts)
 }
 
@@ -315,7 +317,7 @@ pub struct CommentData {
 pub async fn get_post_comments(
     url: &str,
     post_title: &str,
-    relevance: &str,
+    sort_type: &str, // Renamed from relevance
 ) -> Result<Vec<CommentDataWrapper>, RedditError> {
     let client = Client::new();
 
@@ -337,7 +339,7 @@ pub async fn get_post_comments(
                 parent_id: "".to_string(),
                 subreddit: "".to_string(),
                 post_title: "".to_string(),
-                engaged: false,
+                engaged: 0,
                 assignee: "".to_string(),
             };
             return Ok(vec![error_comment]);
@@ -349,7 +351,7 @@ pub async fn get_post_comments(
 
     let api_url = format!(
         "https://oauth.reddit.com/comments/{}?sort={}&limit=500",
-        post_id, relevance
+        post_id, sort_type // Use sort_type here
     );
 
     // Read config
@@ -435,7 +437,7 @@ pub async fn get_post_comments(
                 parent_id: data.parent_id,
                 subreddit: subreddit.clone(),
                 post_title: post_title.to_string(),
-                engaged: false,
+                engaged: 0,
                 assignee: "".to_string(),
             }
         })

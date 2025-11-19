@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import type { Message, SearchState, RedditPost } from "./smart-data-tables";
+import type { Message, SearchState } from "./smart-data-tables";
 import { useAppSettings } from "./app-settings";
 import { invoke } from "@tauri-apps/api/core";
 import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
@@ -75,6 +75,22 @@ import {
 } from "lucide-react";
 const initialData: RedditPost[] = []; // Declare initialData here
 
+// Define RedditPost type to match Rust's PostDataWrapper
+export type RedditPost = {
+  id: string;
+  timestamp: number;
+  formatted_date: string;
+  title: string;
+  url: string;
+  sort_type: string; // Renamed from relevance
+  relevance_score: number; // Added new field
+  subreddit: string;
+  permalink: string;
+  engaged: number; // Changed from boolean to number (0 or 1)
+  assignee: string;
+  notes: string;
+};
+
 const teamMembers = [
   { id: "user1", name: "Alex" },
   { id: "user2", name: "Maria" },
@@ -124,7 +140,7 @@ export function RedditTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(settings.rowsPerPage);
   const [showClearTableDialog, setShowClearTableDialog] = useState(false);
-  const [relevance, setRelevance] = useState("best");
+  const [sortTypeForComments, setSortTypeForComments] = useState("best"); // Renamed from relevance
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [editingNotePost, setEditingNotePost] = useState<RedditPost | null>(
     null,
@@ -213,6 +229,41 @@ export function RedditTable({
     }
   };
 
+  const handleEngagedToggle = async (postId: string, isEngaged: boolean) => {
+    const postToUpdate = data.find((p) => p.id === postId);
+    if (!postToUpdate) return;
+
+    const originalEngagedStatus = postToUpdate.engaged;
+    const newEngagedStatus = isEngaged ? 1 : 0;
+
+    // Optimistic update
+    setData((prevData) =>
+      prevData.map((p) =>
+        p.id === postId ? { ...p, engaged: newEngagedStatus } : p,
+      ),
+    );
+
+    try {
+      await invoke("update_post_engaged_status", {
+        id: parseInt(postId, 10),
+        engaged: newEngagedStatus,
+      });
+
+      toast.success(
+        `Post "${postToUpdate.title.slice(0, 20)}..." marked as ${isEngaged ? "engaged" : "not engaged"}.`,
+      );
+    } catch (error) {
+      console.error("Failed to update engaged status:", error);
+      toast.error("Failed to update engaged status");
+      // Revert on error
+      setData((prevData) =>
+        prevData.map((p) =>
+          p.id === postId ? { ...p, engaged: originalEngagedStatus } : p,
+        ),
+      );
+    }
+  };
+
   useEffect(() => {
     if (externalPosts.length > 0) {
       setData((prev) => {
@@ -247,11 +298,11 @@ export function RedditTable({
 
       const matchesRelevance =
         relevanceFilter === "all" ||
-        (relevanceFilter === "high" && post.relevance >= 80) ||
+        (relevanceFilter === "high" && post.relevance_score >= 80) || // Use relevance_score
         (relevanceFilter === "medium" &&
-          post.relevance >= 60 &&
-          post.relevance < 80) ||
-        (relevanceFilter === "low" && post.relevance < 60);
+          post.relevance_score >= 60 &&
+          post.relevance_score < 80) ||
+        (relevanceFilter === "low" && post.relevance_score < 60);
 
       return matchesSearch && matchesSubreddit && matchesRelevance;
     });
@@ -321,11 +372,11 @@ export function RedditTable({
     window.location.reload();
   };
 
-  const handleGetComments = async (post: RedditPost, relevance: string) => {
+  const handleGetComments = async (post: RedditPost, sort_type: string) => { // Renamed parameter
     const fetchedComments = (await invoke("get_post_comments_command", {
       url: post.url,
       title: post.title,
-      relevance: relevance,
+      sortType: sort_type, // Use new parameter, camelCase for Tauri
     })) as Message[];
 
     setComments(fetchedComments);
@@ -333,13 +384,13 @@ export function RedditTable({
     onAddComments(fetchedComments);
   };
 
-  const handleRelevanceChange = async (newRelevance: string) => {
-    setRelevance(newRelevance);
+  const handleSortTypeForCommentsChange = async (newSortType: string) => { // Renamed function and parameter
+    setSortTypeForComments(newSortType);
     if (commentsPost) {
       const newComments = (await invoke("get_post_comments_command", {
         url: commentsPost.url,
         title: commentsPost.title,
-        relevance: newRelevance,
+        sortType: newSortType, // Use new parameter, camelCase for Tauri
       })) as Message[];
       setComments(newComments);
       onAddComments(newComments);
@@ -354,15 +405,15 @@ export function RedditTable({
     setCurrentPage(1);
   };
 
-  const getRelevanceBadge = (relevance: number) => {
-    if (relevance >= 80) {
+  const getRelevanceBadge = (relevance_score: number) => { // Renamed parameter
+    if (relevance_score >= 80) {
       return (
         <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20">
           High
         </Badge>
       );
     }
-    if (relevance >= 60) {
+    if (relevance_score >= 60) {
       return (
         <Badge className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/20">
           Medium
@@ -486,7 +537,7 @@ export function RedditTable({
                     variant="ghost"
                     size="sm"
                     className="-ml-3 h-8 font-medium"
-                    onClick={() => handleSort("date")}
+                    onClick={() => handleSort("formatted_date")}
                   >
                     Date
                     <ArrowUpDown className="ml-2 h-3 w-3" />
@@ -504,6 +555,28 @@ export function RedditTable({
                   </Button>
                 </TableHead>
                 <TableHead className="w-[100px] p-3 font-medium">URL</TableHead>
+                <TableHead className="w-[100px] p-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-medium"
+                    onClick={() => handleSort("relevance_score")}
+                  >
+                    Score
+                    <ArrowUpDown className="ml-2 h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[100px] p-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-medium"
+                    onClick={() => handleSort("sort_type")}
+                  >
+                    Type
+                    <ArrowUpDown className="ml-2 h-3 w-3" />
+                  </Button>
+                </TableHead>
                 <TableHead className="w-[180px] p-3">
                   <Button
                     variant="ghost"
@@ -543,7 +616,7 @@ export function RedditTable({
               {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={11} // Updated colSpan
                     className="h-24 text-center text-muted-foreground"
                   >
                     No posts found.
@@ -595,6 +668,17 @@ export function RedditTable({
                           Link
                           <ExternalLink className="h-3 w-3 ml-1" />
                         </span>
+                      </TableCell>
+                      <TableCell className="w-[100px] p-3">
+                        <div className="flex items-center gap-2">
+                          {getRelevanceBadge(post.relevance_score)}
+                          <span className="text-sm">{post.relevance_score}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="w-[100px] p-3">
+                        <Badge variant="secondary" className="font-mono">
+                          {post.sort_type}
+                        </Badge>
                       </TableCell>
                       <TableCell className="w-[180px] p-3">
                         <Select
@@ -656,7 +740,7 @@ export function RedditTable({
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onClick={() => handleGetComments(post, relevance)}
+                              onClick={() => handleGetComments(post, post.sort_type)}
                             >
                               <MessageCircle className="mr-2 h-4 w-4" />
                               Get Comments
@@ -698,7 +782,7 @@ export function RedditTable({
                     </TableRow>
                     {expandedRows.has(post.id) && (
                       <TableRow>
-                        <TableCell colSpan={9} className="p-0">
+                        <TableCell colSpan={11} className="p-0"> {/* Updated colSpan */}
                           <div className="p-4 bg-muted/50">
                             <Card>
                               <CardHeader className="flex flex-row items-center justify-between">
@@ -902,7 +986,7 @@ export function RedditTable({
                 <div className="text-sm font-medium text-muted-foreground mb-1">
                   Date
                 </div>
-                <div className="text-sm font-mono">{selectedPost.date}</div>
+                <div className="text-sm font-mono">{selectedPost.formatted_date}</div>
               </div>
               <div>
                 <div className="text-sm font-medium text-muted-foreground mb-1">
@@ -917,9 +1001,17 @@ export function RedditTable({
                   Relevance Score
                 </div>
                 <div className="flex items-center gap-2">
-                  {getRelevanceBadge(selectedPost.relevance)}
-                  <span className="text-sm">{selectedPost.relevance}%</span>
+                  {getRelevanceBadge(selectedPost.relevance_score)}
+                  <span className="text-sm">{selectedPost.relevance_score}%</span>
                 </div>
+              </div>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">
+                  Sort Type
+                </div>
+                <Badge variant="secondary" className="font-mono">
+                  {selectedPost.sort_type}
+                </Badge>
               </div>
               <div>
                 <div className="text-sm font-medium text-muted-foreground mb-1">
@@ -970,10 +1062,10 @@ export function RedditTable({
                     </span>
                   </div>
                   <section className="flex items-center space-x-2">
-                    <span className="text-black">Relevance:</span>
+                    <span className="text-black">Sort By:</span>
                     <Select
-                      value={relevance}
-                      onValueChange={handleRelevanceChange}
+                      value={sortTypeForComments}
+                      onValueChange={handleSortTypeForCommentsChange}
                     >
                       <SelectTrigger size="xs" className="w-[110px]">
                         <SelectValue placeholder="Best" />
