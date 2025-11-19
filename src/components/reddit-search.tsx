@@ -136,6 +136,7 @@ export function RedditSearch({
           subreddit: result.subreddit,
           permalink: result.url,
           engaged: false,
+          assignee: "",
         },
       });
 

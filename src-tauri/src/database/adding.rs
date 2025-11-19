@@ -16,6 +16,7 @@ pub struct PostDataWrapper {
     pub subreddit: String,
     pub permalink: String,
     pub engaged: bool,
+    pub assignee: String,
 }
 
 // Comment data structure
@@ -33,6 +34,7 @@ pub struct CommentDataWrapper {
     pub subreddit: String,
     pub post_title: String,
     pub engaged: bool,
+    pub assignee: String,
 }
 
 pub struct DB {
@@ -64,8 +66,8 @@ impl DB {
 
     // SAVE SINGLE REDDIT POST
     pub fn save_single_reddit(&self, post: &PostDataWrapper) -> RusqliteResult<()> {
-        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         self.conn.execute(
             query,
@@ -78,7 +80,8 @@ impl DB {
                 post.relevance,
                 post.subreddit,
                 post.permalink,
-                post.engaged
+                post.engaged,
+                post.assignee
             ],
         )?;
 
@@ -104,7 +107,8 @@ impl DB {
                 relevance TEXT NOT NULL DEFAULT '',
                 subreddit TEXT NOT NULL DEFAULT '',
                 permalink TEXT NOT NULL DEFAULT '',
-                engaged BOOLEAN
+                engaged BOOLEAN,
+                assignee TEXT NOT NULL DEFAULT ''
             )",
             [],
         )?;
@@ -127,7 +131,8 @@ impl DB {
                 relevance TEXT NOT NULL DEFAULT '',
                 subreddit TEXT NOT NULL DEFAULT '',
                 permalink TEXT NOT NULL DEFAULT '',
-                engaged BOOLEAN
+                engaged BOOLEAN,
+                assignee TEXT NOT NULL DEFAULT ''
             )",
             [],
         )?;
@@ -153,7 +158,8 @@ impl DB {
                 parent_id TEXT NOT NULL,
                 subreddit TEXT NOT NULL,
                 post_title TEXT NOT NULL,
-                engaged BOOLEAN
+                engaged BOOLEAN,
+                assignee TEXT NOT NULL DEFAULT ''
             )",
             [],
         )?;
@@ -167,8 +173,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT OR IGNORE INTO reddit_posts
-                (timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                (timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
             )?;
 
             for result in results {
@@ -180,7 +186,8 @@ impl DB {
                     result.relevance,
                     result.subreddit,
                     result.permalink,
-                    result.engaged
+                    result.engaged,
+                    result.assignee
                 ])?;
             }
         }
@@ -205,8 +212,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT INTO subreddit_search
-            (timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            (timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
             )?;
 
             for result in results {
@@ -218,7 +225,8 @@ impl DB {
                     result.relevance,
                     result.subreddit,
                     result.permalink,
-                    result.engaged
+                    result.engaged,
+                    result.assignee
                 ])?;
             }
         }
@@ -234,8 +242,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT OR IGNORE INTO reddit_comments
-                (id, post_id, body, author, timestamp, formatted_date, score, permalink, parent_id, subreddit, post_title, engaged)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                (id, post_id, body, author, timestamp, formatted_date, score, permalink, parent_id, subreddit, post_title, engaged, assignee)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
             )?;
 
             for comment in comments {
@@ -251,7 +259,8 @@ impl DB {
                     comment.parent_id,
                     comment.subreddit,
                     comment.post_title,
-                    comment.engaged
+                    comment.engaged,
+                    comment.assignee
                 ])?;
             }
         }
@@ -263,7 +272,7 @@ impl DB {
 
     pub fn get_db_results(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, relevance, subreddit, permalink
+            "SELECT id, timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee
              FROM reddit_posts
              ORDER BY timestamp DESC",
         )?;
@@ -280,6 +289,7 @@ impl DB {
                     subreddit: row.get(6)?,
                     permalink: row.get(7)?,
                     engaged: row.get(8)?,
+                    assignee: row.get(9)?,
                 })
             })?
             .collect::<RusqliteResult<Vec<_>>>()?;
@@ -289,7 +299,7 @@ impl DB {
 
     pub fn get_post_comments(&self, post_id: &str) -> RusqliteResult<Vec<CommentDataWrapper>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, post_id, body, author, timestamp, formatted_date, score, permalink, parent_id, subreddit, post_title, engaged
+            "SELECT id, post_id, body, author, timestamp, formatted_date, score, permalink, parent_id, subreddit, post_title, engaged, assignee
              FROM reddit_comments
              WHERE post_id = ?1
              ORDER BY timestamp DESC",
@@ -310,6 +320,7 @@ impl DB {
                     subreddit: row.get(9)?,
                     post_title: row.get(10)?,
                     engaged: row.get(11)?,
+                    assignee: row.get(12)?,
                 })
             })?
             .collect::<RusqliteResult<Vec<_>>>()?;

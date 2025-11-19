@@ -1,57 +1,10 @@
-use serde::{Deserialize, Serialize};
 
 use crate::database::adding::{CommentDataWrapper, PostDataWrapper};
 use crate::database::read::DBReader;
 use crate::models::search::{self, get_access_token, get_subreddit_posts, search_subreddit_posts};
 use crate::settings::api_keys;
 use crate::settings::api_keys::AppConfig;
-use crate::{actions, commands, database};
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct RedditPost {
-    id: String,
-    title: String,
-    url: String,
-    created_utc: f64,
-    subreddit: String,
-    permalink: String,
-    selftext: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(untagged)]
-enum RedditData {
-    Post(RedditPost),
-    Comment(RedditComment),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct RedditComment {
-    id: String,
-    body: String,
-    author: String,
-    created_utc: f64,
-    score: i32,
-    permalink: String,
-    parent_id: String,
-    #[serde(default)]
-    replies: serde_json::Value,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-struct RedditListingData {
-    children: Vec<RedditListingChild>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-struct RedditListingChild {
-    data: RedditData,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-struct RedditListing {
-    data: RedditListingData,
-}
+use crate::{actions, database};
 
 // Define a custom error type for better error handling
 #[derive(Debug)]
