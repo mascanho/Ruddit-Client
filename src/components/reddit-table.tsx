@@ -184,8 +184,8 @@ export function RedditTable({
     // Optimistic update
     setData((prevData) =>
       prevData.map((p) =>
-        p.id === postId ? { ...p, assignee: assigneeToSave } : p
-      )
+        p.id === postId ? { ...p, assignee: assigneeToSave } : p,
+      ),
     );
 
     try {
@@ -196,7 +196,7 @@ export function RedditTable({
 
       if (personName !== "unassigned") {
         toast.success(
-          `Post "${postToUpdate.title.slice(0, 20)}..." assigned to ${personName}.`
+          `Post "${postToUpdate.title.slice(0, 20)}..." assigned to ${personName}.`,
         );
       } else {
         toast.info(`Post "${postToUpdate.title.slice(0, 20)}..." unassigned.`);
@@ -207,8 +207,8 @@ export function RedditTable({
       // Revert on error
       setData((prevData) =>
         prevData.map((p) =>
-          p.id === postId ? { ...p, assignee: originalAssignee } : p
-        )
+          p.id === postId ? { ...p, assignee: originalAssignee } : p,
+        ),
       );
     }
   };
@@ -447,7 +447,6 @@ export function RedditTable({
                 <SelectItem value="low">Low (&lt;60)</SelectItem>
               </SelectContent>
             </Select>
-
             <Button
               variant="destructive"
               onClick={() => setShowClearTableDialog(true)}
@@ -455,7 +454,6 @@ export function RedditTable({
               Clear Table
             </Button>
           </div>
-
           <div className="text-sm text-muted-foreground">
             Showing {filteredAndSortedData.length} of {data.length} posts
           </div>
@@ -463,80 +461,84 @@ export function RedditTable({
       </Card>
 
       <Card className="p-0 m-0 h-[800px] flex flex-col">
-        {/* Fixed Header Section */}
-        <div className="border-b flex-none">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[40px] bg-background sticky top-0 z-10 p-3" />
-                  <TableHead className="w-[60px] bg-background sticky top-0 z-10 p-3">
-                    #
-                  </TableHead>
-                  <TableHead className="w-[110px] bg-background sticky top-0 z-10 p-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="-ml-3 h-8 font-medium"
-                      onClick={() => handleSort("date")}
-                    >
-                      Date
-                      <ArrowUpDown className="ml-2 h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="min-w-[300px] bg-background sticky top-0 z-10 p-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="-ml-3 h-8 font-medium"
-                      onClick={() => handleSort("title")}
-                    >
-                      Title
-                      <ArrowUpDown className="ml-2 h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="w-[100px] bg-background sticky top-0 z-10 p-3 font-medium">
-                    URL
-                  </TableHead>
-                  <TableHead className="w-[180px] bg-background sticky top-0 z-10 p-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="-ml-3 h-8 font-medium"
-                      onClick={() => handleSort("relevance")}
-                    >
-                      Engaged
-                    </Button>
-                  </TableHead>
-                  <TableHead className="w-[150px] bg-background sticky top-0 z-10 p-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="-ml-3 h-8 font-medium"
-                      onClick={() => handleSort("subreddit")}
-                    >
-                      Subreddit
-                      <ArrowUpDown className="ml-2 h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="w-[150px] bg-background sticky top-0 z-10 p-3">
-                    <div className="flex items-center font-medium">
-                      <User className="mr-2 h-4 w-4" />
-                      Assignee
-                    </div>
-                  </TableHead>
-                  <TableHead className="w-[70px] bg-background sticky top-0 z-10 p-3 font-medium">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-            </Table>
-          </div>
-        </div>
-
-        {/* Scrollable Body Section */}
-        <div className="flex-1 overflow-auto">
+        {/* Single Table Container with Fixed Header */}
+        <div className="flex-1 overflow-auto relative">
           <Table>
+            {/* Fixed Header */}
+            <TableHeader className="sticky top-0 z-10 bg-background">
+              <TableRow>
+                <TableHead className="w-[40px] p-3">
+                  {/* Expand/Collapse */}
+                </TableHead>
+                <TableHead className="w-[60px] p-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-medium"
+                    onClick={() => handleSort("index")}
+                  >
+                    #
+                    <ArrowUpDown className="ml-2 h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[110px] p-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-medium"
+                    onClick={() => handleSort("date")}
+                  >
+                    Date
+                    <ArrowUpDown className="ml-2 h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead className="min-w-[300px] p-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-medium"
+                    onClick={() => handleSort("title")}
+                  >
+                    Title
+                    <ArrowUpDown className="ml-2 h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[100px] p-3 font-medium">URL</TableHead>
+                <TableHead className="w-[180px] p-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-medium"
+                    onClick={() => handleSort("engaged")}
+                  >
+                    Engaged
+                    <ArrowUpDown className="ml-2 h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[150px] p-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-medium"
+                    onClick={() => handleSort("subreddit")}
+                  >
+                    Subreddit
+                    <ArrowUpDown className="ml-2 h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[150px] p-3">
+                  <div className="flex items-center font-medium">
+                    <User className="mr-2 h-4 w-4" />
+                    Assignee
+                  </div>
+                </TableHead>
+                <TableHead className="w-[70px] p-3 font-medium">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+
+            {/* Scrollable Body */}
             <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
@@ -595,11 +597,22 @@ export function RedditTable({
                         </span>
                       </TableCell>
                       <TableCell className="w-[180px] p-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">
-                            {post.engaged === 1 ? "Engaged" : "Not engaged"}
-                          </span>
-                        </div>
+                        <Select
+                          value={post.engaged === 1 ? "engaged" : "not engaged"}
+                          onValueChange={(value) =>
+                            handleEngagedToggle(post.id, value === "engaged")
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="engaged">Engaged</SelectItem>
+                            <SelectItem value="not engaged">
+                              Not engaged
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell className="w-[150px] p-3">
                         <Badge variant="outline" className="font-mono">
@@ -744,7 +757,6 @@ export function RedditTable({
                 </SelectContent>
               </Select>
             </div>
-
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground">
                 Page {currentPage} of {totalPages}
@@ -790,6 +802,7 @@ export function RedditTable({
         )}
       </Card>
 
+      {/* Note Editing Dialog */}
       <Dialog
         open={editingNotePost !== null}
         onOpenChange={() => setEditingNotePost(null)}
@@ -816,7 +829,7 @@ export function RedditTable({
         </DialogContent>
       </Dialog>
 
-      {/* Rest of your dialogs remain the same */}
+      {/* Delete Confirmation Dialog */}
       {settings.confirmDelete && (
         <AlertDialog
           open={deleteId !== null}
@@ -843,6 +856,7 @@ export function RedditTable({
         </AlertDialog>
       )}
 
+      {/* Clear Table Dialog */}
       <AlertDialog
         open={showClearTableDialog}
         onOpenChange={setShowClearTableDialog}
@@ -867,6 +881,7 @@ export function RedditTable({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Post Details Dialog */}
       <AlertDialog
         open={selectedPost !== null}
         onOpenChange={() => setSelectedPost(null)}
@@ -929,6 +944,7 @@ export function RedditTable({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Comments Dialog */}
       <Dialog
         open={commentsPost !== null}
         onOpenChange={() => setCommentsPost(null)}
@@ -953,7 +969,6 @@ export function RedditTable({
                       {comments?.length} comments
                     </span>
                   </div>
-
                   <section className="flex items-center space-x-2">
                     <span className="text-black">Relevance:</span>
                     <Select
@@ -979,7 +994,6 @@ export function RedditTable({
               </DialogDescription>
             )}
           </DialogHeader>
-
           <ScrollArea className="max-h-[calc(80vh-180px)] pr-4">
             <div className="space-y-4">
               {comments.map((comment, index) => (
@@ -1011,7 +1025,6 @@ export function RedditTable({
                   </div>
                 </Card>
               ))}
-
               {comments.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   No comments available
