@@ -72,6 +72,7 @@ import {
   ChevronDown,
   User,
   Pencil,
+  Notebook,
 } from "lucide-react";
 const initialData: RedditPost[] = []; // Declare initialData here
 
@@ -372,7 +373,8 @@ export function RedditTable({
     window.location.reload();
   };
 
-  const handleGetComments = async (post: RedditPost, sort_type: string) => { // Renamed parameter
+  const handleGetComments = async (post: RedditPost, sort_type: string) => {
+    // Renamed parameter
     const fetchedComments = (await invoke("get_post_comments_command", {
       url: post.url,
       title: post.title,
@@ -384,7 +386,8 @@ export function RedditTable({
     onAddComments(fetchedComments);
   };
 
-  const handleSortTypeForCommentsChange = async (newSortType: string) => { // Renamed function and parameter
+  const handleSortTypeForCommentsChange = async (newSortType: string) => {
+    // Renamed function and parameter
     setSortTypeForComments(newSortType);
     if (commentsPost) {
       const newComments = (await invoke("get_post_comments_command", {
@@ -405,7 +408,8 @@ export function RedditTable({
     setCurrentPage(1);
   };
 
-  const getRelevanceBadge = (relevance_score: number) => { // Renamed parameter
+  const getRelevanceBadge = (relevance_score: number) => {
+    // Renamed parameter
     if (relevance_score >= 80) {
       return (
         <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20">
@@ -462,7 +466,7 @@ export function RedditTable({
 
   return (
     <>
-      <Card className="p-6">
+      <Card className="px-6">
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
@@ -511,7 +515,7 @@ export function RedditTable({
         </div>
       </Card>
 
-      <Card className="p-0 m-0 h-[800px] flex flex-col">
+      <Card className="p-0 m-0 h-[770px] flex flex-col">
         {/* Single Table Container with Fixed Header */}
         <div className="flex-1 overflow-auto relative">
           <Table>
@@ -520,6 +524,7 @@ export function RedditTable({
               <TableRow>
                 <TableHead className="w-[40px] p-3">
                   {/* Expand/Collapse */}
+                  <Notebook className="h-4 w-4" />
                 </TableHead>
                 <TableHead className="w-[60px] p-3">
                   <Button
@@ -554,40 +559,6 @@ export function RedditTable({
                     <ArrowUpDown className="ml-2 h-3 w-3" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[100px] p-3 font-medium">URL</TableHead>
-                <TableHead className="w-[100px] p-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="-ml-3 h-8 font-medium"
-                    onClick={() => handleSort("relevance_score")}
-                  >
-                    Score
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[100px] p-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="-ml-3 h-8 font-medium"
-                    onClick={() => handleSort("sort_type")}
-                  >
-                    Type
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[180px] p-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="-ml-3 h-8 font-medium"
-                    onClick={() => handleSort("engaged")}
-                  >
-                    Engaged
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
-                  </Button>
-                </TableHead>
                 <TableHead className="w-[150px] p-3">
                   <Button
                     variant="ghost"
@@ -596,6 +567,41 @@ export function RedditTable({
                     onClick={() => handleSort("subreddit")}
                   >
                     Subreddit
+                    <ArrowUpDown className="ml-2 h-3 w-3" />
+                  </Button>
+                </TableHead>
+
+                <TableHead className="w-[100px] p-3 font-medium">URL</TableHead>
+                {/* <TableHead className="w-[100px] p-3"> */}
+                {/*   <Button */}
+                {/*     variant="ghost" */}
+                {/*     size="sm" */}
+                {/*     className="-ml-3 h-8 font-medium" */}
+                {/*     onClick={() => handleSort("relevance_score")} */}
+                {/*   > */}
+                {/*     Score */}
+                {/*     <ArrowUpDown className="ml-2 h-3 w-3" /> */}
+                {/*   </Button> */}
+                {/* </TableHead> */}
+                {/* <TableHead className="w-[100px] p-3"> */}
+                {/*   <Button */}
+                {/*     variant="ghost" */}
+                {/*     size="sm" */}
+                {/*     className="-ml-3 h-8 font-medium" */}
+                {/*     onClick={() => handleSort("sort_type")} */}
+                {/*   > */}
+                {/*     Type */}
+                {/*     <ArrowUpDown className="ml-2 h-3 w-3" /> */}
+                {/*   </Button> */}
+                {/* </TableHead> */}
+                <TableHead className="w-[180px] p-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-medium"
+                    onClick={() => handleSort("engaged")}
+                  >
+                    Engaged
                     <ArrowUpDown className="ml-2 h-3 w-3" />
                   </Button>
                 </TableHead>
@@ -660,6 +666,12 @@ export function RedditTable({
                           {post.title?.length > 100 && "..."}
                         </div>
                       </TableCell>
+                      <TableCell className="w-[150px] p-3">
+                        <Badge variant="outline" className="font-mono">
+                          r/{post.subreddit}
+                        </Badge>
+                      </TableCell>
+
                       <TableCell className="w-[100px] p-3">
                         <span
                           onClick={() => handleOpenInbrowser(post.url)}
@@ -669,17 +681,19 @@ export function RedditTable({
                           <ExternalLink className="h-3 w-3 ml-1" />
                         </span>
                       </TableCell>
-                      <TableCell className="w-[100px] p-3">
-                        <div className="flex items-center gap-2">
-                          {getRelevanceBadge(post.relevance_score)}
-                          <span className="text-sm">{post.relevance_score}%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="w-[100px] p-3">
-                        <Badge variant="secondary" className="font-mono">
-                          {post.sort_type}
-                        </Badge>
-                      </TableCell>
+                      {/* <TableCell className="w-[100px] p-3"> */}
+                      {/*   <div className="flex items-center gap-2"> */}
+                      {/*     {getRelevanceBadge(post.relevance_score)} */}
+                      {/*     <span className="text-sm"> */}
+                      {/*       {post.relevance_score}% */}
+                      {/*     </span> */}
+                      {/*   </div> */}
+                      {/* </TableCell> */}
+                      {/* <TableCell className="w-[100px] p-3"> */}
+                      {/*   <Badge variant="secondary" className="font-mono"> */}
+                      {/*     {post.sort_type} */}
+                      {/*   </Badge> */}
+                      {/* </TableCell> */}
                       <TableCell className="w-[180px] p-3">
                         <Select
                           value={post.engaged === 1 ? "engaged" : "not engaged"}
@@ -697,11 +711,6 @@ export function RedditTable({
                             </SelectItem>
                           </SelectContent>
                         </Select>
-                      </TableCell>
-                      <TableCell className="w-[150px] p-3">
-                        <Badge variant="outline" className="font-mono">
-                          r/{post.subreddit}
-                        </Badge>
                       </TableCell>
                       <TableCell className="w-[150px] p-3">
                         <Select
@@ -740,7 +749,9 @@ export function RedditTable({
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onClick={() => handleGetComments(post, post.sort_type)}
+                              onClick={() =>
+                                handleGetComments(post, post.sort_type)
+                              }
                             >
                               <MessageCircle className="mr-2 h-4 w-4" />
                               Get Comments
@@ -782,7 +793,9 @@ export function RedditTable({
                     </TableRow>
                     {expandedRows.has(post.id) && (
                       <TableRow>
-                        <TableCell colSpan={11} className="p-0"> {/* Updated colSpan */}
+                        <TableCell colSpan={11} className="p-0">
+                          {" "}
+                          {/* Updated colSpan */}
                           <div className="p-4 bg-muted/50">
                             <Card>
                               <CardHeader className="flex flex-row items-center justify-between">
@@ -986,7 +999,9 @@ export function RedditTable({
                 <div className="text-sm font-medium text-muted-foreground mb-1">
                   Date
                 </div>
-                <div className="text-sm font-mono">{selectedPost.formatted_date}</div>
+                <div className="text-sm font-mono">
+                  {selectedPost.formatted_date}
+                </div>
               </div>
               <div>
                 <div className="text-sm font-medium text-muted-foreground mb-1">
@@ -1002,7 +1017,9 @@ export function RedditTable({
                 </div>
                 <div className="flex items-center gap-2">
                   {getRelevanceBadge(selectedPost.relevance_score)}
-                  <span className="text-sm">{selectedPost.relevance_score}%</span>
+                  <span className="text-sm">
+                    {selectedPost.relevance_score}%
+                  </span>
                 </div>
               </div>
               <div>
@@ -1129,3 +1146,4 @@ export function RedditTable({
     </>
   );
 }
+

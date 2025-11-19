@@ -78,8 +78,10 @@ export function RedditSearch({
 
   async function handleFetchSubreddits() {
     try {
-      const fetchedPosts: PostDataWrapper[] = await invoke("get_all_searched_posts");
-      const mappedResults: SearchResult[] = fetchedPosts.map(post => ({
+      const fetchedPosts: PostDataWrapper[] = await invoke(
+        "get_all_searched_posts",
+      );
+      const mappedResults: SearchResult[] = fetchedPosts.map((post) => ({
         id: post.id.toString(),
         title: post.title,
         subreddit: post.subreddit,
@@ -100,8 +102,10 @@ export function RedditSearch({
   // KEEP THE SEARCH PERSISTING by querying the DB of the search results
   async function persistSearch() {
     try {
-      const fetchedPosts: PostDataWrapper[] = await invoke("get_all_searched_posts");
-      const mappedResults: SearchResult[] = fetchedPosts.map(post => ({
+      const fetchedPosts: PostDataWrapper[] = await invoke(
+        "get_all_searched_posts",
+      );
+      const mappedResults: SearchResult[] = fetchedPosts.map((post) => ({
         id: post.id.toString(),
         title: post.title,
         subreddit: post.subreddit,
@@ -143,12 +147,15 @@ export function RedditSearch({
 
     try {
       // Call Tauri command to query Reddit and store in database
-      const fetchedPosts: PostDataWrapper[] = await invoke("get_reddit_results", {
-        sortTypes: selectedSorts, // Renamed parameter to match Rust backend
-        query: query.trim(),
-      });
+      const fetchedPosts: PostDataWrapper[] = await invoke(
+        "get_reddit_results",
+        {
+          sortTypes: selectedSorts, // Renamed parameter to match Rust backend
+          query: query.trim(),
+        },
+      );
 
-      const mappedResults: SearchResult[] = fetchedPosts.map(post => ({
+      const mappedResults: SearchResult[] = fetchedPosts.map((post) => ({
         id: post.id.toString(),
         title: post.title,
         subreddit: post.subreddit,
@@ -174,23 +181,26 @@ export function RedditSearch({
   const addToTable = async (result: SearchResult) => {
     try {
       // TAURI COMMAND TO SEND TO BE
-      const singlePost: PostDataWrapper = await invoke("save_single_reddit_command", {
-        post: {
-          id: parseInt(result.id, 10),
-          timestamp: result.timestamp || Date.now(),
-          formatted_date:
-            result.formatted_date || new Date().toISOString().split("T")[0],
-          title: result.title,
-          url: result.url,
-          sort_type: result.sort_type, // Use new field
-          relevance_score: result.relevance_score, // Use new field
-          subreddit: result.subreddit,
-          permalink: result.url,
-          engaged: 0, // Convert boolean false to i64 0
-          assignee: "",
-          notes: "",
+      const singlePost: PostDataWrapper = await invoke(
+        "save_single_reddit_command",
+        {
+          post: {
+            id: parseInt(result.id, 10),
+            timestamp: result.timestamp || Date.now(),
+            formatted_date:
+              result.formatted_date || new Date().toISOString().split("T")[0],
+            title: result.title,
+            url: result.url,
+            sort_type: result.sort_type, // Use new field
+            relevance_score: result.relevance_score, // Use new field
+            subreddit: result.subreddit,
+            permalink: result.url,
+            engaged: 0, // Convert boolean false to i64 0
+            assignee: "",
+            notes: "",
+          },
         },
-      });
+      );
 
       console.log("Post Title:", singlePost.title);
 
@@ -258,8 +268,11 @@ export function RedditSearch({
   const endIndex = startIndex + rowsPerPage;
   const paginatedResults = subreddits.slice(startIndex, endIndex);
 
-  function isColoredRelevance(sortType: string) { // Renamed parameter
-    switch (sortType) { // Use new parameter
+  function isColoredRelevance(sortType: string) {
+    // Renamed parameter
+    switch (
+      sortType // Use new parameter
+    ) {
       case "hot":
         return "bg-red-500";
       case "top":
@@ -368,7 +381,7 @@ export function RedditSearch({
               </Button>
             </div>
 
-            <div className="space-y-3 max-h-[580px] overflow-y-auto">
+            <div className="space-y-3 max-h-[570px] overflow-y-auto">
               {paginatedResults.map((result) => (
                 <Card
                   key={result.id}
@@ -507,3 +520,4 @@ export function RedditSearch({
     </Card>
   );
 }
+
