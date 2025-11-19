@@ -210,6 +210,7 @@ pub async fn get_subreddit_posts(
                     permalink: format!("https://reddit.com{}", post.permalink),
                     engaged: false,
                     assignee: "".to_string(),
+                    notes: "".to_string(),
                 })
             } else {
                 None
@@ -270,6 +271,7 @@ pub async fn search_subreddit_posts(
                     permalink: format!("https://reddit.com{}", post.permalink.clone()),
                     engaged: false,
                     assignee: "".to_string(),
+                    notes: "".to_string(),
                 })
             } else {
                 None

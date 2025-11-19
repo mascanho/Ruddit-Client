@@ -137,6 +137,7 @@ export function RedditSearch({
           permalink: result.url,
           engaged: false,
           assignee: "",
+          notes: "",
         },
       });
 

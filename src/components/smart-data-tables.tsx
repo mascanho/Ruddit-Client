@@ -41,6 +41,7 @@ export type RedditPost = {
   relevance: number;
   subreddit: string;
   formatted_date: string;
+  notes: string;
 };
 
 export type SearchState = {

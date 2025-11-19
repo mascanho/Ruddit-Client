@@ -34,7 +34,8 @@ async fn main() {
             commands::get_all_comments_command,
             commands::clear_comments_command,
             commands::open_settings_commmand,
-            commands::open_db_folder_command
+            commands::open_db_folder_command,
+            commands::update_post_notes
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

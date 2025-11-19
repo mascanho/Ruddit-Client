@@ -1,6 +1,26 @@
 "use client";
 
-import { useState, useMemo, useEffect, Fragment } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import type { Message, SearchState, RedditPost } from "./smart-data-tables";
+import { useAppSettings } from "./app-settings";
+import { invoke } from "@tauri-apps/api/core";
+import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
+import { toast } from "sonner";
+import moment from "moment";
+import { useOpenUrl } from "@/hooks/useOpenUrl";
+
+// UI Components
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,6 +31,13 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -21,13 +48,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -37,37 +57,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+// Icons
 import {
   Search,
-  MoreVertical,
-  Trash2,
-  ExternalLink,
   ArrowUpDown,
-  X,
-  Info,
+  ExternalLink,
+  MoreVertical,
   MessageCircle,
+  Info,
+  Trash2,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   User,
+  Pencil,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Message, SearchState, RedditPost } from "./smart-data-tables";
-import { useAppSettings } from "./app-settings";
-import { invoke } from "@tauri-apps/api/core";
-import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
-import { toast } from "sonner";
-import moment from "moment";
-import { useOpenUrl } from "@/hooks/useOpenUrl";
-
 const initialData: RedditPost[] = []; // Declare initialData here
 
 const teamMembers = [
@@ -79,54 +84,6 @@ const teamMembers = [
 
 type SortField = keyof RedditPost | null;
 type SortDirection = "asc" | "desc";
-
-const generateMockComments = (
-  postId: string,
-  postTitle: string,
-  subreddit: string,
-): Message[] => {
-  const commentCount = Math.floor(Math.random() * 8) + 3; // 3-10 comments
-  const comments: Message[] = [];
-
-  const sampleComments = [
-    "This is really helpful, thanks for sharing!",
-    "I've been looking for something like this.",
-    "Great post! Saved for later reference.",
-    "Anyone else having issues with this approach?",
-    "This worked perfectly for my use case.",
-    "Appreciate the detailed explanation!",
-    "Has anyone tried this in production?",
-    "Commenting to follow this thread.",
-    "This is exactly what I needed today.",
-    "Thanks! This solved my problem.",
-  ];
-
-  const usernames = [
-    "techie_sam",
-    "dev_nina",
-    "code_wizard",
-    "react_fan",
-    "js_master",
-    "web_guru",
-    "frontend_pro",
-    "backend_ace",
-  ];
-
-  for (let i = 0; i < commentCount; i++) {
-    comments.push({
-      id: `comment_${postId}_${i}`,
-      username: usernames[Math.floor(Math.random() * usernames.length)],
-      message:
-        sampleComments[Math.floor(Math.random() * sampleComments.length)],
-      date: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-      source: `r/${subreddit} - ${postTitle}`,
-    });
-  }
-
-  return comments;
-};
 
 export function RedditTable({
   onAddComments,
@@ -170,6 +127,41 @@ export function RedditTable({
   const [relevance, setRelevance] = useState("best");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [editingNotePost, setEditingNotePost] = useState<RedditPost | null>(
+    null,
+  );
+  const [currentNote, setCurrentNote] = useState("");
+
+  const handleEditNote = (post: RedditPost) => {
+    setEditingNotePost(post);
+    setCurrentNote(post.notes || "");
+  };
+
+  const handleSaveNote = async () => {
+    if (!editingNotePost) return;
+
+    try {
+      await invoke("update_post_notes", {
+        id: parseInt(editingNotePost.id, 10),
+        notes: currentNote,
+      });
+      toast.success("Note saved successfully");
+
+      // Update local data
+      setData((prevData) =>
+        prevData.map((p) =>
+          p.id === editingNotePost.id ? { ...p, notes: currentNote } : p,
+        ),
+      );
+      // also update external posts
+
+      setEditingNotePost(null);
+      setCurrentNote("");
+    } catch (error) {
+      console.error("Failed to save note:", error);
+      toast.error("Failed to save note");
+    }
+  };
 
   const toggleRowExpansion = (id: string) => {
     setExpandedRows((prev) => {
@@ -633,6 +625,12 @@ export function RedditTable({
                               Get Comments
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onClick={() => handleEditNote(post)}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Add/Edit Note
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => setSelectedPost(post)}
                             >
                               <Info className="mr-2 h-4 w-4" />
@@ -666,26 +664,24 @@ export function RedditTable({
                         <TableCell colSpan={9} className="p-0">
                           <div className="p-4 bg-muted/50">
                             <Card>
-                              <CardHeader>
+                              <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle>Notes</CardTitle>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditNote(post)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
                               </CardHeader>
                               <CardContent>
-                                <p>
-                                  This is where notes about the post will be
-                                  displayed.
-                                </p>
-                                <p>
-                                  Backend data will populate this section
-                                  later.
-                                </p>
-
-                                <ul className="list-disc pl-5 mt-2">
-                                  <li>
-                                    Note 1: Some detail about the post.
-                                  </li>
-                                  <li>Note 2: Another observation.</li>
-                                  <li>Note 3: A follow-up action.</li>
-                                </ul>
+                                {post.notes ? (
+                                  <p>{post.notes}</p>
+                                ) : (
+                                  <p className="text-muted-foreground">
+                                    No notes for this post yet.
+                                  </p>
+                                )}
                               </CardContent>
                             </Card>
                           </div>
@@ -769,6 +765,32 @@ export function RedditTable({
           </div>
         )}
       </Card>
+
+      <Dialog
+        open={editingNotePost !== null}
+        onOpenChange={() => setEditingNotePost(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add/Edit Note</DialogTitle>
+            <DialogDescription>
+              Add or edit notes for the post: "{editingNotePost?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={currentNote}
+            onChange={(e) => setCurrentNote(e.target.value)}
+            placeholder="Type your notes here..."
+            rows={6}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingNotePost(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNote}>Save Note</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Rest of your dialogs remain the same */}
       {settings.confirmDelete && (

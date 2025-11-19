@@ -232,3 +232,10 @@ pub async fn open_db_folder_command() -> Result<(), String> {
     actions::open_folder::open_db_folder().await.unwrap();
     Ok(())
 }
+
+#[tauri::command]
+pub fn update_post_notes(id: i64, notes: String) -> Result<(), String> {
+    let db = database::adding::DB::new().map_err(|e| e.to_string())?;
+    db.update_post_notes(id, &notes).map_err(|e| e.to_string())?;
+    Ok(())
+}

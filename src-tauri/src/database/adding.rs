@@ -17,6 +17,7 @@ pub struct PostDataWrapper {
     pub permalink: String,
     pub engaged: bool,
     pub assignee: String,
+    pub notes: String,
 }
 
 // Comment data structure
@@ -66,8 +67,8 @@ impl DB {
 
     // SAVE SINGLE REDDIT POST
     pub fn save_single_reddit(&self, post: &PostDataWrapper) -> RusqliteResult<()> {
-        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee, notes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         self.conn.execute(
             query,
@@ -81,7 +82,8 @@ impl DB {
                 post.subreddit,
                 post.permalink,
                 post.engaged,
-                post.assignee
+                post.assignee,
+                post.notes
             ],
         )?;
 
@@ -108,7 +110,8 @@ impl DB {
                 subreddit TEXT NOT NULL DEFAULT '',
                 permalink TEXT NOT NULL DEFAULT '',
                 engaged BOOLEAN,
-                assignee TEXT NOT NULL DEFAULT ''
+                assignee TEXT NOT NULL DEFAULT '',
+                notes TEXT NOT NULL DEFAULT ''
             )",
             [],
         )?;
@@ -132,7 +135,8 @@ impl DB {
                 subreddit TEXT NOT NULL DEFAULT '',
                 permalink TEXT NOT NULL DEFAULT '',
                 engaged BOOLEAN,
-                assignee TEXT NOT NULL DEFAULT ''
+                assignee TEXT NOT NULL DEFAULT '',
+                notes TEXT NOT NULL DEFAULT ''
             )",
             [],
         )?;
@@ -173,8 +177,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT OR IGNORE INTO reddit_posts
-                (timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                (timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee, notes)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             )?;
 
             for result in results {
@@ -187,7 +191,8 @@ impl DB {
                     result.subreddit,
                     result.permalink,
                     result.engaged,
-                    result.assignee
+                    result.assignee,
+                    result.notes
                 ])?;
             }
         }
@@ -212,8 +217,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT INTO subreddit_search
-            (timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            (timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee, notes)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             )?;
 
             for result in results {
@@ -226,7 +231,8 @@ impl DB {
                     result.subreddit,
                     result.permalink,
                     result.engaged,
-                    result.assignee
+                    result.assignee,
+                    result.notes
                 ])?;
             }
         }
@@ -272,7 +278,7 @@ impl DB {
 
     pub fn get_db_results(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee
+            "SELECT id, timestamp, formatted_date, title, url, relevance, subreddit, permalink, engaged, assignee, notes
              FROM reddit_posts
              ORDER BY timestamp DESC",
         )?;
@@ -290,6 +296,7 @@ impl DB {
                     permalink: row.get(7)?,
                     engaged: row.get(8)?,
                     assignee: row.get(9)?,
+                    notes: row.get(10)?,
                 })
             })?
             .collect::<RusqliteResult<Vec<_>>>()?;
@@ -337,6 +344,14 @@ impl DB {
 
         let datetime: DateTime<Utc> = naive_datetime.and_utc();
         Ok(datetime.format("%Y-%m-%d %H:%M:%S").to_string())
+    }
+
+    pub fn update_post_notes(&self, id: i64, notes: &str) -> RusqliteResult<()> {
+        self.conn.execute(
+            "UPDATE reddit_posts SET notes = ?1 WHERE id = ?2",
+            params![notes, id],
+        )?;
+        Ok(())
     }
 
     pub fn clear_database(&self) -> RusqliteResult<()> {
