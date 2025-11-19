@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import {
   Table,
   TableBody,
@@ -48,8 +48,9 @@ import {
   MessageCircle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -159,6 +160,19 @@ export function RedditTable({
   const [rowsPerPage, setRowsPerPage] = useState(settings.rowsPerPage);
   const [showClearTableDialog, setShowClearTableDialog] = useState(false);
   const [relevance, setRelevance] = useState("best");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRowExpansion = (id: string) => {
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     if (externalPosts.length > 0) {
@@ -416,6 +430,7 @@ export function RedditTable({
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px] bg-background sticky top-0 z-10 p-3" />
                   <TableHead className="w-[60px] bg-background sticky top-0 z-10 p-3">
                     #
                   </TableHead>
@@ -481,7 +496,7 @@ export function RedditTable({
               {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className="h-24 text-center text-muted-foreground"
                   >
                     No posts found.
@@ -489,92 +504,143 @@ export function RedditTable({
                 </TableRow>
               ) : (
                 paginatedData.map((post, index) => (
-                  <TableRow
-                    key={post.id}
-                    className={`group ${settings.tableDensity === "compact" ? "h-10" : settings.tableDensity === "spacious" ? "h-16" : "h-12"}`}
-                  >
-                    <TableCell className="text-muted-foreground text-sm font-medium w-[60px] p-3">
-                      {(currentPage - 1) * rowsPerPage + index + 1}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm w-[110px] p-3">
-                      {post?.formatted_date?.slice(0, 10).trim() || "N/A"}
-                    </TableCell>
-                    <TableCell className="min-w-[300px] p-3">
-                      <div className="line-clamp-2 font-medium">
-                        {post.title?.slice(0, 100) || "No title"}
-                        {post.title?.length > 100 && "..."}
-                      </div>
-                    </TableCell>
-                    <TableCell className="w-[100px] p-3">
-                      <span
-                        onClick={() => handleOpenInbrowser(post.url)}
-                        className="flex items-center text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-sm"
-                      >
-                        Link
-                        <ExternalLink className="h-3 w-3 ml-1" />
-                      </span>
-                    </TableCell>
-                    <TableCell className="w-[180px] p-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
-                          {post.engaged === 1 ? "Engaged" : "Not engaged"}
+                  <Fragment key={post.id}>
+                    <TableRow
+                      className={`group ${
+                        settings.tableDensity === "compact"
+                          ? "h-10"
+                          : settings.tableDensity === "spacious"
+                            ? "h-16"
+                            : "h-12"
+                      }`}
+                    >
+                      <TableCell className="p-3">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleRowExpansion(post.id)}
+                          className="h-8 w-8"
+                        >
+                          <ChevronDown
+                            className={`h-4 w-4 transition-transform ${
+                              expandedRows.has(post.id) ? "rotate-180" : ""
+                            }`}
+                          />
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm font-medium w-[60px] p-3">
+                        {(currentPage - 1) * rowsPerPage + index + 1}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm w-[110px] p-3">
+                        {post?.formatted_date?.slice(0, 10).trim() || "N/A"}
+                      </TableCell>
+                      <TableCell className="min-w-[300px] p-3">
+                        <div className="line-clamp-2 font-medium">
+                          {post.title?.slice(0, 100) || "No title"}
+                          {post.title?.length > 100 && "..."}
+                        </div>
+                      </TableCell>
+                      <TableCell className="w-[100px] p-3">
+                        <span
+                          onClick={() => handleOpenInbrowser(post.url)}
+                          className="flex items-center text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-sm"
+                        >
+                          Link
+                          <ExternalLink className="h-3 w-3 ml-1" />
                         </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="w-[150px] p-3">
-                      <Badge variant="outline" className="font-mono">
-                        r/{post.subreddit}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="w-[70px] p-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleGetComments(post, relevance)}
-                          >
-                            <MessageCircle className="mr-2 h-4 w-4" />
-                            Get Comments
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setSelectedPost(post)}
-                          >
-                            <Info className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <a
-                              href={post.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center"
+                      </TableCell>
+                      <TableCell className="w-[180px] p-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">
+                            {post.engaged === 1 ? "Engaged" : "Not engaged"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="w-[150px] p-3">
+                        <Badge variant="outline" className="font-mono">
+                          r/{post.subreddit}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="w-[70px] p-3">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
                             >
-                              <ExternalLink className="mr-2 h-4 w-4" />
-                              Open Link
-                            </a>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => setDeleteId(post.id)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleGetComments(post, relevance)}
+                            >
+                              <MessageCircle className="mr-2 h-4 w-4" />
+                              Get Comments
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setSelectedPost(post)}
+                            >
+                              <Info className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <a
+                                href={post.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center"
+                              >
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                Open Link
+                              </a>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => setDeleteId(post.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                    {expandedRows.has(post.id) && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="p-0">
+                          <div className="p-4 bg-muted/50">
+                            <Card>
+                              <CardHeader>
+                                <CardTitle>Notes</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <p>
+                                  This is where notes about the post will be
+                                  displayed.
+                                </p>
+                                <p>
+                                  Backend data will populate this section
+                                  later.
+                                </p>
+                                <ul className="list-disc pl-5 mt-2">
+                                  <li>
+                                    Note 1: Some detail about the post.
+                                  </li>
+                                  <li>Note 2: Another observation.</li>
+                                  <li>Note 3: A follow-up action.</li>
+                                </ul>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                 ))
               )}
             </TableBody>
