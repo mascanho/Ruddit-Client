@@ -49,6 +49,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  User,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -68,6 +69,13 @@ import moment from "moment";
 import { useOpenUrl } from "@/hooks/useOpenUrl";
 
 const initialData: RedditPost[] = []; // Declare initialData here
+
+const teamMembers = [
+  { id: "user1", name: "Alex" },
+  { id: "user2", name: "Maria" },
+  { id: "user3", name: "David" },
+  { id: "user4", name: "Sarah" },
+];
 
 type SortField = keyof RedditPost | null;
 type SortDirection = "asc" | "desc";
@@ -161,6 +169,7 @@ export function RedditTable({
   const [showClearTableDialog, setShowClearTableDialog] = useState(false);
   const [relevance, setRelevance] = useState("best");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [assignments, setAssignments] = useState<Record<string, string>>({});
 
   const toggleRowExpansion = (id: string) => {
     setExpandedRows((prev) => {
@@ -172,6 +181,20 @@ export function RedditTable({
       }
       return newSet;
     });
+  };
+
+  const handleAssign = (postId: string, personName: string) => {
+    setAssignments((prev) => ({
+      ...prev,
+      [postId]: personName,
+    }));
+
+    if (personName !== "unassigned") {
+      const post = data.find((p) => p.id === postId);
+      toast.success(
+        `Post "${post?.title.slice(0, 20)}..." assigned to ${personName}.`,
+      );
+    }
   };
 
   useEffect(() => {
@@ -480,6 +503,12 @@ export function RedditTable({
                       <ArrowUpDown className="ml-2 h-3 w-3" />
                     </Button>
                   </TableHead>
+                  <TableHead className="w-[150px] bg-background sticky top-0 z-10 p-3">
+                    <div className="flex items-center font-medium">
+                      <User className="mr-2 h-4 w-4" />
+                      Assignee
+                    </div>
+                  </TableHead>
                   <TableHead className="w-[70px] bg-background sticky top-0 z-10 p-3 font-medium">
                     Actions
                   </TableHead>
@@ -496,7 +525,7 @@ export function RedditTable({
               {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     className="h-24 text-center text-muted-foreground"
                   >
                     No posts found.
@@ -561,6 +590,28 @@ export function RedditTable({
                           r/{post.subreddit}
                         </Badge>
                       </TableCell>
+                      <TableCell className="w-[150px] p-3">
+                        <Select
+                          value={assignments[post.id] || "unassigned"}
+                          onValueChange={(value) =>
+                            handleAssign(post.id, value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Assign to..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unassigned">
+                              Unassigned
+                            </SelectItem>
+                            {teamMembers.map((member) => (
+                              <SelectItem key={member.id} value={member.name}>
+                                {member.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                       <TableCell className="w-[70px] p-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -612,7 +663,7 @@ export function RedditTable({
                     </TableRow>
                     {expandedRows.has(post.id) && (
                       <TableRow>
-                        <TableCell colSpan={8} className="p-0">
+                        <TableCell colSpan={9} className="p-0">
                           <div className="p-4 bg-muted/50">
                             <Card>
                               <CardHeader>
@@ -627,6 +678,7 @@ export function RedditTable({
                                   Backend data will populate this section
                                   later.
                                 </p>
+
                                 <ul className="list-disc pl-5 mt-2">
                                   <li>
                                     Note 1: Some detail about the post.
