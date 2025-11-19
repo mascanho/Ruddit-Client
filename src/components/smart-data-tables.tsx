@@ -181,12 +181,12 @@ export function SmartDataTables() {
 
   return (
     <div
-      className="container mx-auto py-2 px-4 w-full max-w-full"
+      className="container mx-auto py-1 px-4 w-full max-w-full"
       style={{ fontSize: `${settings.fontSize}px` }}
     >
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center">
-          <img src="/ruddit-logo.png" alt="logo" className="h-auto w-20" />
+          <img src="/ruddit-logo.png" alt="logo" className="h-auto w-16" />
           <section className="ml-3 mt-3">
             <h1 className="text-4xl font-bold tracking-tight">Ruddit</h1>
             <p className="text-muted-foreground">
