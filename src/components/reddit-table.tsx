@@ -401,12 +401,6 @@ export function RedditTable({
             >
               Clear Table
             </Button>
-
-            {/* {hasActiveFilters && ( */}
-            {/*   <Button variant="outline" size="icon" onClick={clearFilters}> */}
-            {/*     <X className="h-4 w-4" /> */}
-            {/*   </Button> */}
-            {/* )} */}
           </div>
 
           <div className="text-sm text-muted-foreground">
@@ -415,62 +409,63 @@ export function RedditTable({
         </div>
       </Card>
 
-      <Card className="p-0 m-0 h-[800px]">
-        <div className="border-b">
+      <Card className="p-0 m-0 h-[800px] flex flex-col">
+        {/* Fixed Header Section */}
+        <div className="border-b flex-none">
           <div className="overflow-x-auto">
-            <Table className="m-0 p-0">
+            <Table>
               <TableHeader>
-                <TableRow className="m-0 p-0">
-                  <TableHead className="w-[60px] bg-background sticky top-0 z-10">
+                <TableRow>
+                  <TableHead className="w-[60px] bg-background sticky top-0 z-10 p-3">
                     #
                   </TableHead>
-                  <TableHead className="w-[110px] bg-background sticky top-0 z-10">
+                  <TableHead className="w-[110px] bg-background sticky top-0 z-10 p-3">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="-ml-3 h-8"
+                      className="-ml-3 h-8 font-medium"
                       onClick={() => handleSort("date")}
                     >
                       Date
                       <ArrowUpDown className="ml-2 h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="min-w-[300px] bg-background sticky top-0 z-10">
+                  <TableHead className="min-w-[300px] bg-background sticky top-0 z-10 p-3">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="-ml-3 h-8"
+                      className="-ml-3 h-8 font-medium"
                       onClick={() => handleSort("title")}
                     >
                       Title
                       <ArrowUpDown className="ml-2 h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[100px] bg-background sticky top-0 z-10">
+                  <TableHead className="w-[100px] bg-background sticky top-0 z-10 p-3 font-medium">
                     URL
                   </TableHead>
-                  <TableHead className="w-[180px] bg-background sticky top-0 z-10">
+                  <TableHead className="w-[180px] bg-background sticky top-0 z-10 p-3">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="-ml-3 h-8"
+                      className="-ml-3 h-8 font-medium"
                       onClick={() => handleSort("relevance")}
                     >
                       Engaged
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[150px] bg-background sticky top-0 z-10">
+                  <TableHead className="w-[150px] bg-background sticky top-0 z-10 p-3">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="-ml-3 h-8"
+                      className="-ml-3 h-8 font-medium"
                       onClick={() => handleSort("subreddit")}
                     >
                       Subreddit
                       <ArrowUpDown className="ml-2 h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[70px] bg-background sticky top-0 z-10">
+                  <TableHead className="w-[70px] bg-background sticky top-0 z-10 p-3 font-medium">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -479,14 +474,15 @@ export function RedditTable({
           </div>
         </div>
 
-        <div className="max-h-[680px] h-[680px] overflow-y-auto overflow-x-auto p-0">
-          <Table className="p-0 -mt-4 z-20">
-            <TableBody className="p-0 -mt-5 z-20">
+        {/* Scrollable Body Section */}
+        <div className="flex-1 overflow-auto">
+          <Table>
+            <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={7}
-                    className="h-2 p-0 text-center text-muted-foreground"
+                    className="h-24 text-center text-muted-foreground"
                   >
                     No posts found.
                   </TableCell>
@@ -495,40 +491,42 @@ export function RedditTable({
                 paginatedData.map((post, index) => (
                   <TableRow
                     key={post.id}
-                    className={`group p-0 m-0 ${settings.tableDensity === "compact" ? "h-10" : settings.tableDensity === "spacious" ? "h-10" : "h-10"}`}
+                    className={`group ${settings.tableDensity === "compact" ? "h-10" : settings.tableDensity === "spacious" ? "h-16" : "h-12"}`}
                   >
-                    <TableCell className="text-muted-foreground text-sm font-medium w-[60px]">
+                    <TableCell className="text-muted-foreground text-sm font-medium w-[60px] p-3">
                       {(currentPage - 1) * rowsPerPage + index + 1}
                     </TableCell>
-                    <TableCell className="font-mono text-sm w-[110px]">
-                      {post?.formatted_date.slice(0, 10).trim()}
+                    <TableCell className="font-mono text-sm w-[110px] p-3">
+                      {post?.formatted_date?.slice(0, 10).trim() || "N/A"}
                     </TableCell>
-                    <TableCell className="min-w-[300px]">
+                    <TableCell className="min-w-[300px] p-3">
                       <div className="line-clamp-2 font-medium">
-                        {post.title.slice(0, 100)}
-                        {post.title.length > 100 && "..."}
+                        {post.title?.slice(0, 100) || "No title"}
+                        {post.title?.length > 100 && "..."}
                       </div>
                     </TableCell>
-                    <TableCell onClick={() => handleOpenInbrowser(post.url)}>
-                      <span className="w-[100px] flex items-center text-blue-800 mt-2 hover:underline cursor-pointer">
+                    <TableCell className="w-[100px] p-3">
+                      <span
+                        onClick={() => handleOpenInbrowser(post.url)}
+                        className="flex items-center text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-sm"
+                      >
                         Link
-                        <ExternalLink className="h-3 w-3 ml-1 hover:underline cursor-pointer" />
+                        <ExternalLink className="h-3 w-3 ml-1" />
                       </span>
                     </TableCell>
-                    <TableCell className="w-[180px]">
+                    <TableCell className="w-[180px] p-3">
                       <div className="flex items-center gap-2">
-                        {getRelevanceBadge(post.relevance)}
-                        <span className="text-sm text-muted-foreground">
-                          {post.relevance}%
+                        <span className="text-sm font-medium">
+                          {post.engaged === 1 ? "Engaged" : "Not engaged"}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="w-[150px]">
+                    <TableCell className="w-[150px] p-3">
                       <Badge variant="outline" className="font-mono">
                         r/{post.subreddit}
                       </Badge>
                     </TableCell>
-                    <TableCell className="w-[70px]">
+                    <TableCell className="w-[70px] p-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -583,8 +581,9 @@ export function RedditTable({
           </Table>
         </div>
 
+        {/* Pagination Section */}
         {filteredAndSortedData.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t">
+          <div className="flex items-center justify-between px-6 py-4 border-t flex-none">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
                 Rows per page:
@@ -653,6 +652,7 @@ export function RedditTable({
         )}
       </Card>
 
+      {/* Rest of your dialogs remain the same */}
       {settings.confirmDelete && (
         <AlertDialog
           open={deleteId !== null}
@@ -790,8 +790,6 @@ export function RedditTable({
                     </span>
                   </div>
 
-                  {/* Select the comments relevance to then fetch again if the user changes the relevance */}
-
                   <section className="flex items-center space-x-2">
                     <span className="text-black">Relevance:</span>
                     <Select
@@ -811,7 +809,7 @@ export function RedditTable({
                         <SelectItem value="old">Old</SelectItem>
                         <SelectItem value="q&a">Q&A</SelectItem>
                       </SelectContent>
-                    </Select>{" "}
+                    </Select>
                   </section>
                 </div>
               </DialogDescription>
@@ -835,7 +833,7 @@ export function RedditTable({
                         </span>
                         <span className="text-xs text-muted-foreground">•</span>
                         <span className="text-xs text-muted-foreground">
-                          {comment?.formatted_date.slice(0, 10)}
+                          {comment?.formatted_date?.slice(0, 10)}
                         </span>
                         <span className="text-xs text-primary">
                           {moment(
