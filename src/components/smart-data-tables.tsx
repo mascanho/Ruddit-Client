@@ -181,10 +181,10 @@ export function SmartDataTables() {
 
   return (
     <div
-      className="container mx-auto py-8 px-4 w-full max-w-full"
+      className="container mx-auto py-2 px-4 w-full max-w-full"
       style={{ fontSize: `${settings.fontSize}px` }}
     >
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center">
           <img src="/ruddit-logo.png" alt="logo" className="h-auto w-20" />
           <section className="ml-3 mt-3">
@@ -243,7 +243,7 @@ export function SmartDataTables() {
         className="w-full"
         onValueChange={handleTabChange}
       >
-        <TabsList className="grid w-full flex justify-between w-full max-w-full grid-cols-5 mb-6">
+        <TabsList className="grid w-full flex justify-between w-full max-w-full grid-cols-5 mb-1">
           <TabsTrigger value="reddit" className="relative">
             Reddit Posts
             {subredditsModified && (
