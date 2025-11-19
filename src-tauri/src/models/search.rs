@@ -208,6 +208,7 @@ pub async fn get_subreddit_posts(
                     relevance: relevance.to_string(),
                     subreddit: post.subreddit.clone(),
                     permalink: format!("https://reddit.com{}", post.permalink),
+                    engaged: false,
                 })
             } else {
                 None
@@ -266,6 +267,7 @@ pub async fn search_subreddit_posts(
                     relevance: relevance.to_string(), // Store which sort type found this
                     subreddit: post.subreddit.clone(),
                     permalink: format!("https://reddit.com{}", post.permalink.clone()),
+                    engaged: false,
                 })
             } else {
                 None
@@ -331,6 +333,7 @@ pub async fn get_post_comments(
                 parent_id: "".to_string(),
                 subreddit: "".to_string(),
                 post_title: "".to_string(),
+                engaged: false,
             };
             return Ok(vec![error_comment]);
         }
@@ -427,6 +430,7 @@ pub async fn get_post_comments(
                 parent_id: data.parent_id,
                 subreddit: subreddit.clone(),
                 post_title: post_title.to_string(),
+                engaged: false,
             }
         })
         .collect();

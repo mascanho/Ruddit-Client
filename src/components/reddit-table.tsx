@@ -456,8 +456,7 @@ export function RedditTable({
                       className="-ml-3 h-8"
                       onClick={() => handleSort("relevance")}
                     >
-                      Relevance
-                      <ArrowUpDown className="ml-2 h-3 w-3" />
+                      Engaged
                     </Button>
                   </TableHead>
                   <TableHead className="w-[150px] bg-background sticky top-0 z-10">

@@ -135,6 +135,7 @@ export function RedditSearch({
           relevance: result.relevance.toString(),
           subreddit: result.subreddit,
           permalink: result.url,
+          engaged: false,
         },
       });
 
@@ -202,6 +203,19 @@ export function RedditSearch({
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
   const paginatedResults = subreddits.slice(startIndex, endIndex);
+
+  function isColoredRelevance(relevance: string) {
+    switch (relevance) {
+      case "hot":
+        return "bg-red-500";
+      case "top":
+        return "bg-blue-500";
+      case "new":
+        return "bg-green-500";
+      default:
+        return "bg-gray-500";
+    }
+  }
 
   return (
     <Card className="p-6">
@@ -319,15 +333,9 @@ export function RedditSearch({
                           r/{result.subreddit}
                         </Badge>
                         <Badge
-                          className={
-                            result.relevance >= 80
-                              ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                              : result.relevance >= 60
-                                ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
-                                : "bg-red-500/10 text-red-600 dark:text-red-400"
-                          }
+                          className={isColoredRelevance(result?.relevance)}
                         >
-                          {result.relevance}% relevant
+                          {result.relevance}
                         </Badge>
 
                         <div className="flex space-x-2 items-center">
