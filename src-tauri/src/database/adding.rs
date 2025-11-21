@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use directories::BaseDirs;
 use rusqlite::{params, Connection, Result as RusqliteResult};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::{i64, path::PathBuf};
 
 // Post data structure
 #[derive(Debug, Deserialize, Serialize)]
@@ -22,6 +22,8 @@ pub struct PostDataWrapper {
     pub name: String,
     pub selftext: Option<String>,
     pub author: String,
+    pub score: i64,
+    pub thumbnail: Option<String>,
 }
 
 // Comment data structure
@@ -71,8 +73,8 @@ impl DB {
 
     // SAVE SINGLE REDDIT POST
     pub fn save_single_reddit(&self, post: &PostDataWrapper) -> RusqliteResult<()> {
-        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         self.conn.execute(
             query,
@@ -91,7 +93,9 @@ impl DB {
                 post.notes,
                 post.name,
                 post.selftext,
-                post.author
+                post.author,
+                post.score,
+                post.thumbnail
             ],
         )?;
 
@@ -123,7 +127,9 @@ impl DB {
                 notes TEXT NOT NULL DEFAULT '',
                 name TEXT NOT NULL DEFAULT '',
                 selftext TEXT NOT NULL DEFAULT '',
-                author TEXT NOT NULL DEFAULT ''
+                author TEXT NOT NULL DEFAULT '',
+                score INNTEGER NOT NULL DEFAULT 0,
+                thumbnail TEXT NOT NULL DEFAULT ''
 
             )",
             [],
@@ -153,7 +159,9 @@ impl DB {
                 notes TEXT NOT NULL DEFAULT '',
                 name TEXT NOT NULL DEFAULT '',
                 selftext TEXT NOT NULL DEFAULT '',
-                author TEXT NOT NULL DEFAULT ''
+                author TEXT NOT NULL DEFAULT '',
+                score INTEGER NOT NULL DEFAULT 0,
+                thumbnail TEXT NOT NULL DEFAULT ''
             )",
             [],
         )?;
@@ -194,8 +202,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT OR IGNORE INTO reddit_posts
-                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
             )?;
 
             for result in results {
@@ -213,7 +221,9 @@ impl DB {
                     result.notes,
                     result.name,
                     result.selftext,
-                    result.author
+                    result.author,
+                    result.score,
+                    result.thumbnail
                 ])?;
             }
         }
@@ -238,8 +248,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT INTO subreddit_search
-            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
             )?;
 
             for result in results {
@@ -257,7 +267,9 @@ impl DB {
                     result.notes,
                     result.name,
                     result.selftext,
-                    result.author
+                    result.author,
+                    result.score,
+                    result.thumbnail
                 ])?;
             }
         }
@@ -303,7 +315,7 @@ impl DB {
 
     pub fn get_db_results(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, thumbnail
              FROM reddit_posts
              ORDER BY timestamp DESC",
         )?;
@@ -326,6 +338,8 @@ impl DB {
                     name: row.get(12)?,
                     selftext: row.get(13)?,
                     author: row.get(14)?,
+                    score: row.get(15)?,
+                    thumbnail: row.get(16)?,
                 })
             })?
             .collect::<RusqliteResult<Vec<_>>>()?;
@@ -411,4 +425,3 @@ impl DB {
         Ok(())
     }
 }
-

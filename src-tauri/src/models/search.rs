@@ -21,6 +21,8 @@ pub struct RedditPost {
     selftext: Option<String>,
     name: String,
     author: String,
+    score: i64,
+    thumbnail: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -218,6 +220,8 @@ pub async fn get_subreddit_posts(
                     name: post.name,
                     selftext: post.selftext,
                     author: post.author,
+                    score: post.score,
+                    thumbnail: post.thumbnail,
                 })
             } else {
                 None
@@ -285,6 +289,8 @@ pub async fn search_subreddit_posts(
                     name: post.name.clone(),
                     selftext: post.selftext.clone(),
                     author: post.author.clone(),
+                    score: post.score.clone(),
+                    thumbnail: post.thumbnail.clone(),
                 })
             } else {
                 None
