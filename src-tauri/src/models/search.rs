@@ -19,6 +19,8 @@ pub struct RedditPost {
     subreddit: String,
     permalink: String,
     selftext: Option<String>,
+    name: String,
+    author: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -153,7 +155,8 @@ pub async fn get_subreddit_posts(
 
     let url = format!(
         "https://oauth.reddit.com/r/{}/{}?limit=100",
-        subreddit_clean, sort_type // Use sort_type here
+        subreddit_clean,
+        sort_type // Use sort_type here
     );
 
     println!("Fetching from URL: {}", url);
@@ -212,6 +215,9 @@ pub async fn get_subreddit_posts(
                     engaged: 0,
                     assignee: "".to_string(),
                     notes: "".to_string(),
+                    name: post.name,
+                    selftext: post.selftext,
+                    author: post.author,
                 })
             } else {
                 None
@@ -220,6 +226,7 @@ pub async fn get_subreddit_posts(
         .collect();
 
     println!("Processed {} ", subreddit_clean);
+    println!("Post: {:?}", &posts[0]);
     Ok(posts)
 }
 
@@ -231,12 +238,11 @@ pub async fn search_subreddit_posts(
     let client = Client::new();
 
     // Include the sort parameter in the URL
- 
-let url = format!(
-    "https://oauth.reddit.com/search?q=\"{}\"&sort={}&limit=100&t=all",
-    query, sort_type
-);
 
+    let url = format!(
+        "https://oauth.reddit.com/search?q=\"{}\"&sort={}&limit=100&t=all",
+        query, sort_type
+    );
 
     println!("Making request to: {}", url); // Debug log
 
@@ -276,6 +282,9 @@ let url = format!(
                     engaged: 0,
                     assignee: "".to_string(),
                     notes: "".to_string(),
+                    name: post.name.clone(),
+                    selftext: post.selftext.clone(),
+                    author: post.author.clone(),
                 })
             } else {
                 None
@@ -284,6 +293,7 @@ let url = format!(
         .collect();
 
     println!("Processed {} posts for sort: {}", posts.len(), sort_type);
+    println!("Post: {:#?}", &posts[0]);
     Ok(posts)
 }
 
@@ -353,7 +363,8 @@ pub async fn get_post_comments(
 
     let api_url = format!(
         "https://oauth.reddit.com/comments/{}?sort={}&limit=500",
-        post_id, sort_type // Use sort_type here
+        post_id,
+        sort_type // Use sort_type here
     );
 
     // Read config
