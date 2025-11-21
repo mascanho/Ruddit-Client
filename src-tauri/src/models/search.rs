@@ -19,6 +19,7 @@ pub struct RedditPost {
     subreddit: String,
     permalink: String,
     selftext: Option<String>,
+    num_comments: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -209,6 +210,7 @@ pub async fn get_subreddit_posts(
                     relevance_score: 0, // Default to 0 as no score is available in RedditPost
                     subreddit: post.subreddit.clone(),
                     permalink: format!("https://reddit.com{}", post.permalink),
+                    num_comments: post.num_comments as i64,
                     engaged: 0,
                     assignee: "".to_string(),
                     notes: "".to_string(),
@@ -273,6 +275,7 @@ let url = format!(
                     relevance_score: 0, // Default to 0 as no score is available in RedditPost
                     subreddit: post.subreddit.clone(),
                     permalink: format!("https://reddit.com{}", post.permalink.clone()),
+                    num_comments: post.num_comments as i64,
                     engaged: 0,
                     assignee: "".to_string(),
                     notes: "".to_string(),
