@@ -231,17 +231,19 @@ pub async fn search_subreddit_posts(
     let client = Client::new();
 
     // Include the sort parameter in the URL
-    let url = format!(
-        "https://oauth.reddit.com/search?q={}&sort={}&limit=100&t=all",
-        query, sort_type // Use sort_type here
-    );
+ 
+let url = format!(
+    "https://oauth.reddit.com/search?q=\"{}\"&sort={}&limit=100&t=all",
+    query, sort_type
+);
+
 
     println!("Making request to: {}", url); // Debug log
 
     let response = client
         .get(&url)
         .header("Authorization", format!("Bearer {}", access_token))
-        .header("User-Agent", "RustRedditApp/0.1 by YourUsername")
+        .header("User-Agent", "RustRedditApp/0.1 by Ruddit")
         .send()
         .await?;
 

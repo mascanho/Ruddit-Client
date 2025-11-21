@@ -159,6 +159,8 @@ email = "maria@company.com"
 
         #[cfg(target_os = "linux")]
         {
+
+            use std::process::Command;
             Command::new("xdg-open").arg(config_path).spawn()?;
         }
 
