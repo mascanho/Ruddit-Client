@@ -16,7 +16,6 @@ pub struct PostDataWrapper {
     pub relevance_score: i64, // Added new field
     pub subreddit: String,
     pub permalink: String,
-    pub num_comments: i64,
     pub engaged: i64, // Changed from bool to i64
     pub assignee: String,
     pub notes: String,
@@ -69,8 +68,8 @@ impl DB {
 
     // SAVE SINGLE REDDIT POST
     pub fn save_single_reddit(&self, post: &PostDataWrapper) -> RusqliteResult<()> {
-        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, num_comments, engaged, assignee, notes)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         self.conn.execute(
             query,
@@ -84,7 +83,6 @@ impl DB {
                 post.relevance_score,
                 post.subreddit,
                 post.permalink,
-                post.num_comments,
                 post.engaged,
                 post.assignee,
                 post.notes
@@ -114,7 +112,6 @@ impl DB {
                 relevance_score INTEGER NOT NULL DEFAULT 0,
                 subreddit TEXT NOT NULL DEFAULT '',
                 permalink TEXT NOT NULL DEFAULT '',
-                num_comments INTEGER NOT NULL DEFAULT 0,
                 engaged BOOLEAN,
                 assignee TEXT NOT NULL DEFAULT '',
                 notes TEXT NOT NULL DEFAULT ''
@@ -141,19 +138,12 @@ impl DB {
                 relevance_score INTEGER NOT NULL DEFAULT 0,
                 subreddit TEXT NOT NULL DEFAULT '',
                 permalink TEXT NOT NULL DEFAULT '',
-                num_comments INTEGER NOT NULL DEFAULT 0,
                 engaged BOOLEAN,
                 assignee TEXT NOT NULL DEFAULT '',
                 notes TEXT NOT NULL DEFAULT ''
             )",
             [],
         )?;
-
-        // Add num_comments column if it doesn't exist
-        self.conn.execute(
-            "ALTER TABLE subreddit_search ADD COLUMN num_comments INTEGER NOT NULL DEFAULT 0",
-            [],
-        ).ok(); // Use .ok() to ignore error if column already exists
 
         // Create comments table
         self.create_comments_table()?;
@@ -190,27 +180,26 @@ impl DB {
 
         {
             let mut stmt = tx.prepare(
-            "INSERT OR IGNORE INTO reddit_posts
-                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, num_comments, engaged, assignee, notes)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
-        )?;
+                "INSERT OR IGNORE INTO reddit_posts
+                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+            )?;
 
-        for result in results {
-            stmt.execute(params![
-                result.timestamp,
-                result.formatted_date,
-                result.title,
-                result.url,
-                result.sort_type,
-                result.relevance_score,
-                result.subreddit,
-                result.permalink,
-                result.num_comments,
-                result.engaged,
-                result.assignee,
-                result.notes
-            ])?;
-        }
+            for result in results {
+                stmt.execute(params![
+                    result.timestamp,
+                    result.formatted_date,
+                    result.title,
+                    result.url,
+                    result.sort_type,
+                    result.relevance_score,
+                    result.subreddit,
+                    result.permalink,
+                    result.engaged,
+                    result.assignee,
+                    result.notes
+                ])?;
+            }
         }
 
         tx.commit()?;
@@ -232,27 +221,26 @@ impl DB {
 
         {
             let mut stmt = tx.prepare(
-            "INSERT INTO subreddit_search
-            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, num_comments, engaged, assignee, notes)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
-        )?;
+                "INSERT INTO subreddit_search
+            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+            )?;
 
-        for result in results {
-            stmt.execute(params![
-                result.timestamp,
-                result.formatted_date,
-                result.title,
-                result.url,
-                result.sort_type,
-                result.relevance_score,
-                result.subreddit,
-                result.permalink,
-                result.num_comments,
-                result.engaged,
-                result.assignee,
-                result.notes
-            ])?;
-        }
+            for result in results {
+                stmt.execute(params![
+                    result.timestamp,
+                    result.formatted_date,
+                    result.title,
+                    result.url,
+                    result.sort_type,
+                    result.relevance_score,
+                    result.subreddit,
+                    result.permalink,
+                    result.engaged,
+                    result.assignee,
+                    result.notes
+                ])?;
+            }
         }
 
         tx.commit()?;
@@ -296,7 +284,7 @@ impl DB {
 
     pub fn get_db_results(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, num_comments, engaged, assignee, notes
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes
              FROM reddit_posts
              ORDER BY timestamp DESC",
         )?;
@@ -309,14 +297,13 @@ impl DB {
                     formatted_date: row.get(2)?,
                     title: row.get(3)?,
                     url: row.get(4)?,
-                    sort_type: row.get(5)?,
-                    relevance_score: row.get(6)?,
+                    sort_type: row.get(5)?, // Updated index
+                    relevance_score: row.get(6)?, // Updated index
                     subreddit: row.get(7)?,
                     permalink: row.get(8)?,
-                    num_comments: row.get(9)?,
-                    engaged: row.get(10)?,
-                    assignee: row.get(11)?,
-                    notes: row.get(12)?,
+                    engaged: row.get(9)?,
+                    assignee: row.get(10)?,
+                    notes: row.get(11)?,
                 })
             })?
             .collect::<RusqliteResult<Vec<_>>>()?;

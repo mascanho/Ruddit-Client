@@ -25,7 +25,7 @@ impl DBReader {
     pub fn get_all_posts(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, num_comments, engaged, assignee, notes
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes
          FROM reddit_posts
          ORDER BY timestamp DESC",
         )?;
@@ -41,10 +41,9 @@ impl DBReader {
                 relevance_score: row.get(6)?,
                 subreddit: row.get(7)?,
                 permalink: row.get(8)?,
-                num_comments: row.get(9)?,
-                engaged: row.get(10)?,
-                assignee: row.get(11)?,
-                notes: row.get(12)?,
+                engaged: row.get(9)?,
+                assignee: row.get(10)?,
+                notes: row.get(11)?,
             })
         })?;
 
@@ -55,7 +54,7 @@ impl DBReader {
     pub fn get_all_searched_posts(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, num_comments, engaged, assignee, notes
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes
          FROM subreddit_search
          ORDER BY timestamp DESC",
         )?;
@@ -71,10 +70,9 @@ impl DBReader {
                 relevance_score: row.get(6)?,
                 subreddit: row.get(7)?,
                 permalink: row.get(8)?,
-                num_comments: row.get(9)?,
-                engaged: row.get(10)?,
-                assignee: row.get(11)?,
-                notes: row.get(12)?,
+                engaged: row.get(9)?,
+                assignee: row.get(10)?,
+                notes: row.get(11)?,
             })
         })?;
 
@@ -84,7 +82,7 @@ impl DBReader {
     pub fn get_recent_posts(&self, limit: i64) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, num_comments, engaged, assignee, notes
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes
          FROM reddit_posts 
          ORDER BY timestamp DESC 
          LIMIT ?1",
@@ -101,10 +99,9 @@ impl DBReader {
                 relevance_score: row.get(6)?,
                 subreddit: row.get(7)?,
                 permalink: row.get(8)?,
-                num_comments: row.get(9)?,
-                engaged: row.get(10)?,
-                assignee: row.get(11)?,
-                notes: row.get(12)?,
+                engaged: row.get(9)?,
+                assignee: row.get(10)?,
+                notes: row.get(11)?,
             })
         })?;
 
@@ -114,7 +111,7 @@ impl DBReader {
     pub fn get_posts_by_subreddit(&self, subreddit: &str) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, num_comments, engaged, assignee, notes
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes
          FROM reddit_posts 
          WHERE subreddit = ?1
          ORDER BY timestamp DESC",
@@ -131,10 +128,9 @@ impl DBReader {
                 relevance_score: row.get(6)?,
                 subreddit: row.get(7)?,
                 permalink: row.get(8)?,
-                num_comments: row.get(9)?,
-                engaged: row.get(10)?,
-                assignee: row.get(11)?,
-                notes: row.get(12)?,
+                engaged: row.get(9)?,
+                assignee: row.get(10)?,
+                notes: row.get(11)?,
             })
         })?;
 
@@ -147,7 +143,7 @@ impl DBReader {
     ) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, num_comments, engaged, assignee, notes
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes
          FROM reddit_posts 
          WHERE sort_type = ?1
          ORDER BY timestamp DESC",
@@ -164,10 +160,9 @@ impl DBReader {
                 relevance_score: row.get(6)?,
                 subreddit: row.get(7)?,
                 permalink: row.get(8)?,
-                num_comments: row.get(9)?,
-                engaged: row.get(10)?,
-                assignee: row.get(11)?,
-                notes: row.get(12)?,
+                engaged: row.get(9)?,
+                assignee: row.get(10)?,
+                notes: row.get(11)?,
             })
         })?;
 
@@ -177,7 +172,7 @@ impl DBReader {
     pub fn search_posts(&self, search_term: &str) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, num_comments, engaged, assignee, notes
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes
          FROM reddit_posts 
          WHERE title LIKE ?1 OR subreddit LIKE ?1 OR sort_type LIKE ?1
          ORDER BY timestamp DESC",
@@ -195,10 +190,9 @@ impl DBReader {
                 relevance_score: row.get(6)?,
                 subreddit: row.get(7)?,
                 permalink: row.get(8)?,
-                num_comments: row.get(9)?,
-                engaged: row.get(10)?,
-                assignee: row.get(11)?,
-                notes: row.get(12)?,
+                engaged: row.get(9)?,
+                assignee: row.get(10)?,
+                notes: row.get(11)?,
             })
         })?;
 
