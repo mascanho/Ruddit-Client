@@ -86,15 +86,15 @@ impl DB {
                 relevance_score INTEGER NOT NULL DEFAULT 0,
                 subreddit TEXT NOT NULL DEFAULT '',
                 permalink TEXT NOT NULL DEFAULT '',
-                engaged INTEGER,  // Changed from BOOLEAN to INTEGER
+                engaged INTEGER,  -- Changed from BOOLEAN to INTEGER
                 assignee TEXT NOT NULL DEFAULT '',
                 notes TEXT NOT NULL DEFAULT '',
                 name TEXT NOT NULL DEFAULT '',
                 selftext TEXT,
                 author TEXT NOT NULL DEFAULT '',
                 score INTEGER NOT NULL DEFAULT 0,
-                thumbnail TEXT,
-                is_self INTEGER NOT NULL DEFAULT 0,  // Changed from BOOLEAN to INTEGER
+                thumbnail TEXT NOT NULL DEFAULT '',
+                is_self INTEGER NOT NULL DEFAULT 0,
                 num_comments INTEGER NOT NULL DEFAULT 0
             )",
             [],

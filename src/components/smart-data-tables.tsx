@@ -245,7 +245,7 @@ export function SmartDataTables() {
       >
         <TabsList className="grid w-full flex justify-between w-full max-w-full grid-cols-5 ">
           <TabsTrigger value="reddit" className="relative">
-            Reddit Posts
+            Tracking Posts
             {subredditsModified && (
               <Badge
                 variant="destructive"

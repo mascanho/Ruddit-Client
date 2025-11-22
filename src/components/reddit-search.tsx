@@ -165,6 +165,12 @@ export function RedditSearch({
         snippet: "", // PostDataWrapper doesn't have snippet
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
+        score: post.score,
+        num_comments: post.num_comments,
+        author: post.author,
+        is_self: post.is_self,
+        name: post.name,
+        selftext: post.selftext,
       }));
       setSubreddits(mappedResults);
       console.log("Search results:", mappedResults);
@@ -291,6 +297,8 @@ export function RedditSearch({
     }
   }
 
+  console.log("paginatedResults:", paginatedResults);
+
   return (
     <Card className="p-6">
       <div className="space-y-4">
@@ -414,7 +422,7 @@ export function RedditSearch({
 
                         <div className="flex space-x-2 items-center">
                           <span className="text-black font-semibold">
-                            Posted on:{" "}
+                            Created:{" "}
                           </span>
                           <span>{result?.formatted_date}</span>
                           <span>-</span>
@@ -424,6 +432,30 @@ export function RedditSearch({
                               "YYYY-MM-DD",
                             ).fromNow()}
                           </span>
+                        </div>
+                        <div>
+                          <span className="text-black font-semibold">
+                            Author:{" "}
+                          </span>
+                          <span>{result?.author}</span>
+                        </div>
+                        <div>
+                          <span className="text-black font-semibold">
+                            Subreddit:{" "}
+                          </span>
+                          <span>{result?.subreddit}</span>
+                        </div>
+                        <div>
+                          <span className="text-black font-semibold">
+                            Score:{" "}
+                          </span>
+                          <span>{result?.score}</span>
+                        </div>
+                        <div>
+                          <span className="text-black font-semibold">
+                            Comments:{" "}
+                          </span>
+                          <span>{result?.num_comments}</span>
                         </div>
                       </div>
                     </div>

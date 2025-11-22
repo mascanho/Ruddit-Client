@@ -721,15 +721,19 @@ export function RedditTable({
                             handleAssign(post.id, value)
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="px-2 text-xs">
                             <SelectValue placeholder="Assign to..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="unassigned">
+                            <SelectItem className="text-xs" value="unassigned">
                               Unassigned
                             </SelectItem>
                             {teamMembers.map((member) => (
-                              <SelectItem key={member.id} value={member.name}>
+                              <SelectItem
+                                className="text-xs"
+                                key={member.id}
+                                value={member.name}
+                              >
                                 {member.name}
                               </SelectItem>
                             ))}
