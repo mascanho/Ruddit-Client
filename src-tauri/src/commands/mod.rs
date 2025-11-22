@@ -56,9 +56,6 @@ pub async fn get_reddit_results(
 
     // HANDLE DB CREATION
     let mut db = database::adding::DB::new().unwrap();
-    db.create_tables().unwrap();
-    db.create_current_search_tables().unwrap();
-    database::adding::DB::clear_current_search_results().unwrap();
 
     let mut all_fetched_posts: Vec<PostDataWrapper> = Vec::new();
 
