@@ -70,7 +70,11 @@ impl DB {
         let db_path = app_dir.join("ruddit.db");
         let conn = Connection::open(db_path)?;
 
-        Ok(DB { conn })
+        let db_instance = DB { conn };
+        db_instance.create_tables()?;
+        db_instance.create_current_search_tables()?;
+
+        Ok(db_instance)
     }
 
     pub fn create_tables(&self) -> RusqliteResult<()> {

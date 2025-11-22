@@ -96,14 +96,6 @@ impl AppState {
             .map_err(|_e| RedditError::TokenExtraction)
             .unwrap();
 
-        // Ensure all necessary tables are created
-        db.create_tables()
-            .map_err(|_e| RedditError::TokenExtraction)
-            .unwrap();
-        db.create_current_search_tables()
-            .map_err(|_e| RedditError::TokenExtraction)
-            .unwrap();
-
         // Get data from database
         let reddits = db
             .get_db_results()
