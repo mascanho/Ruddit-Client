@@ -43,6 +43,13 @@ type PostDataWrapper = {
   engaged: number; // i64 in Rust (0 or 1)
   assignee: string;
   notes: string;
+  name: string;
+  selftext: string | null;
+  author: string;
+  score: number;
+  thumbnail: string | null;
+  is_self: boolean;
+  num_comments: number;
 };
 
 type SearchResult = {
@@ -55,6 +62,13 @@ type SearchResult = {
   snippet: string;
   timestamp?: number;
   formatted_date?: string;
+  score?: number;
+  num_comments?: number;
+  author?: string;
+  is_self?: boolean;
+  name?: string;
+  selftext?: string | null;
+  thumbnail?: string | null;
 };
 
 type SortType = "hot" | "top" | "new";
@@ -91,6 +105,13 @@ export function RedditSearch({
         snippet: "", // PostDataWrapper doesn't have snippet
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
+        score: post.score,
+        num_comments: post.num_comments,
+        author: post.author,
+        is_self: post.is_self,
+        name: post.name,
+        selftext: post.selftext,
+        thumbnail: post.thumbnail,
       }));
       setSubreddits(mappedResults);
       console.log("Subreddits:", mappedResults);
@@ -115,6 +136,13 @@ export function RedditSearch({
         snippet: "", // PostDataWrapper doesn't have snippet
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
+        score: post.score,
+        num_comments: post.num_comments,
+        author: post.author,
+        is_self: post.is_self,
+        name: post.name,
+        selftext: post.selftext,
+        thumbnail: post.thumbnail,
       }));
       setSubreddits(mappedResults);
       console.log("Subreddits:", mappedResults);
@@ -171,6 +199,7 @@ export function RedditSearch({
         is_self: post.is_self,
         name: post.name,
         selftext: post.selftext,
+        thumbnail: post.thumbnail,
       }));
       setSubreddits(mappedResults);
       console.log("Search results:", mappedResults);
@@ -260,6 +289,13 @@ export function RedditSearch({
         relevance_score: result.relevance_score, // Use new field
         sort_type: result.sort_type, // Use new field
         subreddit: result.subreddit,
+        score: result.score,
+        num_comments: result.num_comments,
+        author: result.author,
+        is_self: result.is_self,
+        name: result.name,
+        selftext: result.selftext,
+        thumbnail: result.thumbnail,
       })),
     );
 
