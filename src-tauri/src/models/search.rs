@@ -1,6 +1,7 @@
 use base64::{engine::general_purpose, Engine as _};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use regex::Regex;
 
 use crate::{
     database::{
@@ -477,15 +478,17 @@ pub async fn get_post_comments(
     Ok(comments)
 }
 fn extract_post_id_from_url(url: &str) -> Option<String> {
-    let parts: Vec<&str> = url.split("/comments/").collect();
-    if parts.len() > 1 {
-        let post_part = parts[1];
-        let post_id = post_part.split('/').next().unwrap_or("");
-        if !post_id.is_empty() {
-            return Some(post_id.to_string());
-        }
-    }
-    None
+    // Regex to capture post ID from various Reddit URL formats
+    // 1. /r/{subreddit}/comments/{id}/...
+    // 2. /comments/{id}/...
+    // 3. /gallery/{id}
+    // 4. /r/{subreddit}/s/{id} (shortened URLs)
+    let re = Regex::new(
+        r"(?:reddit\.com/r/[^/]+/comments/|reddit\.com/comments/|reddit\.com/gallery/|reddit\.com/r/[^/]+/s/)([a-z0-9]+)"
+    ).unwrap();
+
+    re.captures(url)
+        .and_then(|cap| cap.get(1).map(|m| m.as_str().to_string()))
 }
 
 fn extract_subreddit_from_url(url: &str) -> Option<String> {
