@@ -379,6 +379,7 @@ export function RedditTable({
       url: post.url,
       title: post.title,
       sortType: sort_type, // Use new parameter, camelCase for Tauri
+      subreddit: post.subreddit, // Add subreddit here
     })) as Message[];
 
     setComments(fetchedComments);
@@ -394,6 +395,7 @@ export function RedditTable({
         url: commentsPost.url,
         title: commentsPost.title,
         sortType: newSortType, // Use new parameter, camelCase for Tauri
+        subreddit: commentsPost.subreddit, // Add subreddit here
       })) as Message[];
       setComments(newComments);
       onAddComments(newComments);
