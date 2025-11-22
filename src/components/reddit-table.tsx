@@ -623,7 +623,7 @@ export function RedditTable({
                 <TableRow>
                   <TableCell
                     colSpan={11} // Updated colSpan
-                    className="h-24 text-center text-muted-foreground"
+                    className="h-10 text-center text-muted-foreground"
                   >
                     No posts found.
                   </TableCell>
@@ -632,15 +632,15 @@ export function RedditTable({
                 paginatedData.map((post, index) => (
                   <Fragment key={post.id}>
                     <TableRow
-                      className={`group ${
+                      className={`group text-xs p-0 h-2 ${
                         settings.tableDensity === "compact"
-                          ? "h-10"
+                          ? "h-2"
                           : settings.tableDensity === "spacious"
-                            ? "h-16"
-                            : "h-12"
+                            ? "h-2"
+                            : "h-2"
                       }`}
                     >
-                      <TableCell className="p-3">
+                      <TableCell className="px-3 p-0">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -654,25 +654,25 @@ export function RedditTable({
                           />
                         </Button>
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-sm font-medium w-[60px] p-3">
+                      <TableCell className="text-muted-foreground text-xs font-medium w-[60px] p-3">
                         {(currentPage - 1) * rowsPerPage + index + 1}
                       </TableCell>
-                      <TableCell className="font-mono text-sm w-[110px] p-3">
+                      <TableCell className="font-mono text-sm w-[110px] px-3">
                         {post?.formatted_date?.slice(0, 10).trim() || "N/A"}
                       </TableCell>
-                      <TableCell className="min-w-[300px] p-3">
+                      <TableCell className="min-w-[300px] px-3">
                         <div className="line-clamp-2 font-medium">
                           {post.title?.slice(0, 100) || "No title"}
                           {post.title?.length > 100 && "..."}
                         </div>
                       </TableCell>
-                      <TableCell className="w-[150px] p-3">
+                      <TableCell className="w-[150px] px-3">
                         <Badge variant="outline" className="font-mono">
                           r/{post.subreddit}
                         </Badge>
                       </TableCell>
 
-                      <TableCell className="w-[100px] p-3">
+                      <TableCell className="w-[100px] px-3">
                         <span
                           onClick={() => handleOpenInbrowser(post.url)}
                           className="flex items-center text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-sm"
@@ -694,25 +694,27 @@ export function RedditTable({
                       {/*     {post.sort_type} */}
                       {/*   </Badge> */}
                       {/* </TableCell> */}
-                      <TableCell className="w-[180px] p-3">
+                      <TableCell className="w-[180px] px-3 text-xs">
                         <Select
                           value={post.engaged === 1 ? "engaged" : "not engaged"}
                           onValueChange={(value) =>
                             handleEngagedToggle(post.id, value === "engaged")
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="text-xs px-2">
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="engaged">Engaged</SelectItem>
-                            <SelectItem value="not engaged">
+                            <SelectItem className="text-xs" value="engaged">
+                              Engaged
+                            </SelectItem>
+                            <SelectItem className="text-xs" value="not engaged">
                               Not engaged
                             </SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="w-[150px] p-3">
+                      <TableCell className="w-[150px] px-3">
                         <Select
                           value={post.assignee || "unassigned"}
                           onValueChange={(value) =>
@@ -734,7 +736,7 @@ export function RedditTable({
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="w-[70px] p-3">
+                      <TableCell className="w-[70px] px-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -1146,4 +1148,3 @@ export function RedditTable({
     </>
   );
 }
-
