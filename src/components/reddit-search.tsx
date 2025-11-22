@@ -291,6 +291,7 @@ export function RedditSearch({
         url: singlePost.url,
         title: singlePost.title,
         sortType: singlePost.sort_type, // Use new field, camelCase for Tauri
+        subreddit: singlePost.subreddit, // Add subreddit here
       });
 
       toast.info(`Added ${singlePost.title} post to table`, {

@@ -343,6 +343,7 @@ pub async fn get_post_comments(
     url: &str,
     post_title: &str,
     sort_type: &str, // Renamed from relevance
+    subreddit: &str, // Add subreddit here
 ) -> Result<Vec<CommentDataWrapper>, RedditError> {
     let client = Client::new();
 
@@ -362,7 +363,7 @@ pub async fn get_post_comments(
                 score: 0,
                 permalink: "".to_string(),
                 parent_id: "".to_string(),
-                subreddit: "".to_string(),
+                subreddit: subreddit.to_string(), // Use the passed subreddit
                 post_title: "".to_string(),
                 engaged: 0,
                 assignee: "".to_string(),
@@ -371,8 +372,8 @@ pub async fn get_post_comments(
         }
     };
 
-    // Extract subreddit
-    let subreddit = extract_subreddit_from_url(url).unwrap_or("unknown".to_string());
+    // Use the passed subreddit directly
+    // let subreddit = extract_subreddit_from_url(url).unwrap_or("unknown".to_string());
 
     let api_url = format!(
         "https://oauth.reddit.com/comments/{}?sort={}&limit=500",
@@ -461,7 +462,7 @@ pub async fn get_post_comments(
                 score: data.score,
                 permalink: data.permalink,
                 parent_id: data.parent_id,
-                subreddit: subreddit.clone(),
+                subreddit: subreddit.to_string(),
                 post_title: post_title.to_string(),
                 engaged: 0,
                 assignee: "".to_string(),
