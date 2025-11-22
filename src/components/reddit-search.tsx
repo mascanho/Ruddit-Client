@@ -277,14 +277,12 @@ export function RedditSearch({
         },
       );
 
-      console.log(singlePost, "This is Single");
-
       // Now singlePost should match PostDataWrapper format
       addSingleSubreddit(singlePost);
 
       // Ensure all parameters are defined
-      if (!singlePost?.url || !singlePost?.title) {
-        throw new Error("Post URL or title is missing");
+      if (!singlePost?.url || !singlePost?.title || !singlePost.is_self) {
+        throw new Error("This is not a a valid reddit post ");
       }
 
       await invoke("get_post_comments_command", {
@@ -297,12 +295,11 @@ export function RedditSearch({
       toast.info(`Added ${singlePost.title} post to table`, {
         position: "bottom-center",
       });
+      onNotifyNewPosts(1);
     } catch (err: any) {
       console.error("Error in addToTable:", err);
       toast.error(`Failed to add post: ${err.message || err}`);
     }
-
-    onNotifyNewPosts(1);
   };
 
   const handleOpenInBrowser = async (url: string) => {
