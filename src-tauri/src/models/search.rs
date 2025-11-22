@@ -484,7 +484,7 @@ fn extract_post_id_from_url(url: &str) -> Option<String> {
     // 3. /gallery/{id}
     // 4. /r/{subreddit}/s/{id} (shortened URLs)
     let re = Regex::new(
-        r"(?:reddit\.com/r/[^/]+/comments/|reddit\.com/comments/|reddit\.com/gallery/|reddit\.com/r/[^/]+/s/)([a-z0-9]+)"
+        r"(?:reddit\.com/r/[^/]+/comments/|reddit\.com/comments/|reddit\.com/gallery/|reddit\.com/r/[^/]+/s/|i\.redd\.it/)([a-z0-9]+)"
     ).unwrap();
 
     re.captures(url)
