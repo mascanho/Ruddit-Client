@@ -23,6 +23,8 @@ pub struct RedditPost {
     author: String,
     score: i64,
     thumbnail: Option<String>,
+    is_self: bool,
+    num_comments: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -222,6 +224,8 @@ pub async fn get_subreddit_posts(
                     author: post.author,
                     score: post.score,
                     thumbnail: post.thumbnail,
+                    is_self: post.is_self,
+                    num_comments: post.num_comments,
                 })
             } else {
                 None
@@ -291,6 +295,8 @@ pub async fn search_subreddit_posts(
                     author: post.author.clone(),
                     score: post.score.clone(),
                     thumbnail: post.thumbnail.clone(),
+                    is_self: post.is_self.clone(),
+                    num_comments: post.num_comments.clone(),
                 })
             } else {
                 None

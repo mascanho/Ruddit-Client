@@ -191,18 +191,25 @@ export function RedditSearch({
               result.formatted_date || new Date().toISOString().split("T")[0],
             title: result.title,
             url: result.url,
-            sort_type: result.sort_type, // Use new field
-            relevance_score: result.relevance_score, // Use new field
+            sort_type: result.sort_type,
+            relevance_score: result.relevance_score,
             subreddit: result.subreddit,
-            permalink: result.url,
-            engaged: 0, // Convert boolean false to i64 0
+            permalink: result.url, // Using url as permalink
+            engaged: 0,
             assignee: "",
             notes: "",
+            name: result.name || `t3_${result.id}`, // Generate if missing
+            selftext: result.selftext || "",
+            author: result.author || "unknown",
+            score: result.score || 0,
+            thumbnail: result.thumbnail || "",
+            is_self: result.is_self || false,
+            num_comments: result.num_comments || 0,
           },
         },
       );
 
-      console.log("Post Title:", singlePost.title);
+      console.log(singlePost, "This is Single");
 
       // Now singlePost should match PostDataWrapper format
       addSingleSubreddit(singlePost);
@@ -520,4 +527,3 @@ export function RedditSearch({
     </Card>
   );
 }
-

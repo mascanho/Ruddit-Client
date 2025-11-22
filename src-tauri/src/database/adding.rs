@@ -24,6 +24,8 @@ pub struct PostDataWrapper {
     pub author: String,
     pub score: i64,
     pub thumbnail: Option<String>,
+    pub is_self: bool,
+    pub num_comments: i64,
 }
 
 // Comment data structure
@@ -71,10 +73,43 @@ impl DB {
         Ok(DB { conn })
     }
 
+    pub fn create_tables(&self) -> RusqliteResult<()> {
+        // Create reddit_posts table if it doesn't exist
+        self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS reddit_posts (
+                id INTEGER PRIMARY KEY,
+                timestamp INTEGER NOT NULL,
+                formatted_date TEXT NOT NULL,
+                title TEXT NOT NULL,
+                url TEXT NOT NULL,
+                sort_type TEXT NOT NULL DEFAULT '',
+                relevance_score INTEGER NOT NULL DEFAULT 0,
+                subreddit TEXT NOT NULL DEFAULT '',
+                permalink TEXT NOT NULL DEFAULT '',
+                engaged INTEGER,  // Changed from BOOLEAN to INTEGER
+                assignee TEXT NOT NULL DEFAULT '',
+                notes TEXT NOT NULL DEFAULT '',
+                name TEXT NOT NULL DEFAULT '',
+                selftext TEXT,
+                author TEXT NOT NULL DEFAULT '',
+                score INTEGER NOT NULL DEFAULT 0,
+                thumbnail TEXT,
+                is_self INTEGER NOT NULL DEFAULT 0,  // Changed from BOOLEAN to INTEGER
+                num_comments INTEGER NOT NULL DEFAULT 0
+            )",
+            [],
+        )?;
+
+        self.create_comments_table()?;
+        Ok(())
+    }
+
     // SAVE SINGLE REDDIT POST
     pub fn save_single_reddit(&self, post: &PostDataWrapper) -> RusqliteResult<()> {
-        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        println!("Attempting to save post: {:?}", &post);
+
+        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         self.conn.execute(
             query,
@@ -95,7 +130,9 @@ impl DB {
                 post.selftext,
                 post.author,
                 post.score,
-                post.thumbnail
+                post.thumbnail,
+                post.is_self,
+                post.num_comments
             ],
         )?;
 
@@ -106,38 +143,6 @@ impl DB {
     pub fn remove_single_reddit(&self, id: &i64) -> RusqliteResult<()> {
         self.conn
             .execute("DELETE FROM reddit_posts WHERE id = ?", params![id])?;
-        Ok(())
-    }
-
-    pub fn create_tables(&self) -> RusqliteResult<()> {
-        // Create posts table if it doesn't exist
-        self.conn.execute(
-            "CREATE TABLE IF NOT EXISTS reddit_posts (
-                id INTEGER PRIMARY KEY,
-                timestamp INTEGER NOT NULL,
-                formatted_date TEXT NOT NULL,
-                title TEXT NOT NULL,
-                url TEXT NOT NULL,
-                sort_type TEXT NOT NULL DEFAULT '',
-                relevance_score INTEGER NOT NULL DEFAULT 0,
-                subreddit TEXT NOT NULL DEFAULT '',
-                permalink TEXT NOT NULL DEFAULT '',
-                engaged BOOLEAN,
-                assignee TEXT NOT NULL DEFAULT '',
-                notes TEXT NOT NULL DEFAULT '',
-                name TEXT NOT NULL DEFAULT '',
-                selftext TEXT NOT NULL DEFAULT '',
-                author TEXT NOT NULL DEFAULT '',
-                score INNTEGER NOT NULL DEFAULT 0,
-                thumbnail TEXT NOT NULL DEFAULT ''
-
-            )",
-            [],
-        )?;
-
-        // Create comments table
-        self.create_comments_table()?;
-
         Ok(())
     }
 
@@ -161,7 +166,10 @@ impl DB {
                 selftext TEXT NOT NULL DEFAULT '',
                 author TEXT NOT NULL DEFAULT '',
                 score INTEGER NOT NULL DEFAULT 0,
-                thumbnail TEXT NOT NULL DEFAULT ''
+                thumbnail TEXT NOT NULL DEFAULT '',
+                is_self BOOLEAN NOT NULL DEFAULT FALSE,
+                num_comments INTEGER NOT NULL DEFAULT 0
+
             )",
             [],
         )?;
@@ -202,8 +210,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT OR IGNORE INTO reddit_posts
-                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
             )?;
 
             for result in results {
@@ -223,7 +231,9 @@ impl DB {
                     result.selftext,
                     result.author,
                     result.score,
-                    result.thumbnail
+                    result.thumbnail,
+                    result.is_self,
+                    result.num_comments,
                 ])?;
             }
         }
@@ -248,8 +258,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT INTO subreddit_search
-            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
             )?;
 
             for result in results {
@@ -269,7 +279,9 @@ impl DB {
                     result.selftext,
                     result.author,
                     result.score,
-                    result.thumbnail
+                    result.thumbnail,
+                    result.is_self,
+                    result.num_comments
                 ])?;
             }
         }
@@ -315,7 +327,7 @@ impl DB {
 
     pub fn get_db_results(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, thumbnail
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, thumbnail, is_self, num_comments
              FROM reddit_posts
              ORDER BY timestamp DESC",
         )?;
@@ -340,6 +352,8 @@ impl DB {
                     author: row.get(14)?,
                     score: row.get(15)?,
                     thumbnail: row.get(16)?,
+                    is_self: row.get(17)?,
+                    num_comments: row.get(18)?,
                 })
             })?
             .collect::<RusqliteResult<Vec<_>>>()?;
