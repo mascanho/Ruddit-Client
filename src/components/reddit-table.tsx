@@ -761,19 +761,19 @@ export function RedditTable({
                                 handleGetComments(post, post.sort_type)
                               }
                             >
-                              <MessageCircle className="mr-2 h-4 w-4" />
+                              <MessageCircle className="h-4 w-4" />
                               Get Comments
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleEditNote(post)}
                             >
-                              <Pencil className="mr-2 h-4 w-4" />
+                              <Pencil className="h-4 w-4" />
                               Add/Edit Note
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => setSelectedPost(post)}
                             >
-                              <Info className="mr-2 h-4 w-4" />
+                              <Info className="h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
@@ -783,7 +783,7 @@ export function RedditTable({
                                 rel="noopener noreferrer"
                                 className="flex items-center"
                               >
-                                <ExternalLink className="mr-2 h-4 w-4" />
+                                <ExternalLink className="h-4 w-4" />
                                 Open Link
                               </a>
                             </DropdownMenuItem>
@@ -792,7 +792,7 @@ export function RedditTable({
                               onClick={() => setDeleteId(post.id)}
                               className="text-destructive focus:text-destructive"
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
