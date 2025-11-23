@@ -160,11 +160,11 @@ pub fn get_all_searched_posts() -> Result<Vec<PostDataWrapper>, String> {
 }
 
 #[tauri::command]
-pub fn save_single_reddit_command(post: PostDataWrapper) -> Result<PostDataWrapper, String> {
-    let db = database::adding::DB::new().unwrap();
+pub fn save_single_reddit_command(post: PostDataWrapper) -> Result<bool, String> {
+    let db = database::adding::DB::new().map_err(|e| e.to_string())?;
 
-    db.save_single_reddit(&post).unwrap();
-    Ok(post)
+    let inserted = db.save_single_reddit(&post).map_err(|e| e.to_string())?;
+    Ok(inserted)
 }
 
 // CLEAR SAVED REDDITS TABLE

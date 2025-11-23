@@ -109,13 +109,13 @@ impl DB {
     }
 
     // SAVE SINGLE REDDIT POST
-    pub fn save_single_reddit(&self, post: &PostDataWrapper) -> RusqliteResult<()> {
+    pub fn save_single_reddit(&self, post: &PostDataWrapper) -> RusqliteResult<bool> {
         println!("Attempting to save post: {:#?}", &post);
 
         let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        self.conn.execute(
+        let rows_affected = self.conn.execute(
             query,
             params![
                 post.id,
@@ -140,7 +140,7 @@ impl DB {
             ],
         )?;
 
-        Ok(())
+        Ok(rows_affected > 0)
     }
 
     // REMOVE A SINGLE ENTRY FROM THE TABLE

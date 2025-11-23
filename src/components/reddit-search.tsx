@@ -251,7 +251,7 @@ export function RedditSearch({
   const addToTable = async (result: SearchResult) => {
     try {
       // TAURI COMMAND TO SEND TO BE
-      const singlePost: PostDataWrapper = await invoke(
+      const isInserted: boolean = await invoke( // Changed return type to boolean
         "save_single_reddit_command",
         {
           post: {
@@ -279,7 +279,37 @@ export function RedditSearch({
         },
       );
 
-      // Now singlePost should match PostDataWrapper format
+      // Reconstruct singlePost here as the backend only returns a boolean
+      const singlePost: PostDataWrapper = {
+        id: parseInt(result.id, 10),
+        timestamp: result.timestamp || Date.now(),
+        formatted_date:
+          result.formatted_date || new Date().toISOString().split("T")[0],
+        title: result.title,
+        url: result.url,
+        sort_type: result.sort_type,
+        relevance_score: result.relevance_score,
+        subreddit: result.subreddit,
+        permalink: result.url, // Using url as permalink
+        engaged: 0,
+        assignee: "",
+        notes: "",
+        name: result.name || `t3_${result.id}`, // Generate if missing
+        selftext: result.selftext || "",
+        author: result.author || "unknown",
+        score: result.score || 0,
+        thumbnail: result.thumbnail || "",
+        is_self: result.is_self || false,
+        num_comments: result.num_comments || 0,
+      };
+
+      if (!isInserted) {
+        toast.info(`Post "${singlePost.title}" is already in your tracking table.`, {
+          position: "bottom-center",
+        });
+        return; // Exit if not inserted
+      }
+
       addSingleSubreddit(singlePost);
 
       // Ensure all parameters are defined
