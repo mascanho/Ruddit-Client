@@ -283,7 +283,7 @@ export function RedditSearch({
       addSingleSubreddit(singlePost);
 
       // Ensure all parameters are defined
-      if (!singlePost?.url || !singlePost?.title || !singlePost.is_self) {
+      if (!singlePost?.url || !singlePost?.title) {
         throw new Error("This is not a a valid reddit post ");
       }
 
