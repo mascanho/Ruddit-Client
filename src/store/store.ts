@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 // This should match your Rust PostDataWrapper
 interface PostDataWrapper {
-  id: number; // i64 in Rust
+  id: string; // i64 in Rust
   timestamp: number; // i64 in Rust
   formatted_date: string;
   title: string;
@@ -17,9 +17,20 @@ interface RedditPost {
   title: string;
   subreddit: string;
   url: string;
-  relevance: number;
+  relevance_score: number;
+  sort_type: string;
   snippet: string;
   formatted_date: string;
+  engaged: number;
+  assignee: string;
+  notes: string;
+  name: string;
+  selftext: string | null;
+  author: string;
+  score: number;
+  thumbnail: string | null;
+  is_self: boolean;
+  num_comments: number;
 }
 
 interface SubredditsStore {

@@ -32,7 +32,7 @@ impl DBReader {
 
         let posts = stmt.query_map([], |row| {
             Ok(PostDataWrapper {
-                id: row.get(0)?,
+                id: row.get::<_, String>(0)?,
                 timestamp: row.get(1)?,
                 formatted_date: row.get(2)?,
                 title: row.get(3)?,
@@ -68,7 +68,7 @@ impl DBReader {
 
         let posts = stmt.query_map([], |row| {
             Ok(PostDataWrapper {
-                id: row.get(0)?,
+                id: row.get::<_, String>(0)?,
                 timestamp: row.get(1)?,
                 formatted_date: row.get(2)?,
                 title: row.get(3)?,
@@ -104,7 +104,7 @@ impl DBReader {
 
         let posts = stmt.query_map([limit], |row| {
             Ok(PostDataWrapper {
-                id: row.get(0)?,
+                id: row.get::<_, String>(0)?,
                 timestamp: row.get(1)?,
                 formatted_date: row.get(2)?,
                 title: row.get(3)?,
@@ -140,7 +140,7 @@ impl DBReader {
 
         let posts = stmt.query_map([subreddit], |row| {
             Ok(PostDataWrapper {
-                id: row.get(0)?,
+                id: row.get::<_, String>(0)?,
                 timestamp: row.get(1)?,
                 formatted_date: row.get(2)?,
                 title: row.get(3)?,
@@ -176,7 +176,7 @@ impl DBReader {
 
         let posts = stmt.query_map([sort_type], |row| {
             Ok(PostDataWrapper {
-                id: row.get(0)?,
+                id: row.get::<_, String>(0)?,
                 timestamp: row.get(1)?,
                 formatted_date: row.get(2)?,
                 title: row.get(3)?,
@@ -213,7 +213,7 @@ impl DBReader {
         let search_pattern = format!("%{}%", search_term);
         let posts = stmt.query_map([search_pattern], |row| {
             Ok(PostDataWrapper {
-                id: row.get(0)?,
+                id: row.get::<_, String>(0)?,
                 timestamp: row.get(1)?,
                 formatted_date: row.get(2)?,
                 title: row.get(3)?,
