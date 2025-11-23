@@ -228,24 +228,24 @@ pub async fn open_db_folder_command() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn update_post_notes(id: i64, notes: String) -> Result<(), String> {
+pub fn update_post_notes(id: String, notes: String) -> Result<(), String> {
     let db = database::adding::DB::new().map_err(|e| e.to_string())?;
-    db.update_post_notes(id, &notes).map_err(|e| e.to_string())?;
+    db.update_post_notes(&id, &notes).map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn update_post_assignee(id: i64, assignee: String) -> Result<(), String> {
+pub fn update_post_assignee(id: String, assignee: String) -> Result<(), String> {
     let db = database::adding::DB::new().map_err(|e| e.to_string())?;
-    db.update_post_assignee(id, &assignee)
+    db.update_post_assignee(&id, &assignee)
         .map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn update_post_engaged_status(id: i64, engaged: i64) -> Result<(), String> {
+pub fn update_post_engaged_status(id: String, engaged: i64) -> Result<(), String> {
     let db = database::adding::DB::new().map_err(|e| e.to_string())?;
-    db.update_post_engaged_status(id, engaged)
+    db.update_post_engaged_status(&id, engaged)
         .map_err(|e| e.to_string())?;
     Ok(())
 }
