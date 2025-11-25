@@ -1080,7 +1080,7 @@ export function RedditTable({
                 <div className="flex items-center gap-2 text-xs justify-between">
                   <div className="flex items-center space-x-2">
                     <Badge variant="outline" className="font-mono">
-                      r/{comments[0]?.subreddit}
+                      r/{commentsPost?.subreddit}
                     </Badge>
                     <span className="text-muted-foreground">
                       {comments?.length} comments
