@@ -87,8 +87,7 @@ export function RedditSearch({
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const { settings } = useAppSettings();
   const { setSubreddits, subreddits } = useSubredditsStore();
-  const { redditPosts, setRedditPosts } = useRedditPostsTab();
-  const { addSingleSubreddit } = useAddSingleSubReddit();
+  const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
 
   // Hardcoded keywords for highlighting (can be moved to settings later)
   const keywordsToHighlight = ["bmx", "bike", "cycle", "ride"];
@@ -247,6 +246,21 @@ export function RedditSearch({
   // ADD SINGLE SUBREDDIT TO REDDIT POSTS TABLE
   const addToTable = async (result: SearchResult) => {
     try {
+      // Client-side duplicate check
+      const isClientSideDuplicate = subRedditsSaved.some(
+        (post) => post.id.toString() === result.id,
+      );
+
+      if (isClientSideDuplicate) {
+        toast.info(
+          `Post "${result.title}" is already in your tracking table.`,
+          {
+            position: "bottom-center",
+          },
+        );
+        return; // Exit if already exists client-side
+      }
+
       // TAURI COMMAND TO SEND TO BE
       const isInserted: boolean = await invoke("save_single_reddit_command", {
         post: {
@@ -339,27 +353,80 @@ export function RedditSearch({
     }
   };
 
-  const addAllToTable = () => {
-    onAddResults(
-      subreddits.map((result) => ({
-        id: result.id,
-        date: new Date().toISOString().split("T")[0],
+  const addAllToTable = async () => {
+    let addedCount = 0;
+    let duplicateCount = 0;
+
+    for (const result of paginatedResults) {
+      const singlePost: PostDataWrapper = {
+        id: parseInt(result.id, 10),
+        timestamp: result.timestamp || Date.now(),
+        formatted_date: result.formatted_date || new Date().toISOString().split("T")[0],
         title: result.title,
         url: result.url,
-        relevance_score: result.relevance_score, // Use new field
-        sort_type: result.sort_type, // Use new field
+        sort_type: result.sort_type,
+        relevance_score: result.relevance_score,
         subreddit: result.subreddit,
-        score: result.score,
-        num_comments: result.num_comments,
-        author: result.author,
-        is_self: result.is_self,
-        name: result.name,
-        selftext: result.selftext,
-        thumbnail: result.thumbnail,
-      })),
-    );
+        permalink: result.url,
+        engaged: 0,
+        assignee: "",
+        notes: "",
+        name: result.name || `t3_${result.id}`,
+        selftext: result.selftext || "",
+        author: result.author || "unknown",
+        score: result.score || 0,
+        thumbnail: result.thumbnail || "",
+        is_self: result.is_self || false,
+        num_comments: result.num_comments || 0,
+      };
 
-    onNotifyNewPosts(subreddits.length);
+      // Client-side duplicate check
+      const isClientSideDuplicate = subRedditsSaved.some(
+        (post) => post.id.toString() === singlePost.id.toString(),
+      );
+
+      if (isClientSideDuplicate) {
+        duplicateCount++;
+        continue;
+      }
+
+      try {
+        const isInserted: boolean = await invoke("save_single_reddit_command", {
+          post: singlePost,
+        });
+
+        if (isInserted) {
+          addSingleSubreddit(singlePost);
+          addedCount++;
+          if (singlePost.url && singlePost.title && singlePost.sort_type && singlePost.subreddit) {
+            await invoke("get_post_comments_command", {
+              url: singlePost.url,
+              title: singlePost.title,
+              sortType: singlePost.sort_type,
+              subreddit: singlePost.subreddit,
+            });
+          }
+        } else {
+          // Backend reported it as a duplicate
+          duplicateCount++;
+        }
+      } catch (err: any) {
+        console.error(`Error adding post ${singlePost.title}:`, err);
+        toast.error(`Failed to add post "${singlePost.title}": ${err.message || err}`);
+      }
+    }
+
+    if (addedCount > 0) {
+      toast.success(`Successfully added ${addedCount} post(s) to table!`, {
+        position: "bottom-center",
+      });
+      onNotifyNewPosts(addedCount);
+    }
+    if (duplicateCount > 0) {
+      toast.info(`${duplicateCount} post(s) were already in your tracking table.`, {
+        position: "bottom-center",
+      });
+    }
   };
 
   const searchMonitored = () => {
