@@ -7,7 +7,7 @@ use std::{i64, path::PathBuf};
 // Post data structure
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PostDataWrapper {
-    pub id: String,
+    pub id: i64,
     pub timestamp: i64,
     pub formatted_date: String,
     pub title: String,
@@ -81,7 +81,7 @@ impl DB {
         // Create reddit_posts table if it doesn't exist
         self.conn.execute(
             "CREATE TABLE IF NOT EXISTS reddit_posts (
-                id TEXT PRIMARY KEY,
+                id INTEGER PRIMARY KEY,
                 timestamp INTEGER NOT NULL,
                 formatted_date TEXT NOT NULL,
                 title TEXT NOT NULL,
@@ -144,7 +144,7 @@ impl DB {
     }
 
     // REMOVE A SINGLE ENTRY FROM THE TABLE
-    pub fn remove_single_reddit(&self, id: &str) -> RusqliteResult<()> {
+    pub fn remove_single_reddit(&self, id: &i64) -> RusqliteResult<()> {
         self.conn
             .execute("DELETE FROM reddit_posts WHERE id = ?", params![id])?;
         Ok(())
@@ -339,7 +339,7 @@ impl DB {
         let posts = stmt
             .query_map([], |row| {
                 Ok(PostDataWrapper {
-                    id: row.get::<_, String>(0)?,
+                    id: row.get(0)?,
                     timestamp: row.get(1)?,
                     formatted_date: row.get(2)?,
                     title: row.get(3)?,

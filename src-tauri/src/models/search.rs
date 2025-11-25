@@ -207,7 +207,7 @@ pub async fn get_subreddit_posts(
         .filter_map(|child| {
             if let RedditData::Post(post) = child.data {
                 Some(PostDataWrapper {
-                    id: post.id.clone(),
+                    id: post.id.parse().unwrap_or(0),
                     title: post.title.clone(),
                     url: post.url.clone(),
                     timestamp: post.created_utc as i64,
@@ -280,7 +280,7 @@ pub async fn search_subreddit_posts(
         .filter_map(|child| {
             if let RedditData::Post(post) = &child.data {
                 Some(PostDataWrapper {
-                    id: post.id.clone(),
+                    id: post.id.parse().unwrap_or(0),
                     title: post.title.clone(),
                     url: post.url.clone(),
                     timestamp: post.created_utc as i64,

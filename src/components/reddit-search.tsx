@@ -31,7 +31,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 
 // Define PostDataWrapper type to match Rust struct
 type PostDataWrapper = {
-  id: string; // i64 in Rust
+  id: number; // i64 in Rust
   timestamp: number; // i64 in Rust
   formatted_date: string;
   title: string;
@@ -246,12 +246,11 @@ export function RedditSearch({
   const addToTable = async (result: SearchResult) => {
     try {
       // TAURI COMMAND TO SEND TO BE
-      const isInserted: boolean = await invoke(
-        // Changed return type to boolean
+      const isInserted: boolean = await invoke( // Changed return type to boolean
         "save_single_reddit_command",
         {
           post: {
-            id: result.id,
+            id: parseInt(result.id, 10),
             timestamp: result.timestamp || Date.now(),
             formatted_date:
               result.formatted_date || new Date().toISOString().split("T")[0],
@@ -277,7 +276,7 @@ export function RedditSearch({
 
       // Reconstruct singlePost here as the backend only returns a boolean
       const singlePost: PostDataWrapper = {
-        id: result.id,
+        id: parseInt(result.id, 10),
         timestamp: result.timestamp || Date.now(),
         formatted_date:
           result.formatted_date || new Date().toISOString().split("T")[0],
@@ -300,12 +299,9 @@ export function RedditSearch({
       };
 
       if (!isInserted) {
-        toast.info(
-          `Post "${singlePost.title}" is already in your tracking table.`,
-          {
-            position: "bottom-center",
-          },
-        );
+        toast.info(`Post "${singlePost.title}" is already in your tracking table.`, {
+          position: "bottom-center",
+        });
         return; // Exit if not inserted
       }
 
@@ -399,9 +395,9 @@ export function RedditSearch({
 
   return (
     <Card className="p-6">
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div>
-          <h3 className="text-sm font-semibold mb-1">Search Reddit</h3>
+          <h3 className="text-lg font-semibold mb-2">Search Reddit</h3>
           <p className="text-sm text-muted-foreground">
             Search for posts across Reddit and add them to your tracking table
           </p>
@@ -462,14 +458,14 @@ export function RedditSearch({
           >
             {isSearching ? "Searching..." : "Search"}
           </Button>
-          {/*<Button
+          <Button
             variant="outline"
             onClick={searchMonitored}
             disabled={isSearching}
           >
             <Sparkles className="h-4 w-4 mr-2" />
             Use Monitored
-          </Button>*/}
+          </Button>
         </div>
 
         {subreddits.length > 0 && (
@@ -488,10 +484,10 @@ export function RedditSearch({
                   </Badge>
                 ))}
               </div>
-              {/*<Button variant="outline" size="sm" onClick={addAllToTable}>
+              <Button variant="outline" size="sm" onClick={addAllToTable}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add All to Table
-              </Button>*/}
+              </Button>
             </div>
 
             <div className="space-y-3 max-h-[570px] overflow-y-auto">

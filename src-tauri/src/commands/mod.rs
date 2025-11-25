@@ -177,7 +177,7 @@ pub fn clear_saved_reddits() -> Result<String, String> {
 
 // REMOVE A SINGLE ENTRY FROM THE TABLE
 #[tauri::command]
-pub fn remove_single_reddit_command(post: String) -> Result<(), String> {
+pub fn remove_single_reddit_command(post: i64) -> Result<(), String> {
     let db = database::adding::DB::new().unwrap();
     db.remove_single_reddit(&post).unwrap();
     Ok(())

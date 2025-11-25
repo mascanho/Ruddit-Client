@@ -90,13 +90,6 @@ export type RedditPost = {
   engaged: number; // Changed from boolean to number (0 or 1)
   assignee: string;
   notes: string;
-  name: string;
-  selftext: string | null;
-  author: string;
-  score: number;
-  thumbnail: string | null;
-  is_self: boolean;
-  num_comments: number;
 };
 
 const teamMembers = [
@@ -165,7 +158,7 @@ export function RedditTable({
 
     try {
       await invoke("update_post_notes", {
-        id: editingNotePost.id,
+        id: parseInt(editingNotePost.id, 10),
         notes: currentNote,
       });
       toast.success("Note saved successfully");
@@ -214,7 +207,7 @@ export function RedditTable({
 
     try {
       await invoke("update_post_assignee", {
-        id: postId,
+        id: parseInt(postId, 10),
         assignee: assigneeToSave,
       });
 
@@ -253,7 +246,7 @@ export function RedditTable({
 
     try {
       await invoke("update_post_engaged_status", {
-        id: postId,
+        id: parseInt(postId, 10),
         engaged: newEngagedStatus,
       });
 
@@ -475,8 +468,8 @@ export function RedditTable({
 
   return (
     <>
-      <Card className="px-6 pb-2">
-        <div className="space-y-1">
+      <Card className="px-6">
+        <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -518,7 +511,7 @@ export function RedditTable({
               Clear Table
             </Button>
           </div>
-          <div className="text-xs pt-1 text-muted-foreground">
+          <div className="text-sm text-muted-foreground">
             Showing {filteredAndSortedData.length} of {data.length} posts
           </div>
         </div>
