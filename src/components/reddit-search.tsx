@@ -185,8 +185,10 @@ export function RedditSearch({
   }
 
   useEffect(() => {
-    persistSearch();
-  }, []);
+    if (subreddits.length === 0) {
+      persistSearch();
+    }
+  }, [subreddits.length]);
 
   const toggleSort = (sort: SortType) => {
     setSelectedSorts((prev) => {
