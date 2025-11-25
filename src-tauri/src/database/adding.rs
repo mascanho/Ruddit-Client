@@ -407,7 +407,7 @@ impl DB {
         Ok(datetime.format("%Y-%m-%d %H:%M:%S").to_string())
     }
 
-    pub fn update_post_notes(&self, id: &str, notes: &str) -> RusqliteResult<()> {
+    pub fn update_post_notes(&self, id: i64, notes: &str) -> RusqliteResult<()> {
         self.conn.execute(
             "UPDATE reddit_posts SET notes = ?1 WHERE id = ?2",
             params![notes, id],
@@ -415,7 +415,7 @@ impl DB {
         Ok(())
     }
 
-    pub fn update_post_assignee(&self, id: &str, assignee: &str) -> RusqliteResult<()> {
+    pub fn update_post_assignee(&self, id: i64, assignee: &str) -> RusqliteResult<()> {
         self.conn.execute(
             "UPDATE reddit_posts SET assignee = ?1 WHERE id = ?2",
             params![assignee, id],
@@ -423,7 +423,7 @@ impl DB {
         Ok(())
     }
 
-    pub fn update_post_engaged_status(&self, id: &str, engaged: i64) -> RusqliteResult<()> {
+    pub fn update_post_engaged_status(&self, id: i64, engaged: i64) -> RusqliteResult<()> {
         self.conn.execute(
             "UPDATE reddit_posts SET engaged = ?1 WHERE id = ?2",
             params![engaged, id],
