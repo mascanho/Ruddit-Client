@@ -90,6 +90,9 @@ export function RedditSearch({
   const { redditPosts, setRedditPosts } = useRedditPostsTab();
   const { addSingleSubreddit } = useAddSingleSubReddit();
 
+  // Hardcoded keywords for highlighting (can be moved to settings later)
+  const keywordsToHighlight = ["bmx", "bike", "cycle", "ride"];
+
   // Helper function to highlight keywords in text
   const highlightKeywords = (text: string, keywords: string[]) => {
     if (!text) return null;
@@ -499,7 +502,7 @@ export function RedditSearch({
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium mb-1 line-clamp-2">
-                        {highlightKeywords(result.title, query.split(/\s+/).filter(Boolean))}
+                        {highlightKeywords(result.title, keywordsToHighlight)}
                       </h4>
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                         {result.snippet}
