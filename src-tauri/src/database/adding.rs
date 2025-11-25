@@ -154,7 +154,7 @@ impl DB {
         // Create posts table if it doesn't exist
         self.conn.execute(
             "CREATE TABLE IF NOT EXISTS subreddit_search (
-                id TEXT PRIMARY KEY,
+                id INTEGER PRIMARY KEY,
                 timestamp INTEGER NOT NULL,
                 formatted_date TEXT NOT NULL,
                 title TEXT NOT NULL,
