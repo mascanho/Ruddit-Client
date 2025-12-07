@@ -89,37 +89,49 @@ export function RedditSearch({
   const { setSubreddits, subreddits } = useSubredditsStore();
   const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
 
-  // Hardcoded keywords for highlighting (can be moved to settings later)
-  const keywordsToHighlight = ["bmx", "bike", "cycle", "ride"];
+  // Helper function to escape special characters for regex
+  const escapeRegExp = (string: string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
+  };
 
   // Helper function to highlight keywords in text
-  const highlightKeywords = (text: string, keywords: string[]) => {
-    if (!text) return null;
+  const highlightKeywords = (text: string, currentQuery: string) => {
+    if (!text || !currentQuery.trim()) return text;
 
-    const parts: (string | JSX.Element)[] = [];
-    let lastIndex = 0;
+    const rawKeywords = currentQuery
+      .split(/\s+/)
+      .filter((k) => k.length > 0);
 
-    keywords.forEach((keyword) => {
-      const regex = new RegExp(`(${keyword})`, "gi");
-      let match;
-      while ((match = regex.exec(text)) !== null) {
-        if (match.index > lastIndex) {
-          parts.push(text.substring(lastIndex, match.index));
-        }
-        parts.push(
-          <span key={match.index} className="bg-yellow-200 font-bold">
-            {match[0]}
-          </span>,
-        );
-        lastIndex = regex.lastIndex;
-      }
-    });
+    if (rawKeywords.length === 0) return text;
 
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
-    }
+    // Create a single regex with all keywords joined by |
+    // Escape keywords for the regex pattern
+    const escapedKeywords = rawKeywords.map(escapeRegExp);
+    const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
 
-    return <>{parts}</>;
+    // Split the text based on the regex. capturing groups are included in the result.
+    const parts = text.split(regex);
+
+    return (
+      <>
+        {parts.map((part, i) => {
+          // Check if this part matches any of the keywords (case insensitive)
+          // We check if the part (lowercased) matches any of the raw keywords (lowercased)
+          const isMatch = rawKeywords.some(
+            (k) => part.toLowerCase() === k.toLowerCase(),
+          );
+
+          if (isMatch) {
+            return (
+              <span key={i} className="bg-yellow-200 font-bold text-black">
+                {part}
+              </span>
+            );
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </>
+    );
   };
 
   async function handleFetchSubreddits() {
@@ -447,7 +459,7 @@ export function RedditSearch({
   function isColoredRelevance(sortType: string) {
     // Renamed parameter
     switch (
-      sortType // Use new parameter
+    sortType // Use new parameter
     ) {
       case "hot":
         return "bg-red-500";
@@ -568,7 +580,7 @@ export function RedditSearch({
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium mb-1 line-clamp-2">
-                        {highlightKeywords(result.title, keywordsToHighlight)}
+                        {highlightKeywords(result.title, query)}
                       </h4>
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                         {result.snippet}
