@@ -31,6 +31,10 @@ export type Message = {
   message: string;
   date: string;
   source?: string;
+  // Fields used in RedditTable
+  author?: string;
+  body?: string;
+  formatted_date?: string;
 };
 
 export type RedditPost = {
@@ -134,7 +138,7 @@ export function SmartDataTables() {
     const avgRelevance =
       redditPosts.length > 0
         ? redditPosts.reduce((sum, p) => sum + p.relevance, 0) /
-          redditPosts.length
+        redditPosts.length
         : 0;
 
     return {

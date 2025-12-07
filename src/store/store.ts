@@ -10,6 +10,10 @@ interface PostDataWrapper {
   relevance: string; // Changed from number to string
   subreddit: string;
   permalink: string;
+  // Marketing / CRM fields (Client-side)
+  status?: "new" | "investigating" | "replied" | "closed" | "ignored";
+  intent?: "high" | "medium" | "low";
+  category?: "brand" | "competitor" | "general";
 }
 
 interface RedditPost {

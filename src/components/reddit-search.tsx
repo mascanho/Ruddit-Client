@@ -28,6 +28,8 @@ import {
 import { toast } from "sonner";
 import moment from "moment";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { calculateIntent, categorizePost } from "@/lib/marketing-utils";
+import { parseRedditId } from "@/lib/reddit-utils";
 
 // Define PostDataWrapper type to match Rust struct
 type PostDataWrapper = {
@@ -258,9 +260,12 @@ export function RedditSearch({
   // ADD SINGLE SUBREDDIT TO REDDIT POSTS TABLE
   const addToTable = async (result: SearchResult) => {
     try {
-      // Client-side duplicate check
+      // Parse ID correctly using base36
+      const parsedId = parseRedditId(result.id);
+
+      // Client-side duplicate check using parsed ID
       const isClientSideDuplicate = subRedditsSaved.some(
-        (post) => post.id.toString() === result.id,
+        (post) => post.id === parsedId,
       );
 
       if (isClientSideDuplicate) {
@@ -276,7 +281,7 @@ export function RedditSearch({
       // TAURI COMMAND TO SEND TO BE
       const isInserted: boolean = await invoke("save_single_reddit_command", {
         post: {
-          id: parseInt(result.id, 10),
+          id: parsedId,
           timestamp: result.timestamp || Date.now(),
           formatted_date:
             result.formatted_date || new Date().toISOString().split("T")[0],
@@ -301,7 +306,7 @@ export function RedditSearch({
 
       // Reconstruct singlePost here as the backend only returns a boolean
       const singlePost: PostDataWrapper = {
-        id: parseInt(result.id, 10),
+        id: parsedId,
         timestamp: result.timestamp || Date.now(),
         formatted_date:
           result.formatted_date || new Date().toISOString().split("T")[0],
@@ -321,6 +326,13 @@ export function RedditSearch({
         thumbnail: result.thumbnail || "",
         is_self: result.is_self || false,
         num_comments: result.num_comments || 0,
+        status: "new",
+        intent: calculateIntent(result.title),
+        category: categorizePost(
+          result.title,
+          settings.brandKeywords,
+          settings.competitorKeywords
+        ),
       };
 
       if (!isInserted) {
@@ -370,8 +382,9 @@ export function RedditSearch({
     let duplicateCount = 0;
 
     for (const result of paginatedResults) {
+      const parsedId = parseRedditId(result.id);
       const singlePost: PostDataWrapper = {
-        id: parseInt(result.id, 10),
+        id: parsedId,
         timestamp: result.timestamp || Date.now(),
         formatted_date: result.formatted_date || new Date().toISOString().split("T")[0],
         title: result.title,
@@ -390,11 +403,18 @@ export function RedditSearch({
         thumbnail: result.thumbnail || "",
         is_self: result.is_self || false,
         num_comments: result.num_comments || 0,
+        status: "new",
+        intent: calculateIntent(result.title),
+        category: categorizePost(
+          result.title,
+          settings.brandKeywords,
+          settings.competitorKeywords
+        ),
       };
 
       // Client-side duplicate check
       const isClientSideDuplicate = subRedditsSaved.some(
-        (post) => post.id.toString() === singlePost.id.toString(),
+        (post) => post.id === singlePost.id,
       );
 
       if (isClientSideDuplicate) {
