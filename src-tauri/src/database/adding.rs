@@ -257,7 +257,8 @@ impl DB {
         let tx = self.conn.transaction()?;
 
         // First, clear all existing results
-        // tx.execute("DELETE FROM subreddit_search", [])?;
+        // First, clear all existing results
+        tx.execute("DELETE FROM subreddit_search", [])?;
 
         {
             let mut stmt = tx.prepare(

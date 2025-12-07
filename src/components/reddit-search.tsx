@@ -29,7 +29,6 @@ import { toast } from "sonner";
 import moment from "moment";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { calculateIntent, categorizePost } from "@/lib/marketing-utils";
-import { parseRedditId } from "@/lib/reddit-utils";
 
 // Define PostDataWrapper type to match Rust struct
 type PostDataWrapper = {
@@ -82,9 +81,12 @@ export function RedditSearch({
   onAddResults: (results: SearchResult[]) => void;
   onNotifyNewPosts: (count: number) => void;
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => localStorage.getItem("lastRedditSearchQuery") || "");
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedSorts, setSelectedSorts] = useState<SortType[]>(["hot"]);
+  const [selectedSorts, setSelectedSorts] = useState<SortType[]>(() => {
+    const saved = localStorage.getItem("lastRedditSearchSorts");
+    return saved ? JSON.parse(saved) : ["hot"];
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const { settings } = useAppSettings();
@@ -95,6 +97,15 @@ export function RedditSearch({
   const escapeRegExp = (string: string) => {
     return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
   };
+
+  // Persist query and sorts
+  useEffect(() => {
+    localStorage.setItem("lastRedditSearchQuery", query);
+  }, [query]);
+
+  useEffect(() => {
+    localStorage.setItem("lastRedditSearchSorts", JSON.stringify(selectedSorts));
+  }, [selectedSorts]);
 
   // Helper function to highlight keywords in text
   const highlightKeywords = (text: string, currentQuery: string) => {
@@ -260,8 +271,8 @@ export function RedditSearch({
   // ADD SINGLE SUBREDDIT TO REDDIT POSTS TABLE
   const addToTable = async (result: SearchResult) => {
     try {
-      // Parse ID correctly using base36
-      const parsedId = parseRedditId(result.id);
+      // ID is already parsed by backend, sent as string to avoid JS precision loss
+      const parsedId = parseInt(result.id, 10);
 
       // Client-side duplicate check using parsed ID
       const isClientSideDuplicate = subRedditsSaved.some(
@@ -382,7 +393,7 @@ export function RedditSearch({
     let duplicateCount = 0;
 
     for (const result of paginatedResults) {
-      const parsedId = parseRedditId(result.id);
+      const parsedId = parseInt(result.id, 10);
       const singlePost: PostDataWrapper = {
         id: parsedId,
         timestamp: result.timestamp || Date.now(),
