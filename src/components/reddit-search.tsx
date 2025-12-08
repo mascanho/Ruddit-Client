@@ -29,30 +29,9 @@ import {
 import { toast } from "sonner";
 import moment from "moment";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { calculateIntent, categorizePost } from "@/lib/marketing-utils";
+import { calculateIntent, categorizePost, getIntentColor } from "@/lib/marketing-utils";
 
-// Define PostDataWrapper type to match Rust struct
-type PostDataWrapper = {
-  id: number; // i64 in Rust
-  timestamp: number; // i64 in Rust
-  formatted_date: string;
-  title: string;
-  url: string;
-  sort_type: string; // Renamed from relevance
-  relevance_score: number; // Added new field
-  subreddit: string;
-  permalink: string;
-  engaged: number; // i64 in Rust (0 or 1)
-  assignee: string;
-  notes: string;
-  name: string;
-  selftext: string | null;
-  author: string;
-  score: number;
-  thumbnail: string | null;
-  is_self: boolean;
-  num_comments: number;
-};
+// ... existing imports
 
 type SearchResult = {
   id: string;
@@ -71,6 +50,8 @@ type SearchResult = {
   name?: string;
   selftext?: string | null;
   thumbnail?: string | null;
+  intent?: "high" | "medium" | "low";
+  category?: "brand" | "competitor" | "general";
 };
 
 type SortType = "hot" | "top" | "new";
@@ -88,8 +69,12 @@ export function RedditSearch({
     const saved = localStorage.getItem("lastRedditSearchSorts");
     return saved ? JSON.parse(saved) : ["hot"];
   });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(100);
+  const [currentPage, setCurrentPage] = useState(() => {
+    return parseInt(localStorage.getItem("lastRedditSearchPage") || "1", 10);
+  });
+  const [rowsPerPage, setRowsPerPage] = useState(() => {
+    return parseInt(localStorage.getItem("lastRedditSearchRows") || "100", 10);
+  });
   const { settings } = useAppSettings();
   const { setSubreddits, subreddits } = useSubredditsStore();
   const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
@@ -107,6 +92,14 @@ export function RedditSearch({
   useEffect(() => {
     localStorage.setItem("lastRedditSearchSorts", JSON.stringify(selectedSorts));
   }, [selectedSorts]);
+
+  useEffect(() => {
+    localStorage.setItem("lastRedditSearchPage", currentPage.toString());
+  }, [currentPage]);
+
+  useEffect(() => {
+    localStorage.setItem("lastRedditSearchRows", rowsPerPage.toString());
+  }, [rowsPerPage]);
 
   // Helper function to highlight keywords in text
   const highlightKeywords = (text: string, currentQuery: string) => {
@@ -160,7 +153,7 @@ export function RedditSearch({
         url: post.url,
         relevance_score: post.relevance_score,
         sort_type: post.sort_type,
-        snippet: "", // PostDataWrapper doesn't have snippet
+        snippet: post.selftext ? post.selftext.slice(0, 200) + (post.selftext.length > 200 ? "..." : "") : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
         score: post.score,
@@ -170,6 +163,12 @@ export function RedditSearch({
         name: post.name,
         selftext: post.selftext,
         thumbnail: post.thumbnail,
+        intent: calculateIntent(post.title),
+        category: categorizePost(
+          post.title,
+          settings.brandKeywords,
+          settings.competitorKeywords
+        ),
       }));
       setSubreddits(mappedResults);
       console.log("Subreddits:", mappedResults);
@@ -191,7 +190,7 @@ export function RedditSearch({
         url: post.url,
         relevance_score: post.relevance_score,
         sort_type: post.sort_type,
-        snippet: "", // PostDataWrapper doesn't have snippet
+        snippet: post.selftext ? post.selftext.slice(0, 200) + (post.selftext.length > 200 ? "..." : "") : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
         score: post.score,
@@ -201,9 +200,15 @@ export function RedditSearch({
         name: post.name,
         selftext: post.selftext,
         thumbnail: post.thumbnail,
+        intent: calculateIntent(post.title),
+        category: categorizePost(
+          post.title,
+          settings.brandKeywords,
+          settings.competitorKeywords
+        ),
       }));
       setSubreddits(mappedResults);
-      setViewFilters(["hot", "top", "new"]);
+      // NOTE: Removed setViewFilters reset here to rely on persisted state
       console.log("Subreddits:", mappedResults);
     } catch (error) {
       console.error("Error persisting search:", error);
@@ -247,7 +252,7 @@ export function RedditSearch({
         url: post.url,
         relevance_score: post.relevance_score,
         sort_type: post.sort_type,
-        snippet: "", // PostDataWrapper doesn't have snippet
+        snippet: post.selftext ? post.selftext.slice(0, 200) + (post.selftext.length > 200 ? "..." : "") : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
         score: post.score,
@@ -257,6 +262,12 @@ export function RedditSearch({
         name: post.name,
         selftext: post.selftext,
         thumbnail: post.thumbnail,
+        intent: calculateIntent(post.title),
+        category: categorizePost(
+          post.title,
+          settings.brandKeywords,
+          settings.competitorKeywords
+        ),
       }));
       setSubreddits(mappedResults);
       setViewFilters(selectedSorts); // Sync view filters with search params
@@ -485,9 +496,22 @@ export function RedditSearch({
 
   const [viewSort, setViewSort] = useState<
     "date-desc" | "date-asc" | "score-desc" | "score-asc" | "comments-desc" | "comments-asc" | "original"
-  >("date-desc");
+  >(() => {
+    return (localStorage.getItem("lastRedditSearchViewSort") as any) || "date-desc";
+  });
 
-  const [viewFilters, setViewFilters] = useState<SortType[]>([]);
+  const [viewFilters, setViewFilters] = useState<SortType[]>(() => {
+    const saved = localStorage.getItem("lastRedditSearchViewFilters");
+    return saved ? JSON.parse(saved) : ["hot", "top", "new"];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("lastRedditSearchViewSort", viewSort);
+  }, [viewSort]);
+
+  useEffect(() => {
+    localStorage.setItem("lastRedditSearchViewFilters", JSON.stringify(viewFilters));
+  }, [viewFilters]);
 
   // Filter local results based on viewSort and viewFilters
   const sortedSubreddits = [...subreddits]
@@ -696,58 +720,47 @@ export function RedditSearch({
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium mb-1 line-clamp-2">
+                      <h4 className="font-medium mb-1 line-clamp-2 text-base">
                         {highlightKeywords(result.title, query)}
                       </h4>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                        {result.snippet}
-                      </p>
-                      <div className="flex items-center gap-2 flex-wrap">
+                      {result.snippet && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                          {result.snippet}
+                        </p>
+                      )}
+
+                      <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                        {result.intent && (
+                          <Badge className={getIntentColor(result.intent)}>
+                            {result.intent.toUpperCase()} INTENT
+                          </Badge>
+                        )}
+
                         <Badge variant="outline" className="font-mono text-xs">
                           r/{result.subreddit}
                         </Badge>
+
                         {result.sort_type?.split(",").map((type) => (
                           <Badge key={type} className={isColoredRelevance(type)}>
                             {type}
                           </Badge>
                         ))}
 
-                        <div className="flex space-x-2 items-center">
-                          <span className="text-black font-semibold">
-                            Created:{" "}
+                        <div className="h-4 w-px bg-border mx-1" />
+
+                        <div className="flex items-center gap-4">
+                          <span title="Score">
+                            Score: <span className="font-medium text-foreground">{result.score}</span>
                           </span>
-                          <span>{result?.formatted_date}</span>
-                          <span>-</span>
-                          <span>
-                            {moment(
-                              result?.formatted_date,
-                              "YYYY-MM-DD",
-                            ).fromNow()}
+                          <span title="Comments">
+                            Comments: <span className="font-medium text-foreground">{result.num_comments}</span>
                           </span>
-                        </div>
-                        <div>
-                          <span className="text-black font-semibold">
-                            Author:{" "}
+                          <span title="Author">
+                            By: <span className="font-medium text-foreground">{result.author}</span>
                           </span>
-                          <span>{result?.author}</span>
-                        </div>
-                        <div>
-                          <span className="text-black font-semibold">
-                            Subreddit:{" "}
+                          <span title="Date">
+                            {moment(result.formatted_date).fromNow()}
                           </span>
-                          <span>{result?.subreddit}</span>
-                        </div>
-                        <div>
-                          <span className="text-black font-semibold">
-                            Score:{" "}
-                          </span>
-                          <span>{result?.score}</span>
-                        </div>
-                        <div>
-                          <span className="text-black font-semibold">
-                            Comments:{" "}
-                          </span>
-                          <span>{result?.num_comments}</span>
                         </div>
                       </div>
                     </div>

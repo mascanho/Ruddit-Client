@@ -117,11 +117,11 @@ pub async fn get_reddit_results(
     let mut db = database::adding::DB::new().unwrap();
 
     if !all_fetched_posts.is_empty() {
-        // Append to database all at once
-        match db.append_results(&all_fetched_posts) { 
+        // Save to subreddit_search table so it persists for the view
+        match db.replace_current_results(&all_fetched_posts) { 
             Ok(_) => {
                 println!(
-                    "Successfully added {} merged unique posts to database",
+                    "Successfully added {} merged unique posts to subreddit_search database",
                     all_fetched_posts.len()
                 );
             }
