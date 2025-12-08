@@ -216,8 +216,6 @@ export function RedditSearch({
   const toggleSort = (sort: SortType) => {
     setSelectedSorts((prev) => {
       if (prev.includes(sort)) {
-        // Don't allow deselecting all
-        if (prev.length === 1) return prev;
         return prev.filter((s) => s !== sort);
       }
       return [...prev, sort];
