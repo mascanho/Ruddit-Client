@@ -235,10 +235,22 @@ pub fn update_post_notes(id: i64, notes: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn update_post_assignee(id: i64, assignee: String) -> Result<(), String> {
+pub async fn update_post_assignee(id: i64, assignee: String, title: String) -> Result<(), String> {
     let db = database::adding::DB::new().map_err(|e| e.to_string())?;
     db.update_post_assignee(id, &assignee)
         .map_err(|e| e.to_string())?;
+
+    if !assignee.is_empty() {
+        // Send email in background or await it 
+        // Since this is async command now, we can await it.
+        // We log errors but don't fail the command based on email failure 
+        // to avoid reverting the UI for just a notification failure.
+        match crate::email::sending::send_assignment_email(&assignee, id, &title).await {
+            Ok(_) => println!("Email notification sent for post {}", id),
+            Err(e) => eprintln!("Failed to send email notif: {:?}", e)
+        }
+    }
+    
     Ok(())
 }
 

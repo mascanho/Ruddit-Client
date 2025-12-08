@@ -236,6 +236,7 @@ export function RedditTable({
       await invoke("update_post_assignee", {
         id: parseInt(postId, 10),
         assignee: assigneeToSave,
+        title: postToUpdate.title,
       });
 
       if (personName !== "unassigned") {
