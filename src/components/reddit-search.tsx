@@ -17,6 +17,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  ArrowUpDown,
 } from "lucide-react";
 import { useAppSettings } from "./app-settings";
 import { invoke } from "@tauri-apps/api/core";
@@ -482,10 +483,20 @@ export function RedditSearch({
     }
   };
 
-  const totalPages = Math.ceil(subreddits.length / rowsPerPage);
+  const [viewSort, setViewSort] = useState<"date-desc" | "date-asc" | "original">("date-desc");
+
+  // Filter local results based on viewSort
+  const sortedSubreddits = [...subreddits].sort((a, b) => {
+    if (viewSort === "original") return 0;
+    const timeA = a.timestamp || 0;
+    const timeB = b.timestamp || 0;
+    return viewSort === "date-desc" ? timeB - timeA : timeA - timeB;
+  });
+
+  const totalPages = Math.ceil(sortedSubreddits.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
-  const paginatedResults = subreddits.slice(startIndex, endIndex);
+  const paginatedResults = sortedSubreddits.slice(startIndex, endIndex);
 
   function isColoredRelevance(sortType: string) {
     // Renamed parameter
@@ -587,6 +598,19 @@ export function RedditSearch({
                 <p className="text-sm text-muted-foreground">
                   {subreddits.length} results found
                 </p>
+                <div className="h-4 w-px bg-border mx-2" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Sort order:</span>
+                  <select
+                    className="border rounded px-2 py-1 text-xs bg-background"
+                    value={viewSort}
+                    onChange={(e) => setViewSort(e.target.value as any)}
+                  >
+                    <option value="date-desc">Newest First</option>
+                    <option value="date-asc">Oldest First</option>
+                    <option value="original">Unsorted</option>
+                  </select>
+                </div>
                 {selectedSorts.map((sort) => (
                   <Badge key={sort} variant="secondary" className="text-xs">
                     {sort === "hot" && <Flame className="h-3 w-3 mr-1" />}
