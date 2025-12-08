@@ -483,14 +483,33 @@ export function RedditSearch({
     }
   };
 
-  const [viewSort, setViewSort] = useState<"date-desc" | "date-asc" | "original">("date-desc");
+  const [viewSort, setViewSort] = useState<
+    "date-desc" | "date-asc" | "score-desc" | "score-asc" | "comments-desc" | "comments-asc" | "original"
+  >("date-desc");
 
   // Filter local results based on viewSort
   const sortedSubreddits = [...subreddits].sort((a, b) => {
     if (viewSort === "original") return 0;
-    const timeA = a.timestamp || 0;
-    const timeB = b.timestamp || 0;
-    return viewSort === "date-desc" ? timeB - timeA : timeA - timeB;
+
+    if (viewSort.startsWith("date")) {
+      const timeA = a.timestamp || 0;
+      const timeB = b.timestamp || 0;
+      return viewSort === "date-desc" ? timeB - timeA : timeA - timeB;
+    }
+
+    if (viewSort.startsWith("score")) {
+      const scoreA = a.score || 0;
+      const scoreB = b.score || 0;
+      return viewSort === "score-desc" ? scoreB - scoreA : scoreA - scoreB;
+    }
+
+    if (viewSort.startsWith("comments")) {
+      const commentsA = a.num_comments || 0;
+      const commentsB = b.num_comments || 0;
+      return viewSort === "comments-desc" ? commentsB - commentsA : commentsA - commentsB;
+    }
+
+    return 0;
   });
 
   const totalPages = Math.ceil(sortedSubreddits.length / rowsPerPage);
@@ -608,6 +627,10 @@ export function RedditSearch({
                   >
                     <option value="date-desc">Newest First</option>
                     <option value="date-asc">Oldest First</option>
+                    <option value="score-desc">Highest Score</option>
+                    <option value="score-asc">Lowest Score</option>
+                    <option value="comments-desc">Most Comments</option>
+                    <option value="comments-asc">Fewest Comments</option>
                     <option value="original">Unsorted</option>
                   </select>
                 </div>
