@@ -203,6 +203,7 @@ export function RedditSearch({
         thumbnail: post.thumbnail,
       }));
       setSubreddits(mappedResults);
+      setViewFilters(["hot", "top", "new"]);
       console.log("Subreddits:", mappedResults);
     } catch (error) {
       console.error("Error persisting search:", error);
@@ -258,6 +259,7 @@ export function RedditSearch({
         thumbnail: post.thumbnail,
       }));
       setSubreddits(mappedResults);
+      setViewFilters(selectedSorts); // Sync view filters with search params
       console.log("Search results:", mappedResults);
     } catch (error) {
       console.error("Search error:", error);
@@ -485,30 +487,46 @@ export function RedditSearch({
     "date-desc" | "date-asc" | "score-desc" | "score-asc" | "comments-desc" | "comments-asc" | "original"
   >("date-desc");
 
-  // Filter local results based on viewSort
-  const sortedSubreddits = [...subreddits].sort((a, b) => {
-    if (viewSort === "original") return 0;
+  const [viewFilters, setViewFilters] = useState<SortType[]>([]);
 
-    if (viewSort.startsWith("date")) {
-      const timeA = a.timestamp || 0;
-      const timeB = b.timestamp || 0;
-      return viewSort === "date-desc" ? timeB - timeA : timeA - timeB;
-    }
+  // Filter local results based on viewSort and viewFilters
+  const sortedSubreddits = [...subreddits]
+    .filter((item) => {
+      const types = (item.sort_type || "").split(",");
+      return viewFilters.some(filter => types.includes(filter));
+    })
+    .sort((a, b) => {
+      if (viewSort === "original") return 0;
 
-    if (viewSort.startsWith("score")) {
-      const scoreA = a.score || 0;
-      const scoreB = b.score || 0;
-      return viewSort === "score-desc" ? scoreB - scoreA : scoreA - scoreB;
-    }
+      if (viewSort.startsWith("date")) {
+        const timeA = a.timestamp || 0;
+        const timeB = b.timestamp || 0;
+        return viewSort === "date-desc" ? timeB - timeA : timeA - timeB;
+      }
 
-    if (viewSort.startsWith("comments")) {
-      const commentsA = a.num_comments || 0;
-      const commentsB = b.num_comments || 0;
-      return viewSort === "comments-desc" ? commentsB - commentsA : commentsA - commentsB;
-    }
+      if (viewSort.startsWith("score")) {
+        const scoreA = a.score || 0;
+        const scoreB = b.score || 0;
+        return viewSort === "score-desc" ? scoreB - scoreA : scoreA - scoreB;
+      }
 
-    return 0;
-  });
+      if (viewSort.startsWith("comments")) {
+        const commentsA = a.num_comments || 0;
+        const commentsB = b.num_comments || 0;
+        return viewSort === "comments-desc" ? commentsB - commentsA : commentsA - commentsB;
+      }
+
+      return 0;
+    });
+
+  const toggleViewFilter = (filter: SortType) => {
+    setViewFilters((prev) => {
+      if (prev.includes(filter)) {
+        return prev.filter(f => f !== filter);
+      }
+      return [...prev, filter];
+    });
+  };
 
   const totalPages = Math.ceil(sortedSubreddits.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -632,14 +650,37 @@ export function RedditSearch({
                     <option value="original">Unsorted</option>
                   </select>
                 </div>
-                {selectedSorts.map((sort) => (
-                  <Badge key={sort} variant="secondary" className="text-xs">
-                    {sort === "hot" && <Flame className="h-3 w-3 mr-1" />}
-                    {sort === "top" && <TrendingUp className="h-3 w-3 mr-1" />}
-                    {sort === "new" && <Clock className="h-3 w-3 mr-1" />}
-                    {sort}
-                  </Badge>
-                ))}
+                <div className="h-4 w-px bg-border mx-2" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Filter view:</span>
+                  <Button
+                    variant={viewFilters.includes("hot") ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => toggleViewFilter("hot")}
+                  >
+                    <Flame className="h-3 w-3 mr-1" />
+                    Hot
+                  </Button>
+                  <Button
+                    variant={viewFilters.includes("top") ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => toggleViewFilter("top")}
+                  >
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    Top
+                  </Button>
+                  <Button
+                    variant={viewFilters.includes("new") ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => toggleViewFilter("new")}
+                  >
+                    <Clock className="h-3 w-3 mr-1" />
+                    New
+                  </Button>
+                </div>
               </div>
               <Button variant="outline" size="sm" onClick={addAllToTable}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -665,11 +706,11 @@ export function RedditSearch({
                         <Badge variant="outline" className="font-mono text-xs">
                           r/{result.subreddit}
                         </Badge>
-                        <Badge
-                          className={isColoredRelevance(result?.sort_type)}
-                        >
-                          {result.sort_type}
-                        </Badge>
+                        {result.sort_type?.split(",").map((type) => (
+                          <Badge key={type} className={isColoredRelevance(type)}>
+                            {type}
+                          </Badge>
+                        ))}
 
                         <div className="flex space-x-2 items-center">
                           <span className="text-black font-semibold">
