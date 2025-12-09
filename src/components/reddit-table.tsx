@@ -124,7 +124,9 @@ export function RedditTable({
   // Load CRM data from localStorage on mount and merge with data
   useEffect(() => {
     if (data.length === 0) return;
-    const storedCrm = JSON.parse(localStorage.getItem("ruddit-crm-data") || "{}");
+    const storedCrm = JSON.parse(
+      localStorage.getItem("ruddit-crm-data") || "{}",
+    );
 
     // Only update if we have new data to merge to avoid infinite loop if we put this in the dependency array incorrectly
     // Actually, we should do this when data *changes* from external sources (initial load)
@@ -134,10 +136,14 @@ export function RedditTable({
 
   const updateCrmData = (postId: string, updates: Partial<RedditPost>) => {
     // Update local state
-    setData(prev => prev.map(p => p.id === postId ? { ...p, ...updates } : p));
+    setData((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, ...updates } : p)),
+    );
 
     // Update LocalStorage
-    const storedCrm = JSON.parse(localStorage.getItem("ruddit-crm-data") || "{}");
+    const storedCrm = JSON.parse(
+      localStorage.getItem("ruddit-crm-data") || "{}",
+    );
     const postData = storedCrm[postId] || {};
     storedCrm[postId] = { ...postData, ...updates };
     localStorage.setItem("ruddit-crm-data", JSON.stringify(storedCrm));
@@ -295,26 +301,28 @@ export function RedditTable({
 
   useEffect(() => {
     if (externalPosts.length > 0) {
-      const storedCrm = JSON.parse(localStorage.getItem("ruddit-crm-data") || "{}");
+      const storedCrm = JSON.parse(
+        localStorage.getItem("ruddit-crm-data") || "{}",
+      );
 
       setData((prev) => {
         const existingIds = new Set(prev.map((p) => p.id));
         const newPosts = externalPosts.filter((p) => !existingIds.has(p.id));
 
         // Merge with CRM data
-        const mergedNewPosts = newPosts.map(p => ({
+        const mergedNewPosts = newPosts.map((p) => ({
           ...p,
           status: storedCrm[p.id]?.status || p.status || "new",
           intent: storedCrm[p.id]?.intent || p.intent || "low", // default to low if unknown? or calculate?
-          category: storedCrm[p.id]?.category || p.category || "general"
+          category: storedCrm[p.id]?.category || p.category || "general",
         }));
 
         // Also update existing posts with CRM data if needed (e.g. on reload)
-        const updatedPrev = prev.map(p => ({
+        const updatedPrev = prev.map((p) => ({
           ...p,
           status: storedCrm[p.id]?.status || p.status || "new",
           intent: storedCrm[p.id]?.intent || p.intent,
-          category: storedCrm[p.id]?.category || p.category
+          category: storedCrm[p.id]?.category || p.category,
         }));
 
         return [...updatedPrev, ...mergedNewPosts];
@@ -612,28 +620,7 @@ export function RedditTable({
                 </TableHead>
 
                 <TableHead className="w-[100px] p-3 font-medium">URL</TableHead>
-                {/* <TableHead className="w-[100px] p-3"> */}
-                {/*   <Button */}
-                {/*     variant="ghost" */}
-                {/*     size="sm" */}
-                {/*     className="-ml-3 h-8 font-medium" */}
-                {/*     onClick={() => handleSort("relevance_score")} */}
-                {/*   > */}
-                {/*     Score */}
-                {/*     <ArrowUpDown className="ml-2 h-3 w-3" /> */}
-                {/*   </Button> */}
-                {/* </TableHead> */}
-                {/* <TableHead className="w-[100px] p-3"> */}
-                {/*   <Button */}
-                {/*     variant="ghost" */}
-                {/*     size="sm" */}
-                {/*     className="-ml-3 h-8 font-medium" */}
-                {/*     onClick={() => handleSort("sort_type")} */}
-                {/*   > */}
-                {/*     Type */}
-                {/*     <ArrowUpDown className="ml-2 h-3 w-3" /> */}
-                {/*   </Button> */}
-                {/* </TableHead> */}
+
                 <TableHead className="w-[180px] p-3">
                   <Button
                     variant="ghost"
@@ -651,10 +638,12 @@ export function RedditTable({
                     Assignee
                   </div>
                 </TableHead>
+                <TableHead className="w-[100px] p-3 font-medium">
+                  Status
+                </TableHead>
                 <TableHead className="w-[70px] p-3 font-medium">
                   Actions
                 </TableHead>
-                <TableHead className="w-[100px] p-3 font-medium">Status</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -673,12 +662,13 @@ export function RedditTable({
                 paginatedData.map((post, index) => (
                   <Fragment key={post.id}>
                     <TableRow
-                      className={`group text-xs p-0 h-2 ${settings.tableDensity === "compact"
-                        ? "h-2"
-                        : settings.tableDensity === "spacious"
+                      className={`group text-xs p-0 h-2 ${
+                        settings.tableDensity === "compact"
                           ? "h-2"
-                          : "h-2"
-                        }`}
+                          : settings.tableDensity === "spacious"
+                            ? "h-2"
+                            : "h-2"
+                      }`}
                     >
                       <TableCell className="px-3 p-0">
                         <Button
@@ -688,8 +678,9 @@ export function RedditTable({
                           className="h-8 w-8"
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${expandedRows.has(post.id) ? "rotate-180" : ""
-                              }`}
+                            className={`h-4 w-4 transition-transform ${
+                              expandedRows.has(post.id) ? "rotate-180" : ""
+                            }`}
                           />
                         </Button>
                       </TableCell>
@@ -705,9 +696,30 @@ export function RedditTable({
                           {post.title?.length > 100 && "..."}
                         </div>
                         <div className="flex gap-2 mt-1">
-                          {post.category === 'brand' && <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-[10px] h-5">Brand</Badge>}
-                          {post.category === 'competitor' && <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-[10px] h-5">Competitor</Badge>}
-                          {post.intent === 'high' && <Badge variant="secondary" className="bg-rose-100 text-rose-800 text-[10px] h-5">High Intent</Badge>}
+                          {post.category === "brand" && (
+                            <Badge
+                              variant="secondary"
+                              className="bg-blue-100 text-blue-800 text-[10px] h-5"
+                            >
+                              Brand
+                            </Badge>
+                          )}
+                          {post.category === "competitor" && (
+                            <Badge
+                              variant="secondary"
+                              className="bg-orange-100 text-orange-800 text-[10px] h-5"
+                            >
+                              Competitor
+                            </Badge>
+                          )}
+                          {post.intent === "high" && (
+                            <Badge
+                              variant="secondary"
+                              className="bg-rose-100 text-rose-800 text-[10px] h-5"
+                            >
+                              High Intent
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="w-[150px] px-3">
@@ -725,19 +737,7 @@ export function RedditTable({
                           <ExternalLink className="h-3 w-3 ml-1" />
                         </span>
                       </TableCell>
-                      {/* <TableCell className="w-[100px] p-3"> */}
-                      {/*   <div className="flex items-center gap-2"> */}
-                      {/*     {getRelevanceBadge(post.relevance_score)} */}
-                      {/*     <span className="text-sm"> */}
-                      {/*       {post.relevance_score}% */}
-                      {/*     </span> */}
-                      {/*   </div> */}
-                      {/* </TableCell> */}
-                      {/* <TableCell className="w-[100px] p-3"> */}
-                      {/*   <Badge variant="secondary" className="font-mono"> */}
-                      {/*     {post.sort_type} */}
-                      {/*   </Badge> */}
-                      {/* </TableCell> */}
+
                       <TableCell className="w-[180px] px-3 text-xs">
                         <Select
                           value={post.engaged === 1 ? "engaged" : "not engaged"}
@@ -755,6 +755,30 @@ export function RedditTable({
                             <SelectItem className="text-xs" value="not engaged">
                               Not engaged
                             </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+
+                      <TableCell className="w-[100px] px-3">
+                        <Select
+                          value={post.status || "new"}
+                          onValueChange={(value) =>
+                            updateCrmData(post.id, { status: value as any })
+                          }
+                        >
+                          <SelectTrigger
+                            className={`text-xs px-2 h-7 ${getStatusColor(post.status)}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="new">New</SelectItem>
+                            <SelectItem value="investigating">
+                              Investigating
+                            </SelectItem>
+                            <SelectItem value="replied">Replied</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                            <SelectItem value="ignored">Ignored</SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>
@@ -840,140 +864,118 @@ export function RedditTable({
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
-                      <TableCell className="w-[100px] px-3">
-                        <Select
-                          value={post.status || "new"}
-                          onValueChange={(value) => updateCrmData(post.id, { status: value as any })}
-                        >
-                          <SelectTrigger className={`text-xs px-2 h-7 ${getStatusColor(post.status)}`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="new">New</SelectItem>
-                            <SelectItem value="investigating">Investigating</SelectItem>
-                            <SelectItem value="replied">Replied</SelectItem>
-                            <SelectItem value="closed">Closed</SelectItem>
-                            <SelectItem value="ignored">Ignored</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
                     </TableRow>
-                    {
-                      expandedRows.has(post.id) && (
-                        <TableRow>
-                          <TableCell colSpan={11} className="p-0">
-                            {" "}
-                            {/* Updated colSpan */}
-                            <div className="p-4 bg-muted/50">
-                              <Card>
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                  <CardTitle>Notes</CardTitle>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEditNote(post)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                </CardHeader>
-                                <CardContent>
-                                  {post.notes ? (
-                                    <p>{post.notes}</p>
-                                  ) : (
-                                    <p className="text-muted-foreground">
-                                      No notes for this post yet.
-                                    </p>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    }
+                    {expandedRows.has(post.id) && (
+                      <TableRow>
+                        <TableCell colSpan={11} className="p-0">
+                          {" "}
+                          {/* Updated colSpan */}
+                          <div className="p-4 bg-muted/50">
+                            <Card>
+                              <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle>Notes</CardTitle>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditNote(post)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </CardHeader>
+                              <CardContent>
+                                {post.notes ? (
+                                  <p>{post.notes}</p>
+                                ) : (
+                                  <p className="text-muted-foreground">
+                                    No notes for this post yet.
+                                  </p>
+                                )}
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </Fragment>
                 ))
               )}
             </TableBody>
-          </Table >
-        </div >
+          </Table>
+        </div>
 
         {/* Pagination Section */}
-        {
-          filteredAndSortedData.length > 0 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t flex-none">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  Rows per page:
-                </span>
-                <Select
-                  value={rowsPerPage.toString()}
-                  onValueChange={(v) => {
-                    setRowsPerPage(Number(v));
-                    setCurrentPage(1);
-                  }}
+        {filteredAndSortedData.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t flex-none">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Rows per page:
+              </span>
+              <Select
+                value={rowsPerPage.toString()}
+                onValueChange={(v) => {
+                  setRowsPerPage(Number(v));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-[80px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
                 >
-                  <SelectTrigger className="w-[80px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <ChevronLeft className="h-4 w-4 -ml-3" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                    <ChevronRight className="h-4 w-4 -ml-3" />
-                  </Button>
-                </div>
+                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4 -ml-3" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4 -ml-3" />
+                </Button>
               </div>
             </div>
-          )
-        }
-      </Card >
+          </div>
+        )}
+      </Card>
 
       {/* Note Editing Dialog */}
-      < Dialog
-        open={editingNotePost !== null
-        }
+      <Dialog
+        open={editingNotePost !== null}
         onOpenChange={() => setEditingNotePost(null)}
       >
         <DialogContent>
@@ -996,36 +998,34 @@ export function RedditTable({
             <Button onClick={handleSaveNote}>Save Note</Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog >
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      {
-        settings.confirmDelete && (
-          <AlertDialog
-            open={deleteId !== null}
-            onOpenChange={() => setDeleteId(null)}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the
-                  post from your data.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => deleteId && handleDelete(deleteId)}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )
-      }
+      {settings.confirmDelete && (
+        <AlertDialog
+          open={deleteId !== null}
+          onOpenChange={() => setDeleteId(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the
+                post from your data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteId && handleDelete(deleteId)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       {/* Clear Table Dialog */}
       <AlertDialog

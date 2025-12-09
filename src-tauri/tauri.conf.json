@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "Ruddit - 0.0.1",
-        "minWidth": 1600,
-        "width": 1600,
+        "minWidth": 1700,
+        "width": 1700,
         "height": 1100,
         "resizable": true,
         "fullscreen": false
