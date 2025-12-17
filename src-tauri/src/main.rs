@@ -20,6 +20,10 @@ async fn main() {
                         .build(),
                 )?;
             }
+            // Ensure config exists on startup
+            if let Err(e) = settings::api_keys::ConfigDirs::create_default_config() {
+                eprintln!("Error creating default config: {}", e);
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

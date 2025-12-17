@@ -82,36 +82,11 @@ impl ConfigDirs {
         // Path to the config file
         let config_path = app_config_dir.join("settings.toml");
 
-        // Default TOML content
-        let toml_content = r#"
-[api_keys]
-reddit_api_id = "your_api_id_here"
-reddit_api_secret = "your_api_secret_here"
-subreddit = "supplychain"
-relevance = "hot"
-gemini_api_key = "your_api_key_here"
-branded_keywords = ["keyword1", "keyword2"]
-lead_keywords = ["keyword1", "keyword2"]
-sentiment = ["keyword1", "keyword2"]
-MATCH = "OR"
-
-# Assignees with username and email
-[[assignees]]
-id = "user1"
-name = "Alex"
-email = "alex@company.com"
-
-[[assignees]]
-id = "user2"
-name = "Maria"
-email = "maria@company.com"
-
-"#
-        .trim_start();
-
         // Write to file if file does not exist yet
         if !config_path.exists() {
             println!("Creating config file: {}", config_path.display());
+            let default_config = AppConfig::default();
+            let toml_content = toml::to_string_pretty(&default_config)?;
             fs::write(config_path, toml_content)?;
         }
 
@@ -124,6 +99,11 @@ email = "maria@company.com"
 
         // Path to the config file
         let config_path = config_dir.join("ruddit/settings.toml");
+
+        if !config_path.exists() {
+             Self::create_default_config()?;
+        }
+
         println!("Reading config file: {:#?}", config_path);
 
         // Read from file
