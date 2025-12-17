@@ -324,6 +324,7 @@ export function RedditSearch({
           thumbnail: result.thumbnail || "",
           is_self: result.is_self || false,
           num_comments: result.num_comments || 0,
+          intent: calculateIntent(result.title),
         },
       });
 

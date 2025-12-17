@@ -154,6 +154,7 @@ pub async fn get_subreddit_posts(
     sort_type: &str, // Renamed from relevance
 ) -> Result<Vec<PostDataWrapper>, RedditError> {
     let client = Client::new();
+    let config = api_keys::ConfigDirs::read_config().unwrap_or_default();
 
     // Clean the subreddit name - remove "r/" if present
     let subreddit_clean = subreddit.trim_start_matches("r/");
@@ -206,6 +207,7 @@ pub async fn get_subreddit_posts(
         .into_iter()
         .filter_map(|child| {
             if let RedditData::Post(post) = child.data {
+                let intent = config.api_keys.calculate_intent(&post.title, post.selftext.as_deref());
                 Some(PostDataWrapper {
                     id: i64::from_str_radix(&post.id, 36).unwrap_or(0),
                     title: post.title.clone(),
@@ -227,6 +229,7 @@ pub async fn get_subreddit_posts(
                     thumbnail: post.thumbnail,
                     is_self: post.is_self,
                     num_comments: post.num_comments,
+                    intent,
                 })
             } else {
                 None
@@ -245,6 +248,7 @@ pub async fn search_subreddit_posts(
     sort_type: &str, // Renamed from relevance
 ) -> Result<Vec<PostDataWrapper>, RedditError> {
     let client = Client::new();
+    let config = api_keys::ConfigDirs::read_config().unwrap_or_default();
 
     // Include the sort parameter in the URL
 
@@ -277,6 +281,7 @@ pub async fn search_subreddit_posts(
         .into_iter()
         .filter_map(|child| {
             if let RedditData::Post(post) = &child.data {
+                let intent = config.api_keys.calculate_intent(&post.title, post.selftext.as_deref());
                 Some(PostDataWrapper {
                     id: i64::from_str_radix(&post.id, 36).unwrap_or(0),
                     title: post.title.clone(),
@@ -298,6 +303,7 @@ pub async fn search_subreddit_posts(
                     thumbnail: post.thumbnail.clone(),
                     is_self: post.is_self.clone(),
                     num_comments: post.num_comments.clone(),
+                    intent,
                 })
             } else {
                 None

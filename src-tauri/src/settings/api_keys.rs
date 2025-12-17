@@ -20,6 +20,12 @@ pub struct ApiKeys {
     #[serde(default)]
     pub sentiment: Vec<String>,
 
+    #[serde(default = "default_high_intent_patterns")]
+    pub intent_high: Vec<String>,
+
+    #[serde(default = "default_medium_intent_patterns")]
+    pub intent_medium: Vec<String>,
+
     #[serde(default)]
     #[serde(rename = "MATCH")]
     pub match_keyword: String,
@@ -50,9 +56,64 @@ impl Default for ApiKeys {
             lead_keywords: vec![],
             branded_keywords: vec![],
             sentiment: vec!["neutral".to_string()],
+            intent_high: default_high_intent_patterns(),
+            intent_medium: default_medium_intent_patterns(),
             match_keyword: "".to_string(),
         }
     }
+}
+
+impl ApiKeys {
+    pub fn calculate_intent(&self, title: &str, body: Option<&str>) -> String {
+        let text = format!("{} {}", title, body.unwrap_or("")).to_lowercase();
+
+        // Check high intent
+        for pattern in &self.intent_high {
+            if text.contains(&pattern.to_lowercase()) {
+                return "High".to_string();
+            }
+        }
+
+        // Check medium intent
+        for pattern in &self.intent_medium {
+            if text.contains(&pattern.to_lowercase()) {
+                return "Medium".to_string();
+            }
+        }
+
+        "Low".to_string()
+    }
+}
+
+
+fn default_high_intent_patterns() -> Vec<String> {
+    vec![
+        "looking for".to_string(),
+        "recommend".to_string(),
+        "suggestion".to_string(),
+        "alternative to".to_string(),
+        "vs".to_string(),
+        "comparison".to_string(),
+        "review".to_string(),
+        "best".to_string(),
+        "help with".to_string(),
+        "how to".to_string(),
+        "pricing".to_string(),
+        "cost".to_string(),
+        "software".to_string(),
+    ]
+}
+
+fn default_medium_intent_patterns() -> Vec<String> {
+    vec![
+        "issues with".to_string(),
+        "problem".to_string(),
+        "error".to_string(),
+        "question".to_string(),
+        "anyone used".to_string(),
+        "thoughts on".to_string(),
+        "experience with".to_string(),
+    ]
 }
 
 impl ConfigDirs {

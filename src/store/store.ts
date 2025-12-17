@@ -2,17 +2,28 @@ import { create } from "zustand";
 
 // This should match your Rust PostDataWrapper
 interface PostDataWrapper {
-  id: number; // i64 in Rust
-  timestamp: number; // i64 in Rust
+  id: number;
+  timestamp: number;
   formatted_date: string;
   title: string;
   url: string;
-  relevance: string; // Changed from number to string
+  sort_type: string;
+  relevance_score: number;
   subreddit: string;
   permalink: string;
-  // Marketing / CRM fields (Client-side)
+  engaged: number;
+  assignee: string;
+  notes: string;
+  name: string;
+  selftext?: string | null;
+  author: string;
+  score: number;
+  thumbnail?: string | null;
+  is_self: boolean;
+  num_comments: number;
+  intent: string;
+  // Client-side only?
   status?: "new" | "investigating" | "replied" | "closed" | "ignored";
-  intent?: "high" | "medium" | "low";
   category?: "brand" | "competitor" | "general";
 }
 

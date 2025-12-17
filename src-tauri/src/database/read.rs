@@ -25,7 +25,7 @@ impl DBReader {
     pub fn get_all_posts(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent
          FROM reddit_posts
          ORDER BY timestamp DESC",
         )?;
@@ -51,6 +51,7 @@ impl DBReader {
                 thumbnail: row.get(16)?,
                 is_self: row.get(17)?,
                 num_comments: row.get(18)?,
+                intent: row.get(19)?,
             })
         })?;
 
@@ -61,7 +62,7 @@ impl DBReader {
     pub fn get_all_searched_posts(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent
          FROM subreddit_search
          ORDER BY timestamp DESC",
         )?;
@@ -87,6 +88,7 @@ impl DBReader {
                 thumbnail: row.get(16)?,
                 is_self: row.get(17)?,
                 num_comments: row.get(18)?,
+                intent: row.get(19)?,
             })
         })?;
 
@@ -96,7 +98,7 @@ impl DBReader {
     pub fn get_recent_posts(&self, limit: i64) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent
          FROM reddit_posts
          ORDER BY timestamp DESC
          LIMIT ?1",
@@ -123,6 +125,7 @@ impl DBReader {
                 thumbnail: row.get(16)?,
                 is_self: row.get(17)?,
                 num_comments: row.get(18)?,
+                intent: row.get(19)?,
             })
         })?;
 
@@ -132,7 +135,7 @@ impl DBReader {
     pub fn get_posts_by_subreddit(&self, subreddit: &str) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent
          FROM reddit_posts
          WHERE subreddit = ?1
          ORDER BY timestamp DESC",
@@ -159,6 +162,7 @@ impl DBReader {
                 thumbnail: row.get(16)?,
                 is_self: row.get(17)?,
                 num_comments: row.get(18)?,
+                intent: row.get(19)?,
             })
         })?;
 
@@ -168,7 +172,7 @@ impl DBReader {
     pub fn get_posts_by_sort_type(&self, sort_type: &str) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent
          FROM reddit_posts
          WHERE sort_type = ?1
          ORDER BY timestamp DESC",
@@ -195,6 +199,7 @@ impl DBReader {
                 thumbnail: row.get(16)?,
                 is_self: row.get(17)?,
                 num_comments: row.get(18)?,
+                intent: row.get(19)?,
             })
         })?;
 
@@ -204,7 +209,7 @@ impl DBReader {
     pub fn search_posts(&self, search_term: &str) -> RusqliteResult<Vec<PostDataWrapper>> {
         let db = DB::new()?;
         let mut stmt = db.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent
          FROM reddit_posts
          WHERE title LIKE ?1 OR subreddit LIKE ?1 OR sort_type LIKE ?1
          ORDER BY timestamp DESC",
@@ -232,6 +237,7 @@ impl DBReader {
                 thumbnail: row.get(16)?,
                 is_self: row.get(17)?,
                 num_comments: row.get(18)?,
+                intent: row.get(19)?,
             })
         })?;
 
