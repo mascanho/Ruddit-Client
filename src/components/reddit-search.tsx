@@ -50,7 +50,7 @@ type SearchResult = {
   name?: string;
   selftext?: string | null;
   thumbnail?: string | null;
-  intent?: "high" | "medium" | "low";
+  intent?: string; // allow string from backend
   category?: "brand" | "competitor" | "general";
 };
 
@@ -163,7 +163,7 @@ export function RedditSearch({
         name: post.name,
         selftext: post.selftext,
         thumbnail: post.thumbnail,
-        intent: calculateIntent(post.title),
+        intent: post.intent,
         category: categorizePost(
           post.title,
           settings.brandKeywords,
@@ -200,7 +200,7 @@ export function RedditSearch({
         name: post.name,
         selftext: post.selftext,
         thumbnail: post.thumbnail,
-        intent: calculateIntent(post.title),
+        intent: post.intent,
         category: categorizePost(
           post.title,
           settings.brandKeywords,
@@ -262,7 +262,7 @@ export function RedditSearch({
         name: post.name,
         selftext: post.selftext,
         thumbnail: post.thumbnail,
-        intent: calculateIntent(post.title),
+        intent: post.intent,
         category: categorizePost(
           post.title,
           settings.brandKeywords,
@@ -324,7 +324,7 @@ export function RedditSearch({
           thumbnail: result.thumbnail || "",
           is_self: result.is_self || false,
           num_comments: result.num_comments || 0,
-          intent: calculateIntent(result.title),
+          intent: result.intent || 'Low', // Use result intent
         },
       });
 
@@ -351,7 +351,7 @@ export function RedditSearch({
         is_self: result.is_self || false,
         num_comments: result.num_comments || 0,
         status: "new",
-        intent: calculateIntent(result.title),
+        intent: result.intent || 'Low',
         category: categorizePost(
           result.title,
           settings.brandKeywords,
@@ -428,7 +428,7 @@ export function RedditSearch({
         is_self: result.is_self || false,
         num_comments: result.num_comments || 0,
         status: "new",
-        intent: calculateIntent(result.title),
+        intent: result.intent || 'Low',
         category: categorizePost(
           result.title,
           settings.brandKeywords,
@@ -732,7 +732,7 @@ export function RedditSearch({
 
                       <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                         {result.intent && (
-                          <Badge className={getIntentColor(result.intent)}>
+                          <Badge className={getIntentColor(result.intent.toLowerCase())}>
                             {result.intent.toUpperCase()} INTENT
                           </Badge>
                         )}

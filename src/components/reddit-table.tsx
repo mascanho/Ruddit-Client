@@ -101,7 +101,7 @@ export type RedditPost = {
   notes: string;
   // Client-side fields
   status?: "new" | "investigating" | "replied" | "closed" | "ignored";
-  intent?: "high" | "medium" | "low";
+  intent?: string;
   category?: "brand" | "competitor" | "general";
 };
 
@@ -717,12 +717,11 @@ export function RedditTable({
                               Competitor
                             </Badge>
                           )}
-                          {post.intent === "high" && (
+                          {post.intent && (
                             <Badge
-                              variant="secondary"
-                              className="bg-rose-100 text-rose-800 text-[10px] h-5"
+                              className={`${getIntentColor(post.intent.toLowerCase())} text-[10px] h-5 px-1.5 font-medium border-0`}
                             >
-                              High Intent
+                              {post.intent.toUpperCase()}
                             </Badge>
                           )}
                         </div>

@@ -85,23 +85,8 @@ impl ApiKeys {
     }
 }
 
-
 fn default_high_intent_patterns() -> Vec<String> {
-    vec![
-        "looking for".to_string(),
-        "recommend".to_string(),
-        "suggestion".to_string(),
-        "alternative to".to_string(),
-        "vs".to_string(),
-        "comparison".to_string(),
-        "review".to_string(),
-        "best".to_string(),
-        "help with".to_string(),
-        "how to".to_string(),
-        "pricing".to_string(),
-        "cost".to_string(),
-        "software".to_string(),
-    ]
+    vec!["software".to_string()]
 }
 
 fn default_medium_intent_patterns() -> Vec<String> {
@@ -162,7 +147,7 @@ impl ConfigDirs {
         let config_path = config_dir.join("ruddit/settings.toml");
 
         if !config_path.exists() {
-             Self::create_default_config()?;
+            Self::create_default_config()?;
         }
 
         println!("Reading config file: {:#?}", config_path);
@@ -200,7 +185,6 @@ impl ConfigDirs {
 
         #[cfg(target_os = "linux")]
         {
-
             use std::process::Command;
             Command::new("xdg-open").arg(config_path).spawn()?;
         }
