@@ -74,7 +74,15 @@ import {
   User,
   Pencil,
   Notebook,
+  CheckCircle2,
+  Circle,
+  UserPlus,
 } from "lucide-react";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 const initialData: RedditPost[] = []; // Declare initialData here
 
 // Define RedditPost type to match Rust's PostDataWrapper
@@ -621,7 +629,7 @@ export function RedditTable({
 
                 <TableHead className="w-[100px] p-3 font-medium">URL</TableHead>
 
-                <TableHead className="w-[180px] p-3">
+                <TableHead className="w-[100px] p-3 text-center">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -632,16 +640,15 @@ export function RedditTable({
                     <ArrowUpDown className="ml-2 h-3 w-3" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[150px] p-3">
-                  <div className="flex items-center font-medium">
-                    <User className="mr-2 h-4 w-4" />
+                <TableHead className="w-[120px] p-3 text-center font-medium">
+                  Status
+                </TableHead>
+                <TableHead className="w-[100px] p-3 text-center">
+                  <div className="flex items-center justify-center font-medium">
                     Assignee
                   </div>
                 </TableHead>
-                <TableHead className="w-[100px] p-3 font-medium">
-                  Status
-                </TableHead>
-                <TableHead className="w-[70px] p-3 font-medium">
+                <TableHead className="w-[70px] p-3 text-center font-medium">
                   Actions
                 </TableHead>
               </TableRow>
@@ -662,13 +669,12 @@ export function RedditTable({
                 paginatedData.map((post, index) => (
                   <Fragment key={post.id}>
                     <TableRow
-                      className={`group text-xs p-0 h-2 ${
-                        settings.tableDensity === "compact"
+                      className={`group text-xs p-0 h-2 ${settings.tableDensity === "compact"
+                        ? "h-2"
+                        : settings.tableDensity === "spacious"
                           ? "h-2"
-                          : settings.tableDensity === "spacious"
-                            ? "h-2"
-                            : "h-2"
-                      }`}
+                          : "h-2"
+                        }`}
                     >
                       <TableCell className="px-3 p-0">
                         <Button
@@ -678,9 +684,8 @@ export function RedditTable({
                           className="h-8 w-8"
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${
-                              expandedRows.has(post.id) ? "rotate-180" : ""
-                            }`}
+                            className={`h-4 w-4 transition-transform ${expandedRows.has(post.id) ? "rotate-180" : ""
+                              }`}
                           />
                         </Button>
                       </TableCell>
@@ -738,77 +743,98 @@ export function RedditTable({
                         </span>
                       </TableCell>
 
-                      <TableCell className="w-[180px] px-3 text-xs">
-                        <Select
-                          value={post.engaged === 1 ? "engaged" : "not engaged"}
-                          onValueChange={(value) =>
-                            handleEngagedToggle(post.id, value === "engaged")
-                          }
+                      <TableCell className="w-[100px] px-3 text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-transparent"
+                          onClick={() => handleEngagedToggle(post.id, post.engaged !== 1)}
                         >
-                          <SelectTrigger className="text-xs px-2">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem className="text-xs" value="engaged">
-                              Engaged
-                            </SelectItem>
-                            <SelectItem className="text-xs" value="not engaged">
-                              Not engaged
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                          {post.engaged === 1 ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500 fill-green-500/20" />
+                          ) : (
+                            <Circle className="h-5 w-5 text-muted-foreground/30" />
+                          )}
+                        </Button>
+                      </TableCell>
+
+                      <TableCell className="w-[120px] px-3">
+                        <div className="flex justify-center">
+                          <Select
+                            value={post.status || "new"}
+                            onValueChange={(value) =>
+                              updateCrmData(post.id, { status: value as any })
+                            }
+                          >
+                            <SelectTrigger
+                              className={`w-full justify-between h-7 text-xs px-2 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(post.status)} bg-opacity-20 hover:bg-opacity-30 transition-colors font-medium rounded-full`}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="new">New</SelectItem>
+                              <SelectItem value="investigating">
+                                Investigating
+                              </SelectItem>
+                              <SelectItem value="replied">Replied</SelectItem>
+                              <SelectItem value="closed">Closed</SelectItem>
+                              <SelectItem value="ignored">Ignored</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </TableCell>
 
                       <TableCell className="w-[100px] px-3">
-                        <Select
-                          value={post.status || "new"}
-                          onValueChange={(value) =>
-                            updateCrmData(post.id, { status: value as any })
-                          }
-                        >
-                          <SelectTrigger
-                            className={`text-xs px-2 h-7 ${getStatusColor(post.status)}`}
+                        <div className="flex justify-center">
+                          <Select
+                            value={post.assignee || "unassigned"}
+                            onValueChange={(value) =>
+                              handleAssign(post.id, value)
+                            }
                           >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="new">New</SelectItem>
-                            <SelectItem value="investigating">
-                              Investigating
-                            </SelectItem>
-                            <SelectItem value="replied">Replied</SelectItem>
-                            <SelectItem value="closed">Closed</SelectItem>
-                            <SelectItem value="ignored">Ignored</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="w-[150px] px-3">
-                        <Select
-                          value={post.assignee || "unassigned"}
-                          onValueChange={(value) =>
-                            handleAssign(post.id, value)
-                          }
-                        >
-                          <SelectTrigger className="px-2 text-xs">
-                            <SelectValue placeholder="Assign to..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem className="text-xs" value="unassigned">
-                              Unassigned
-                            </SelectItem>
-                            {teamMembers.map((member) => (
-                              <SelectItem
-                                className="text-xs"
-                                key={member.id}
-                                value={member.name}
-                              >
-                                {member.name}
+                            <SelectTrigger className="w-8 h-8 rounded-full p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden flex items-center justify-center">
+                              <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
+                                {post.assignee && post.assignee !== "unassigned" ? (
+                                  <>
+                                    <AvatarImage
+                                      src={`https://avatar.vercel.sh/${post.assignee}`}
+                                      alt={post.assignee}
+                                    />
+                                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                                      {post.assignee.slice(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </>
+                                ) : (
+                                  <AvatarFallback className="bg-transparent border border-dashed border-muted-foreground/50 hover:border-muted-foreground hover:bg-muted/50 transition-colors">
+                                    <UserPlus className="h-4 w-4 text-muted-foreground" />
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                            </SelectTrigger>
+                            <SelectContent align="center">
+                              <SelectItem className="text-xs" value="unassigned">
+                                Unassigned
                               </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                              {teamMembers.map((member) => (
+                                <SelectItem
+                                  className="text-xs"
+                                  key={member.id}
+                                  value={member.name}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-5 w-5">
+                                      <AvatarImage src={`https://avatar.vercel.sh/${member.name}`} />
+                                      <AvatarFallback className="text-[10px]">{member.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    {member.name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </TableCell>
-                      <TableCell className="w-[70px] px-3">
+                      <TableCell className="w-[70px] px-3 text-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
