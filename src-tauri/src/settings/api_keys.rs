@@ -86,7 +86,21 @@ impl ApiKeys {
 }
 
 fn default_high_intent_patterns() -> Vec<String> {
-    vec!["software".to_string()]
+    vec![
+        "looking for".to_string(),
+        "recommend".to_string(),
+        "suggestion".to_string(),
+        "alternative to".to_string(),
+        "vs".to_string(),
+        "comparison".to_string(),
+        "review".to_string(),
+        "best".to_string(),
+        "help with".to_string(),
+        "how to".to_string(),
+        "pricing".to_string(),
+        "cost".to_string(),
+        "software".to_string(),
+    ]
 }
 
 fn default_medium_intent_patterns() -> Vec<String> {
