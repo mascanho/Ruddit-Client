@@ -541,6 +541,11 @@ export function RedditSearch({
     return saved ? JSON.parse(saved) : ["hot", "top", "new"];
   });
 
+  const [viewIntentFilters, setViewIntentFilters] = useState<string[]>(() => {
+    const saved = localStorage.getItem("lastRedditSearchViewIntentFilters");
+    return saved ? JSON.parse(saved) : ["High", "Medium", "Low"];
+  });
+
   useEffect(() => {
     localStorage.setItem("lastRedditSearchViewSort", viewSort);
   }, [viewSort]);
@@ -552,11 +557,27 @@ export function RedditSearch({
     );
   }, [viewFilters]);
 
+  useEffect(() => {
+    localStorage.setItem(
+      "lastRedditSearchViewIntentFilters",
+      JSON.stringify(viewIntentFilters),
+    );
+  }, [viewIntentFilters]);
+
   // Filter local results based on viewSort and viewFilters
   const sortedSubreddits = [...subreddits]
     .filter((item) => {
       const types = (item.sort_type || "").split(",");
-      return viewFilters.some((filter) => types.includes(filter));
+      const sortTypeMatch = viewFilters.some((filter) =>
+        types.includes(filter),
+      );
+
+      const intent = item.intent || "Low";
+      const intentMatch = viewIntentFilters.some(
+        (f) => f.toLowerCase() === intent.toLowerCase(),
+      );
+
+      return sortTypeMatch && intentMatch;
     })
     .sort((a, b) => {
       if (viewSort === "original") return 0;
@@ -586,6 +607,15 @@ export function RedditSearch({
 
   const toggleViewFilter = (filter: SortType) => {
     setViewFilters((prev) => {
+      if (prev.includes(filter)) {
+        return prev.filter((f) => f !== filter);
+      }
+      return [...prev, filter];
+    });
+  };
+
+  const toggleViewIntentFilter = (filter: string) => {
+    setViewIntentFilters((prev) => {
       if (prev.includes(filter)) {
         return prev.filter((f) => f !== filter);
       }
@@ -754,6 +784,46 @@ export function RedditSearch({
                   >
                     <Clock className="h-3 w-3 mr-1" />
                     New
+                  </Button>
+                </div>
+                <div className="h-4 w-px bg-border mx-2" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    Intent:
+                  </span>
+                  <Button
+                    variant={
+                      viewIntentFilters.includes("High")
+                        ? "secondary"
+                        : "ghost"
+                    }
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => toggleViewIntentFilter("High")}
+                  >
+                    High
+                  </Button>
+                  <Button
+                    variant={
+                      viewIntentFilters.includes("Medium")
+                        ? "secondary"
+                        : "ghost"
+                    }
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => toggleViewIntentFilter("Medium")}
+                  >
+                    Medium
+                  </Button>
+                  <Button
+                    variant={
+                      viewIntentFilters.includes("Low") ? "secondary" : "ghost"
+                    }
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => toggleViewIntentFilter("Low")}
+                  >
+                    Low
                   </Button>
                 </div>
               </div>
