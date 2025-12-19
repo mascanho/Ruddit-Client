@@ -78,11 +78,7 @@ import {
   Circle,
   UserPlus,
 } from "lucide-react";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const initialData: RedditPost[] = []; // Declare initialData here
 
 // Define RedditPost type to match Rust's PostDataWrapper
@@ -593,7 +589,7 @@ export function RedditTable({
                     <ArrowUpDown className="ml-2 h-3 w-3" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[110px] p-3">
+                <TableHead className="w-[30px] p-3">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -629,7 +625,7 @@ export function RedditTable({
 
                 <TableHead className="w-[100px] p-3 font-medium">URL</TableHead>
 
-                <TableHead className="w-[100px] p-3 text-center">
+                <TableHead className="w-[30px] p-3 text-center">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -637,7 +633,6 @@ export function RedditTable({
                     onClick={() => handleSort("engaged")}
                   >
                     Engaged
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
                   </Button>
                 </TableHead>
                 <TableHead className="w-[120px] p-3 text-center font-medium">
@@ -669,12 +664,13 @@ export function RedditTable({
                 paginatedData.map((post, index) => (
                   <Fragment key={post.id}>
                     <TableRow
-                      className={`group text-xs p-0 h-2 ${settings.tableDensity === "compact"
-                        ? "h-2"
-                        : settings.tableDensity === "spacious"
+                      className={`group text-xs p-0 h-2 ${
+                        settings.tableDensity === "compact"
                           ? "h-2"
-                          : "h-2"
-                        }`}
+                          : settings.tableDensity === "spacious"
+                            ? "h-2"
+                            : "h-2"
+                      }`}
                     >
                       <TableCell className="px-3 p-0">
                         <Button
@@ -684,15 +680,16 @@ export function RedditTable({
                           className="h-8 w-8"
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${expandedRows.has(post.id) ? "rotate-180" : ""
-                              }`}
+                            className={`h-4 w-4 transition-transform ${
+                              expandedRows.has(post.id) ? "rotate-180" : ""
+                            }`}
                           />
                         </Button>
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-xs font-medium w-[60px] p-3">
+                      <TableCell className="text-muted-foreground text-xs font-medium w-[30px] p-3">
                         {(currentPage - 1) * rowsPerPage + index + 1}
                       </TableCell>
-                      <TableCell className="font-mono text-sm w-[110px] px-3">
+                      <TableCell className="font-mono text-xs w-[110px] px-3">
                         {post?.formatted_date?.slice(0, 10).trim() || "N/A"}
                       </TableCell>
                       <TableCell className="min-w-[300px] px-3">
@@ -742,12 +739,14 @@ export function RedditTable({
                         </span>
                       </TableCell>
 
-                      <TableCell className="w-[100px] px-3 text-center">
+                      <TableCell className="w-[20px] px-3 text-center">
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 hover:bg-transparent"
-                          onClick={() => handleEngagedToggle(post.id, post.engaged !== 1)}
+                          onClick={() =>
+                            handleEngagedToggle(post.id, post.engaged !== 1)
+                          }
                         >
                           {post.engaged === 1 ? (
                             <CheckCircle2 className="h-5 w-5 text-green-500 fill-green-500/20" />
@@ -766,12 +765,17 @@ export function RedditTable({
                             }
                           >
                             <SelectTrigger
-                              className={`w-full justify-between h-7 text-xs px-2 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(post.status)} bg-opacity-20 hover:bg-opacity-30 transition-colors font-medium rounded-full`}
+                              className={`w-full flex justify-center  h-7 text-xs px-2 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(post.status)} bg-opacity-20 hover:bg-opacity-30 transition-colors font-medium rounded-full text-center`}
                             >
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="new">New</SelectItem>
+                            <SelectContent className="text-center flex justify-center">
+                              <SelectItem
+                                className="text-center w-full flex justify-center"
+                                value="new"
+                              >
+                                New
+                              </SelectItem>
                               <SelectItem value="investigating">
                                 Investigating
                               </SelectItem>
@@ -793,7 +797,8 @@ export function RedditTable({
                           >
                             <SelectTrigger className="w-8 h-8 rounded-full p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden flex items-center justify-center">
                               <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
-                                {post.assignee && post.assignee !== "unassigned" ? (
+                                {post.assignee &&
+                                post.assignee !== "unassigned" ? (
                                   <>
                                     <AvatarImage
                                       src={`https://avatar.vercel.sh/${post.assignee}`}
@@ -811,7 +816,10 @@ export function RedditTable({
                               </Avatar>
                             </SelectTrigger>
                             <SelectContent align="center">
-                              <SelectItem className="text-xs" value="unassigned">
+                              <SelectItem
+                                className="text-xs"
+                                value="unassigned"
+                              >
                                 Unassigned
                               </SelectItem>
                               {teamMembers.map((member) => (
@@ -822,8 +830,12 @@ export function RedditTable({
                                 >
                                   <div className="flex items-center gap-2">
                                     <Avatar className="h-5 w-5">
-                                      <AvatarImage src={`https://avatar.vercel.sh/${member.name}`} />
-                                      <AvatarFallback className="text-[10px]">{member.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                      <AvatarImage
+                                        src={`https://avatar.vercel.sh/${member.name}`}
+                                      />
+                                      <AvatarFallback className="text-[10px]">
+                                        {member.name.slice(0, 2).toUpperCase()}
+                                      </AvatarFallback>
                                     </Avatar>
                                     {member.name}
                                   </div>

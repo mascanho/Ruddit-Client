@@ -29,7 +29,11 @@ import {
 import { toast } from "sonner";
 import moment from "moment";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { calculateIntent, categorizePost, getIntentColor } from "@/lib/marketing-utils";
+import {
+  calculateIntent,
+  categorizePost,
+  getIntentColor,
+} from "@/lib/marketing-utils";
 
 // ... existing imports
 
@@ -63,7 +67,9 @@ export function RedditSearch({
   onAddResults: (results: SearchResult[]) => void;
   onNotifyNewPosts: (count: number) => void;
 }) {
-  const [query, setQuery] = useState(() => localStorage.getItem("lastRedditSearchQuery") || "");
+  const [query, setQuery] = useState(
+    () => localStorage.getItem("lastRedditSearchQuery") || "",
+  );
   const [isSearching, setIsSearching] = useState(false);
   const [selectedSorts, setSelectedSorts] = useState<SortType[]>(() => {
     const saved = localStorage.getItem("lastRedditSearchSorts");
@@ -90,7 +96,10 @@ export function RedditSearch({
   }, [query]);
 
   useEffect(() => {
-    localStorage.setItem("lastRedditSearchSorts", JSON.stringify(selectedSorts));
+    localStorage.setItem(
+      "lastRedditSearchSorts",
+      JSON.stringify(selectedSorts),
+    );
   }, [selectedSorts]);
 
   useEffect(() => {
@@ -105,9 +114,7 @@ export function RedditSearch({
   const highlightKeywords = (text: string, currentQuery: string) => {
     if (!text || !currentQuery.trim()) return text;
 
-    const rawKeywords = currentQuery
-      .split(/\s+/)
-      .filter((k) => k.length > 0);
+    const rawKeywords = currentQuery.split(/\s+/).filter((k) => k.length > 0);
 
     if (rawKeywords.length === 0) return text;
 
@@ -153,7 +160,10 @@ export function RedditSearch({
         url: post.url,
         relevance_score: post.relevance_score,
         sort_type: post.sort_type,
-        snippet: post.selftext ? post.selftext.slice(0, 200) + (post.selftext.length > 200 ? "..." : "") : "",
+        snippet: post.selftext
+          ? post.selftext.slice(0, 200) +
+            (post.selftext.length > 200 ? "..." : "")
+          : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
         score: post.score,
@@ -167,7 +177,7 @@ export function RedditSearch({
         category: categorizePost(
           post.title,
           settings.brandKeywords,
-          settings.competitorKeywords
+          settings.competitorKeywords,
         ),
       }));
       setSubreddits(mappedResults);
@@ -190,7 +200,10 @@ export function RedditSearch({
         url: post.url,
         relevance_score: post.relevance_score,
         sort_type: post.sort_type,
-        snippet: post.selftext ? post.selftext.slice(0, 200) + (post.selftext.length > 200 ? "..." : "") : "",
+        snippet: post.selftext
+          ? post.selftext.slice(0, 200) +
+            (post.selftext.length > 200 ? "..." : "")
+          : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
         score: post.score,
@@ -204,7 +217,7 @@ export function RedditSearch({
         category: categorizePost(
           post.title,
           settings.brandKeywords,
-          settings.competitorKeywords
+          settings.competitorKeywords,
         ),
       }));
       setSubreddits(mappedResults);
@@ -252,7 +265,10 @@ export function RedditSearch({
         url: post.url,
         relevance_score: post.relevance_score,
         sort_type: post.sort_type,
-        snippet: post.selftext ? post.selftext.slice(0, 200) + (post.selftext.length > 200 ? "..." : "") : "",
+        snippet: post.selftext
+          ? post.selftext.slice(0, 200) +
+            (post.selftext.length > 200 ? "..." : "")
+          : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
         score: post.score,
@@ -266,7 +282,7 @@ export function RedditSearch({
         category: categorizePost(
           post.title,
           settings.brandKeywords,
-          settings.competitorKeywords
+          settings.competitorKeywords,
         ),
       }));
       setSubreddits(mappedResults);
@@ -324,7 +340,7 @@ export function RedditSearch({
           thumbnail: result.thumbnail || "",
           is_self: result.is_self || false,
           num_comments: result.num_comments || 0,
-          intent: result.intent || 'Low', // Use result intent
+          intent: result.intent || "Low", // Use result intent
         },
       });
 
@@ -351,11 +367,11 @@ export function RedditSearch({
         is_self: result.is_self || false,
         num_comments: result.num_comments || 0,
         status: "new",
-        intent: result.intent || 'Low',
+        intent: result.intent || "Low",
         category: categorizePost(
           result.title,
           settings.brandKeywords,
-          settings.competitorKeywords
+          settings.competitorKeywords,
         ),
       };
 
@@ -410,7 +426,8 @@ export function RedditSearch({
       const singlePost: PostDataWrapper = {
         id: parsedId,
         timestamp: result.timestamp || Date.now(),
-        formatted_date: result.formatted_date || new Date().toISOString().split("T")[0],
+        formatted_date:
+          result.formatted_date || new Date().toISOString().split("T")[0],
         title: result.title,
         url: result.url,
         sort_type: result.sort_type,
@@ -428,11 +445,11 @@ export function RedditSearch({
         is_self: result.is_self || false,
         num_comments: result.num_comments || 0,
         status: "new",
-        intent: result.intent || 'Low',
+        intent: result.intent || "Low",
         category: categorizePost(
           result.title,
           settings.brandKeywords,
-          settings.competitorKeywords
+          settings.competitorKeywords,
         ),
       };
 
@@ -454,7 +471,12 @@ export function RedditSearch({
         if (isInserted) {
           addSingleSubreddit(singlePost);
           addedCount++;
-          if (singlePost.url && singlePost.title && singlePost.sort_type && singlePost.subreddit) {
+          if (
+            singlePost.url &&
+            singlePost.title &&
+            singlePost.sort_type &&
+            singlePost.subreddit
+          ) {
             await invoke("get_post_comments_command", {
               url: singlePost.url,
               title: singlePost.title,
@@ -468,7 +490,9 @@ export function RedditSearch({
         }
       } catch (err: any) {
         console.error(`Error adding post ${singlePost.title}:`, err);
-        toast.error(`Failed to add post "${singlePost.title}": ${err.message || err}`);
+        toast.error(
+          `Failed to add post "${singlePost.title}": ${err.message || err}`,
+        );
       }
     }
 
@@ -479,9 +503,12 @@ export function RedditSearch({
       onNotifyNewPosts(addedCount);
     }
     if (duplicateCount > 0) {
-      toast.info(`${duplicateCount} post(s) were already in your tracking table.`, {
-        position: "bottom-center",
-      });
+      toast.info(
+        `${duplicateCount} post(s) were already in your tracking table.`,
+        {
+          position: "bottom-center",
+        },
+      );
     }
   };
 
@@ -496,9 +523,17 @@ export function RedditSearch({
   };
 
   const [viewSort, setViewSort] = useState<
-    "date-desc" | "date-asc" | "score-desc" | "score-asc" | "comments-desc" | "comments-asc" | "original"
+    | "date-desc"
+    | "date-asc"
+    | "score-desc"
+    | "score-asc"
+    | "comments-desc"
+    | "comments-asc"
+    | "original"
   >(() => {
-    return (localStorage.getItem("lastRedditSearchViewSort") as any) || "date-desc";
+    return (
+      (localStorage.getItem("lastRedditSearchViewSort") as any) || "date-desc"
+    );
   });
 
   const [viewFilters, setViewFilters] = useState<SortType[]>(() => {
@@ -511,14 +546,17 @@ export function RedditSearch({
   }, [viewSort]);
 
   useEffect(() => {
-    localStorage.setItem("lastRedditSearchViewFilters", JSON.stringify(viewFilters));
+    localStorage.setItem(
+      "lastRedditSearchViewFilters",
+      JSON.stringify(viewFilters),
+    );
   }, [viewFilters]);
 
   // Filter local results based on viewSort and viewFilters
   const sortedSubreddits = [...subreddits]
     .filter((item) => {
       const types = (item.sort_type || "").split(",");
-      return viewFilters.some(filter => types.includes(filter));
+      return viewFilters.some((filter) => types.includes(filter));
     })
     .sort((a, b) => {
       if (viewSort === "original") return 0;
@@ -538,7 +576,9 @@ export function RedditSearch({
       if (viewSort.startsWith("comments")) {
         const commentsA = a.num_comments || 0;
         const commentsB = b.num_comments || 0;
-        return viewSort === "comments-desc" ? commentsB - commentsA : commentsA - commentsB;
+        return viewSort === "comments-desc"
+          ? commentsB - commentsA
+          : commentsA - commentsB;
       }
 
       return 0;
@@ -547,7 +587,7 @@ export function RedditSearch({
   const toggleViewFilter = (filter: SortType) => {
     setViewFilters((prev) => {
       if (prev.includes(filter)) {
-        return prev.filter(f => f !== filter);
+        return prev.filter((f) => f !== filter);
       }
       return [...prev, filter];
     });
@@ -561,7 +601,7 @@ export function RedditSearch({
   function isColoredRelevance(sortType: string) {
     // Renamed parameter
     switch (
-    sortType // Use new parameter
+      sortType // Use new parameter
     ) {
       case "hot":
         return "bg-red-500";
@@ -660,7 +700,9 @@ export function RedditSearch({
                 </p>
                 <div className="h-4 w-px bg-border mx-2" />
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Sort order:</span>
+                  <span className="text-xs text-muted-foreground">
+                    Sort order:
+                  </span>
                   <select
                     className="border rounded px-2 py-1 text-xs bg-background"
                     value={viewSort}
@@ -677,9 +719,13 @@ export function RedditSearch({
                 </div>
                 <div className="h-4 w-px bg-border mx-2" />
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Filter view:</span>
+                  <span className="text-xs text-muted-foreground">
+                    Filter view:
+                  </span>
                   <Button
-                    variant={viewFilters.includes("hot") ? "secondary" : "ghost"}
+                    variant={
+                      viewFilters.includes("hot") ? "secondary" : "ghost"
+                    }
                     size="sm"
                     className="h-7 px-2 text-xs"
                     onClick={() => toggleViewFilter("hot")}
@@ -688,7 +734,9 @@ export function RedditSearch({
                     Hot
                   </Button>
                   <Button
-                    variant={viewFilters.includes("top") ? "secondary" : "ghost"}
+                    variant={
+                      viewFilters.includes("top") ? "secondary" : "ghost"
+                    }
                     size="sm"
                     className="h-7 px-2 text-xs"
                     onClick={() => toggleViewFilter("top")}
@@ -697,7 +745,9 @@ export function RedditSearch({
                     Top
                   </Button>
                   <Button
-                    variant={viewFilters.includes("new") ? "secondary" : "ghost"}
+                    variant={
+                      viewFilters.includes("new") ? "secondary" : "ghost"
+                    }
                     size="sm"
                     className="h-7 px-2 text-xs"
                     onClick={() => toggleViewFilter("new")}
@@ -717,8 +767,15 @@ export function RedditSearch({
               {paginatedResults.map((result) => (
                 <Card
                   key={result.id}
-                  className="p-4 hover:bg-accent/50 transition-colors"
+                  className="p-4 hover:bg-accent/50 transition-colors relative"
                 >
+                  {result?.is_self && (
+                    <div className="absolute bottom-4 right-4">
+                      <div className="px-3 text-xs py-1 rounded-xl border border-gray-300 text-gray-400">
+                        Self Post
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium mb-1 line-clamp-2 text-base">
@@ -732,7 +789,11 @@ export function RedditSearch({
 
                       <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                         {result.intent && (
-                          <Badge className={getIntentColor(result.intent.toLowerCase())}>
+                          <Badge
+                            className={getIntentColor(
+                              result.intent.toLowerCase(),
+                            )}
+                          >
                             {result.intent.toUpperCase()} INTENT
                           </Badge>
                         )}
@@ -742,7 +803,10 @@ export function RedditSearch({
                         </Badge>
 
                         {result.sort_type?.split(",").map((type) => (
-                          <Badge key={type} className={isColoredRelevance(type)}>
+                          <Badge
+                            key={type}
+                            className={isColoredRelevance(type)}
+                          >
                             {type}
                           </Badge>
                         ))}
@@ -751,13 +815,22 @@ export function RedditSearch({
 
                         <div className="flex items-center gap-4">
                           <span title="Score">
-                            Score: <span className="font-medium text-foreground">{result.score}</span>
+                            Score:{" "}
+                            <span className="font-medium text-foreground">
+                              {result.score}
+                            </span>
                           </span>
                           <span title="Comments">
-                            Comments: <span className="font-medium text-foreground">{result.num_comments}</span>
+                            Comments:{" "}
+                            <span className="font-medium text-foreground">
+                              {result.num_comments}
+                            </span>
                           </span>
                           <span title="Author">
-                            By: <span className="font-medium text-foreground">{result.author}</span>
+                            By:{" "}
+                            <span className="font-medium text-foreground">
+                              {result.author}
+                            </span>
                           </span>
                           <span title="Date">
                             {moment(result.formatted_date).fromNow()}
@@ -769,7 +842,7 @@ export function RedditSearch({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="cursor-pointer"
+                        className="cursor-pointer hover:bg-blue-900 hover:text-white"
                         onClick={() => handleOpenInBrowser(result.url)}
                       >
                         View
@@ -777,6 +850,7 @@ export function RedditSearch({
                       <Button
                         variant="outline"
                         size="sm"
+                        className="cursor-pointer hover:bg-blue-900 hover:text-white"
                         onClick={() => addToTable(result)}
                       >
                         <Plus className="h-4 w-4 mr-2" />
