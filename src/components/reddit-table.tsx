@@ -623,7 +623,9 @@ export function RedditTable({
                   </Button>
                 </TableHead>
 
-                <TableHead className="w-[100px] p-3 font-medium">URL</TableHead>
+                <TableHead className="w-[100px] p-3 font-medium text-center">
+                  Intent
+                </TableHead>
 
                 <TableHead className="w-[30px] p-3 text-center">
                   <Button
@@ -693,7 +695,10 @@ export function RedditTable({
                         {post?.formatted_date?.slice(0, 10).trim() || "N/A"}
                       </TableCell>
                       <TableCell className="min-w-[300px] px-3">
-                        <div className="line-clamp-2 font-medium">
+                        <div
+                          onClick={() => handleOpenInbrowser(post.url)}
+                          className="line-clamp-2 font-medium cursor-pointer hover:underline"
+                        >
                           {post.title?.slice(0, 100) || "No title"}
                           {post.title?.length > 100 && "..."}
                         </div>
@@ -714,13 +719,6 @@ export function RedditTable({
                               Competitor
                             </Badge>
                           )}
-                          {post.intent && (
-                            <Badge
-                              className={`${getIntentColor(post.intent.toLowerCase())} text-[10px] h-5 px-1.5 font-medium border-0`}
-                            >
-                              {post.intent.toUpperCase()}
-                            </Badge>
-                          )}
                         </div>
                       </TableCell>
                       <TableCell className="w-[150px] px-3">
@@ -729,14 +727,14 @@ export function RedditTable({
                         </Badge>
                       </TableCell>
 
-                      <TableCell className="w-[100px] px-3">
-                        <span
-                          onClick={() => handleOpenInbrowser(post.url)}
-                          className="flex items-center text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-sm"
-                        >
-                          Link
-                          <ExternalLink className="h-3 w-3 ml-1" />
-                        </span>
+                      <TableCell className="w-[100px] px-3 text-center">
+                        {post.intent && (
+                          <Badge
+                            className={`${getIntentColor(post.intent.toLowerCase())} text-[10px] h-5 px-1.5 font-medium border-0`}
+                          >
+                            {post.intent.toUpperCase()}
+                          </Badge>
+                        )}
                       </TableCell>
 
                       <TableCell className="w-[20px] px-3 text-center">
