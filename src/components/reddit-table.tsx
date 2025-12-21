@@ -1167,7 +1167,7 @@ export function RedditTable({
         open={commentsPost !== null}
         onOpenChange={() => setCommentsPost(null)}
       >
-        <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogContent className="max-h-[80vh] w-[800px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
