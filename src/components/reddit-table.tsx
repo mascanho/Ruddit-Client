@@ -578,15 +578,13 @@ export function RedditTable({
                   {/* Expand/Collapse */}
                   <Notebook className="h-4 w-4" />
                 </TableHead>
-                <TableHead className="w-[60px] p-3">
+                <TableHead className="w-[30px] p-3">
                   <Button
                     variant="ghost"
                     size="sm"
                     className="-ml-3 h-8 font-medium"
-                    onClick={() => handleSort("index")}
                   >
                     #
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
                   </Button>
                 </TableHead>
                 <TableHead className="w-[30px] p-3">
@@ -862,19 +860,19 @@ export function RedditTable({
                                 handleGetComments(post, post.sort_type)
                               }
                             >
-                              <MessageCircle className="mr-2 h-4 w-4" />
+                              <MessageCircle className="h-4 w-4" />
                               Get Comments
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleEditNote(post)}
                             >
-                              <Pencil className="mr-2 h-4 w-4" />
+                              <Pencil className="h-4 w-4" />
                               Add/Edit Note
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => setSelectedPost(post)}
                             >
-                              <Info className="mr-2 h-4 w-4" />
+                              <Info className="h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
@@ -884,7 +882,7 @@ export function RedditTable({
                                 rel="noopener noreferrer"
                                 className="flex items-center"
                               >
-                                <ExternalLink className="mr-2 h-4 w-4" />
+                                <ExternalLink className="h-4 w-4" />
                                 Open Link
                               </a>
                             </DropdownMenuItem>
@@ -893,7 +891,7 @@ export function RedditTable({
                               onClick={() => setDeleteId(post.id)}
                               className="text-destructive focus:text-destructive"
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -1167,7 +1165,7 @@ export function RedditTable({
         open={commentsPost !== null}
         onOpenChange={() => setCommentsPost(null)}
       >
-        <DialogContent className="max-h-[80vh] w-[800px]">
+        <DialogContent className="w-full max-w-[800px] max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />

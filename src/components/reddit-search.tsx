@@ -788,14 +788,10 @@ export function RedditSearch({
                 </div>
                 <div className="h-4 w-px bg-border mx-2" />
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    Intent:
-                  </span>
+                  <span className="text-xs text-muted-foreground">Intent:</span>
                   <Button
                     variant={
-                      viewIntentFilters.includes("High")
-                        ? "secondary"
-                        : "ghost"
+                      viewIntentFilters.includes("High") ? "secondary" : "ghost"
                     }
                     size="sm"
                     className="h-7 px-2 text-xs"
@@ -842,7 +838,7 @@ export function RedditSearch({
                   {result?.is_self && (
                     <div className="absolute bottom-4 right-4">
                       <div className="px-3 text-xs py-1 rounded-xl border border-gray-300 text-gray-400">
-                        Self Post
+                        Post
                       </div>
                     </div>
                   )}
