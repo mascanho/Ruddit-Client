@@ -718,7 +718,11 @@ export function RedditTable({
                               Competitor
                             </Badge>
                           )}
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <div
+                            className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer hover:text-primary"
+                            onClick={() => handleGetComments(post, post.sort_type)}
+                            title="Get comments"
+                          >
                             <MessageCircle className="h-3 w-3" />
                             <span>{post.num_comments ?? 0}</span>
                           </div>
