@@ -238,7 +238,9 @@ pub async fn get_subreddit_posts(
         .collect();
 
     println!("Processed {} ", subreddit_clean);
-    println!("Post: {:?}", &posts[0]);
+    if !posts.is_empty() {
+        println!("Post: {:?}", &posts[0]);
+    }
     Ok(posts)
 }
 
@@ -312,7 +314,9 @@ pub async fn search_subreddit_posts(
         .collect();
 
     println!("Processed {} posts for sort: {}", posts.len(), sort_type);
-    println!("Post: {:#?}", &posts[0]);
+    if !posts.is_empty() {
+        println!("Post: {:#?}", &posts[0]);
+    }
     Ok(posts)
 }
 
