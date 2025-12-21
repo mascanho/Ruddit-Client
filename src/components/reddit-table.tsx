@@ -12,6 +12,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import type { Message, SearchState } from "./smart-data-tables";
+import { RedditCommentsView } from "./reddit-comments-view";
 import { useAppSettings } from "./app-settings";
 import { invoke } from "@tauri-apps/api/core";
 import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
@@ -110,73 +111,11 @@ const teamMembers = [
 ];
 
 interface CommentTree extends Message {
-
   children: CommentTree[];
 }
 
-function buildCommentTree(flatComments: Message[]): CommentTree[] {
-  const map = new Map<string, CommentTree>();
-  const roots: CommentTree[] = [];
-
-  // Initialize map and create CommentTree objects
-  flatComments.forEach((c) => {
-    map.set(c.id, { ...c, children: [] });
-  });
-
-  // Build tree
-  flatComments.forEach((c) => {
-    const node = map.get(c.id)!;
-    // Check if parent exists in our map
-    // Reddit parent_id usually starts with "t3_" (post) or "t1_" (comment)
-    const parentId = c.parent_id?.split("_")[1];
-    if (parentId && map.has(parentId)) {
-      map.get(parentId)!.children.push(node);
-    } else {
-      roots.push(node);
-    }
-  });
-
-  return roots;
-}
-
-const CommentItem = ({
-  comment,
-  depth = 0,
-}: {
-  comment: CommentTree;
-  depth?: number;
-}) => (
-  <div style={{ marginLeft: depth > 0 ? `${depth * 20}px` : "0" }}>
-    <Card className={`p-4 mb-4 ${depth > 0 ? "border-l-4 border-l-primary/30" : ""}`}>
-      <div className="flex items-start gap-3">
-        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-medium text-primary">
-            {comment?.author?.charAt(0).toUpperCase()}
-          </span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-medium text-sm">{comment?.author}</span>
-            <span className="text-xs text-muted-foreground">•</span>
-            <span className="text-xs text-muted-foreground">
-              {comment?.formatted_date?.slice(0, 10)}
-            </span>
-            <span className="text-xs text-primary">
-              {moment(comment?.formatted_date, "YYYY-MM-DD").fromNow()}
-            </span>
-          </div>
-          <p className="text-sm leading-relaxed">{comment?.body}</p>
-        </div>
-      </div>
-    </Card>
-    {comment.children.length > 0 &&
-      comment.children.map((child) => (
-        <CommentItem key={child.id} comment={child} depth={depth + 1} />
-      ))}
-  </div>
-);
-
 type SortField = keyof RedditPost | null;
+
 
 type SortDirection = "asc" | "desc";
 
@@ -1254,71 +1193,14 @@ export function RedditTable({
       </AlertDialog>
 
       {/* Comments Dialog */}
-      <Dialog
-        open={commentsPost !== null}
-        onOpenChange={() => setCommentsPost(null)}
-      >
-        <DialogContent className="w-full max-w-[800px] max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
-              Comments
-            </DialogTitle>
-            {commentsPost && (
-              <DialogDescription className="space-y-1">
-                <div className="font-medium text-foreground line-clamp-2">
-                  {commentsPost?.title}
-                </div>
-                <div className="flex items-center gap-2 text-xs justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="outline" className="font-mono">
-                      r/{commentsPost?.subreddit}
-                    </Badge>
-                    <span className="text-muted-foreground">
-                      {comments?.length} comments
-                    </span>
-                  </div>
-                  <section className="flex items-center space-x-2">
-                    <span className="text-black">Sort By:</span>
-                    <Select
-                      value={sortTypeForComments}
-                      onValueChange={handleSortTypeForCommentsChange}
-                    >
-                      <SelectTrigger size="xs" className="w-[110px]">
-                        <SelectValue placeholder="Best" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="best">Best</SelectItem>
-                        <SelectItem value="top">Top</SelectItem>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="controversial">
-                          Controversial
-                        </SelectItem>
-                        <SelectItem value="old">Old</SelectItem>
-                        <SelectItem value="q&a">Q&A</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </section>
-                </div>
-              </DialogDescription>
-            )}
-          </DialogHeader>
-          <ScrollArea className="max-h-[calc(80vh-180px)] pr-4">
-            <div className="space-y-4">
-              {useMemo(() => buildCommentTree(comments), [comments]).map(
-                (rootComment) => (
-                  <CommentItem key={rootComment.id} comment={rootComment} />
-                ),
-              )}
-              {comments.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No comments available
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      <RedditCommentsView
+        isOpen={commentsPost !== null}
+        onOpenChange={(open) => !open && setCommentsPost(null)}
+        post={commentsPost}
+        comments={comments}
+        sortType={sortTypeForComments}
+        onSortTypeChange={handleSortTypeForCommentsChange}
+      />
     </>
   );
 }

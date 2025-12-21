@@ -26,6 +26,7 @@ import {
   useRedditPostsTab,
   useSubredditsStore,
 } from "@/store/store";
+import { RedditCommentsView } from "./reddit-comments-view";
 import { toast } from "sonner";
 import moment from "moment";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -84,6 +85,12 @@ export function RedditSearch({
   const { settings } = useAppSettings();
   const { setSubreddits, subreddits } = useSubredditsStore();
   const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
+
+  // Comments state
+  const [comments, setComments] = useState<Message[]>([]);
+  const [commentsPost, setCommentsPost] = useState<SearchResult | null>(null);
+  const [sortTypeForComments, setSortTypeForComments] = useState("best");
+
 
   // Helper function to escape special characters for regex
   const escapeRegExp = (string: string) => {
@@ -162,7 +169,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -202,7 +209,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -267,7 +274,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -416,6 +423,31 @@ export function RedditSearch({
       console.error("Failed to open URL:", error);
     }
   };
+
+  const handleGetComments = async (result: SearchResult, sort_type: string) => {
+    try {
+      const fetchedComments = (await invoke("get_post_comments_command", {
+        url: result.url,
+        title: result.title,
+        sortType: sort_type,
+        subreddit: result.subreddit,
+      })) as Message[];
+
+      setComments(fetchedComments);
+      setCommentsPost(result);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      toast.error(`Failed to fetch comments: ${error}`);
+    }
+  };
+
+  const handleSortTypeForCommentsChange = (newSortType: string) => {
+    setSortTypeForComments(newSortType);
+    if (commentsPost) {
+      handleGetComments(commentsPost, newSortType);
+    }
+  };
+
 
   const addAllToTable = async () => {
     let addedCount = 0;
@@ -631,7 +663,7 @@ export function RedditSearch({
   function isColoredRelevance(sortType: string) {
     // Renamed parameter
     switch (
-      sortType // Use new parameter
+    sortType // Use new parameter
     ) {
       case "hot":
         return "bg-red-500";
@@ -909,6 +941,14 @@ export function RedditSearch({
                         variant="outline"
                         size="sm"
                         className="cursor-pointer hover:bg-blue-900 hover:text-white"
+                        onClick={() => handleGetComments(result, sortTypeForComments)}
+                      >
+                        Comments
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="cursor-pointer hover:bg-blue-900 hover:text-white"
                         onClick={() => handleOpenInBrowser(result.url)}
                       >
                         View
@@ -1002,6 +1042,19 @@ export function RedditSearch({
           </>
         )}
       </div>
+
+      <RedditCommentsView
+        isOpen={commentsPost !== null}
+        onOpenChange={(open) => !open && setCommentsPost(null)}
+        post={commentsPost ? {
+          title: commentsPost.title,
+          url: commentsPost.url,
+          subreddit: commentsPost.subreddit
+        } : null}
+        comments={comments}
+        sortType={sortTypeForComments}
+        onSortTypeChange={handleSortTypeForCommentsChange}
+      />
     </Card>
   );
 }
