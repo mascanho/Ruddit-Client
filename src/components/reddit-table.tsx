@@ -436,6 +436,11 @@ export function RedditTable({
     setComments(fetchedComments);
     setCommentsPost(post);
     onAddComments(fetchedComments);
+    setData((prevData) =>
+      prevData.map((p) =>
+        p.id === post.id ? { ...p, num_comments: fetchedComments.length } : p,
+      ),
+    );
   };
 
   const handleSortTypeForCommentsChange = async (newSortType: string) => {
@@ -450,6 +455,13 @@ export function RedditTable({
       })) as Message[];
       setComments(newComments);
       onAddComments(newComments);
+      setData((prevData) =>
+        prevData.map((p) =>
+          p.id === commentsPost.id
+            ? { ...p, num_comments: newComments.length }
+            : p,
+        ),
+      );
     }
   };
 
