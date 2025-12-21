@@ -95,6 +95,7 @@ export type RedditPost = {
   engaged: number; // Changed from boolean to number (0 or 1)
   assignee: string;
   notes: string;
+  num_comments?: number;
   // Client-side fields
   status?: "new" | "investigating" | "replied" | "closed" | "ignored";
   intent?: string;
@@ -700,7 +701,7 @@ export function RedditTable({
                           {post.title?.slice(0, 100) || "No title"}
                           {post.title?.length > 100 && "..."}
                         </div>
-                        <div className="flex gap-2 mt-1">
+                        <div className="flex items-center gap-2 mt-1">
                           {post.category === "brand" && (
                             <Badge
                               variant="secondary"
@@ -717,6 +718,10 @@ export function RedditTable({
                               Competitor
                             </Badge>
                           )}
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MessageCircle className="h-3 w-3" />
+                            <span>{post.num_comments ?? 0}</span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="w-[150px] px-3">
@@ -1128,6 +1133,12 @@ export function RedditTable({
                     {selectedPost.relevance_score}%
                   </span>
                 </div>
+              </div>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">
+                  Comments
+                </div>
+                <div className="text-sm">{selectedPost.num_comments ?? 0}</div>
               </div>
               <div>
                 <div className="text-sm font-medium text-muted-foreground mb-1">
