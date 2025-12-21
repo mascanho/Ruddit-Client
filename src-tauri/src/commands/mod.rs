@@ -215,7 +215,7 @@ pub async fn get_post_comments_command(
 ) -> Result<Vec<CommentDataWrapper>, String> {
     let results = search::get_post_comments(&url, &title, &sort_type, &subreddit)
         .await
-        .unwrap();
+        .map_err(|e| e.to_string())?;
 
     Ok(results)
 }

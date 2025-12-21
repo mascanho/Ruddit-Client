@@ -35,7 +35,9 @@ export type Message = {
   author?: string;
   body?: string;
   formatted_date?: string;
+  parent_id?: string;
 };
+
 
 export type RedditPost = {
   id: string;

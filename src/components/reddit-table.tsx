@@ -109,7 +109,75 @@ const teamMembers = [
   { id: "user4", name: "Sarah" },
 ];
 
+interface CommentTree extends Message {
+
+  children: CommentTree[];
+}
+
+function buildCommentTree(flatComments: Message[]): CommentTree[] {
+  const map = new Map<string, CommentTree>();
+  const roots: CommentTree[] = [];
+
+  // Initialize map and create CommentTree objects
+  flatComments.forEach((c) => {
+    map.set(c.id, { ...c, children: [] });
+  });
+
+  // Build tree
+  flatComments.forEach((c) => {
+    const node = map.get(c.id)!;
+    // Check if parent exists in our map
+    // Reddit parent_id usually starts with "t3_" (post) or "t1_" (comment)
+    const parentId = c.parent_id?.split("_")[1];
+    if (parentId && map.has(parentId)) {
+      map.get(parentId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  return roots;
+}
+
+const CommentItem = ({
+  comment,
+  depth = 0,
+}: {
+  comment: CommentTree;
+  depth?: number;
+}) => (
+  <div style={{ marginLeft: depth > 0 ? `${depth * 20}px` : "0" }}>
+    <Card className={`p-4 mb-4 ${depth > 0 ? "border-l-4 border-l-primary/30" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <span className="text-xs font-medium text-primary">
+            {comment?.author?.charAt(0).toUpperCase()}
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-medium text-sm">{comment?.author}</span>
+            <span className="text-xs text-muted-foreground">•</span>
+            <span className="text-xs text-muted-foreground">
+              {comment?.formatted_date?.slice(0, 10)}
+            </span>
+            <span className="text-xs text-primary">
+              {moment(comment?.formatted_date, "YYYY-MM-DD").fromNow()}
+            </span>
+          </div>
+          <p className="text-sm leading-relaxed">{comment?.body}</p>
+        </div>
+      </div>
+    </Card>
+    {comment.children.length > 0 &&
+      comment.children.map((child) => (
+        <CommentItem key={child.id} comment={child} depth={depth + 1} />
+      ))}
+  </div>
+);
+
 type SortField = keyof RedditPost | null;
+
 type SortDirection = "asc" | "desc";
 
 export function RedditTable({
@@ -677,13 +745,12 @@ export function RedditTable({
                 paginatedData.map((post, index) => (
                   <Fragment key={post.id}>
                     <TableRow
-                      className={`group text-xs p-0 h-2 ${
-                        settings.tableDensity === "compact"
+                      className={`group text-xs p-0 h-2 ${settings.tableDensity === "compact"
+                        ? "h-2"
+                        : settings.tableDensity === "spacious"
                           ? "h-2"
-                          : settings.tableDensity === "spacious"
-                            ? "h-2"
-                            : "h-2"
-                      }`}
+                          : "h-2"
+                        }`}
                     >
                       <TableCell className="px-3 p-0">
                         <Button
@@ -693,9 +760,8 @@ export function RedditTable({
                           className="h-8 w-8"
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${
-                              expandedRows.has(post.id) ? "rotate-180" : ""
-                            }`}
+                            className={`h-4 w-4 transition-transform ${expandedRows.has(post.id) ? "rotate-180" : ""
+                              }`}
                           />
                         </Button>
                       </TableCell>
@@ -815,7 +881,7 @@ export function RedditTable({
                             <SelectTrigger className="w-8 h-8 rounded-full p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden flex items-center justify-center">
                               <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
                                 {post.assignee &&
-                                post.assignee !== "unassigned" ? (
+                                  post.assignee !== "unassigned" ? (
                                   <>
                                     <AvatarImage
                                       src={`https://avatar.vercel.sh/${post.assignee}`}
@@ -1239,35 +1305,11 @@ export function RedditTable({
           </DialogHeader>
           <ScrollArea className="max-h-[calc(80vh-180px)] pr-4">
             <div className="space-y-4">
-              {comments.map((comment, index) => (
-                <Card key={comment.id} className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-medium text-primary">
-                        {comment?.author?.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm">
-                          {comment?.author}
-                        </span>
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <span className="text-xs text-muted-foreground">
-                          {comment?.formatted_date?.slice(0, 10)}
-                        </span>
-                        <span className="text-xs text-primary">
-                          {moment(
-                            comment?.formatted_date,
-                            "YYYY-MM-DD",
-                          ).fromNow()}
-                        </span>
-                      </div>
-                      <p className="text-sm leading-relaxed">{comment?.body}</p>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+              {useMemo(() => buildCommentTree(comments), [comments]).map(
+                (rootComment) => (
+                  <CommentItem key={rootComment.id} comment={rootComment} />
+                ),
+              )}
               {comments.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   No comments available
