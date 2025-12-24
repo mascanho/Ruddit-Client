@@ -15,6 +15,7 @@ import type { Message, SearchState } from "./smart-data-tables";
 import { RedditCommentsView } from "./reddit-comments-view";
 import { useAppSettings } from "./app-settings";
 import { invoke } from "@tauri-apps/api/core";
+import { save } from "@tauri-apps/plugin-dialog";
 import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
 import { toast } from "sonner";
 import moment from "moment";
@@ -115,7 +116,6 @@ interface CommentTree extends Message {
 }
 
 type SortField = keyof RedditPost | null;
-
 
 type SortDirection = "asc" | "desc";
 
@@ -530,10 +530,54 @@ export function RedditTable({
     }
   };
 
-  const openUrl = useOpenUrl();
+  const handleExportToCsv = async () => {
+    if (filteredAndSortedData.length === 0) {
+      toast.info("No data to export.");
+      return;
+    }
 
-  const handleOpenInbrowser = (url: any) => {
-    openUrl(url);
+    const headers = Object.keys(
+      filteredAndSortedData[0],
+    ) as (keyof RedditPost)[];
+    const csvRows = [];
+
+    // Add headers
+    csvRows.push(headers.map((header) => `"${header}"`).join(","));
+
+    // Add data rows
+    for (const row of filteredAndSortedData) {
+      const values = headers.map((header) => {
+        const value = row[header];
+        const stringValue =
+          value === undefined || value === null ? "" : String(value);
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      });
+      csvRows.push(values.join(","));
+    }
+
+    const csvString = csvRows.join("\n");
+
+    try {
+      const filePath = await save({
+        filters: [
+          {
+            name: "CSV",
+            extensions: ["csv"],
+          },
+        ],
+        defaultPath: `reddit_posts_${new Date().toISOString().slice(0, 10)}.csv`,
+      });
+
+      if (filePath) {
+        await invoke("save_text_file", { path: filePath, contents: csvString });
+        toast.success(`Data exported to ${filePath} successfully!`);
+      } else {
+        toast.info("Export cancelled.");
+      }
+    } catch (error) {
+      console.error("Failed to export data:", error);
+      toast.error("Failed to export data.");
+    }
   };
 
   return (
@@ -574,6 +618,9 @@ export function RedditTable({
                 <SelectItem value="low">Low (&lt;60)</SelectItem>
               </SelectContent>
             </Select>
+            <Button variant="outline" onClick={handleExportToCsv}>
+              Export to CSV
+            </Button>
             <Button
               variant="destructive"
               onClick={() => setShowClearTableDialog(true)}
@@ -684,12 +731,13 @@ export function RedditTable({
                 paginatedData.map((post, index) => (
                   <Fragment key={post.id}>
                     <TableRow
-                      className={`group text-xs p-0 h-2 ${settings.tableDensity === "compact"
-                        ? "h-2"
-                        : settings.tableDensity === "spacious"
+                      className={`group text-xs p-0 h-2 ${
+                        settings.tableDensity === "compact"
                           ? "h-2"
-                          : "h-2"
-                        }`}
+                          : settings.tableDensity === "spacious"
+                            ? "h-2"
+                            : "h-2"
+                      }`}
                     >
                       <TableCell className="px-3 p-0">
                         <Button
@@ -699,8 +747,9 @@ export function RedditTable({
                           className="h-8 w-8"
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${expandedRows.has(post.id) ? "rotate-180" : ""
-                              }`}
+                            className={`h-4 w-4 transition-transform ${
+                              expandedRows.has(post.id) ? "rotate-180" : ""
+                            }`}
                           />
                         </Button>
                       </TableCell>
@@ -737,7 +786,9 @@ export function RedditTable({
                           )}
                           <div
                             className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer hover:text-primary"
-                            onClick={() => handleGetComments(post, post.sort_type)}
+                            onClick={() =>
+                              handleGetComments(post, post.sort_type)
+                            }
                             title="Get comments"
                           >
                             <MessageCircle className="h-3 w-3" />
@@ -820,7 +871,7 @@ export function RedditTable({
                             <SelectTrigger className="w-8 h-8 rounded-full p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden flex items-center justify-center">
                               <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
                                 {post.assignee &&
-                                  post.assignee !== "unassigned" ? (
+                                post.assignee !== "unassigned" ? (
                                   <>
                                     <AvatarImage
                                       src={`https://avatar.vercel.sh/${post.assignee}`}

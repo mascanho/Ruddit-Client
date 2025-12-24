@@ -1,7 +1,7 @@
 use base64::{engine::general_purpose, Engine as _};
+use regex::Regex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use regex::Regex;
 
 use crate::{
     database::{
@@ -91,7 +91,6 @@ impl From<reqwest::Error> for RedditError {
         RedditError::Reqwest(e)
     }
 }
-
 
 pub struct AppState {
     pub data: Vec<PostDataWrapper>,
@@ -221,7 +220,9 @@ pub async fn get_subreddit_posts(
         .into_iter()
         .filter_map(|child| {
             if let RedditData::Post(post) = child.data {
-                let intent = config.api_keys.calculate_intent(&post.title, post.selftext.as_deref());
+                let intent = config
+                    .api_keys
+                    .calculate_intent(&post.title, post.selftext.as_deref());
                 Some(PostDataWrapper {
                     id: i64::from_str_radix(&post.id, 36).unwrap_or(0),
                     title: post.title.clone(),
@@ -297,7 +298,9 @@ pub async fn search_subreddit_posts(
         .into_iter()
         .filter_map(|child| {
             if let RedditData::Post(post) = &child.data {
-                let intent = config.api_keys.calculate_intent(&post.title, post.selftext.as_deref());
+                let intent = config
+                    .api_keys
+                    .calculate_intent(&post.title, post.selftext.as_deref());
                 Some(PostDataWrapper {
                     id: i64::from_str_radix(&post.id, 36).unwrap_or(0),
                     title: post.title.clone(),
@@ -472,21 +475,19 @@ pub async fn get_post_comments(
     let mut comments: Vec<CommentDataWrapper> = Vec::new();
     for child_json in comments_data.data.children {
         if let Ok(child) = serde_json::from_value::<CommentChild>(child_json) {
-            flatten_comments(
-                child.data,
-                &mut comments,
-                &post_id,
-                subreddit,
-                post_title,
-            );
+            flatten_comments(child.data, &mut comments, &post_id, subreddit, post_title);
         }
     }
 
-    println!("Successfully fetched and flattened {} comments", comments.len());
+    println!(
+        "Successfully fetched and flattened {} comments",
+        comments.len()
+    );
 
     // Save to database
     let mut db = database::adding::DB::new().map_err(|e| RedditError::ParseError(e.to_string()))?;
-    db.append_comments(&comments).map_err(|e| RedditError::ParseError(e.to_string()))?;
+    db.append_comments(&comments)
+        .map_err(|e| RedditError::ParseError(e.to_string()))?;
 
     Ok(comments)
 }
@@ -523,13 +524,7 @@ fn flatten_comments(
                 for child_json in children {
                     if let Ok(child) = serde_json::from_value::<CommentChild>(child_json.clone()) {
                         // Recursively flatten
-                        flatten_comments(
-                            child.data,
-                            comments,
-                            post_id,
-                            subreddit,
-                            post_title,
-                        );
+                        flatten_comments(child.data, comments, post_id, subreddit, post_title);
                     }
                 }
             }
