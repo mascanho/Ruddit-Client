@@ -83,6 +83,41 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const initialData: RedditPost[] = []; // Declare initialData here
 
+const highlightKeywords = (text: string, keywords: string[]) => {
+  if (!text) return null;
+
+  const parts: (string | JSX.Element)[] = [];
+  let lastIndex = 0;
+  let keyCounter = 0;
+
+  const pattern = keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const regex = new RegExp(`(${pattern})`, 'gi');
+
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const matchedText = match[0];
+    const index = match.index;
+
+    if (index > lastIndex) {
+      parts.push(text.substring(lastIndex, index));
+    }
+
+    parts.push(
+      <span key={keyCounter++} className="bg-yellow-200 dark:bg-yellow-700 rounded px-0.5">
+        {matchedText}
+      </span>
+    );
+    lastIndex = index + matchedText.length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return <>{parts}</>;
+};
+
+
 // Define RedditPost type to match Rust's PostDataWrapper
 export type RedditPost = {
   id: string;
@@ -107,7 +142,7 @@ export type RedditPost = {
 const teamMembers = [
   { id: "user1", name: "Alex" },
   { id: "user2", name: "Maria" },
-  { id: "user3", name: "David" },
+  { id: "user3", "name": "David" },
   { id: "user4", name: "Sarah" },
 ];
 
@@ -132,6 +167,18 @@ export function RedditTable({
 }) {
   const [data, setData] = useState<RedditPost[]>(initialData);
   const { settings } = useAppSettings();
+  const openUrl = useOpenUrl();
+  const keywordsToHighlight = useMemo(() => {
+    return [
+      ...(settings.monitoredKeywords || []),
+      ...(settings.brandKeywords || []),
+      ...(settings.competitorKeywords || []),
+    ].filter(Boolean);
+  }, [
+    settings.monitoredKeywords,
+    settings.brandKeywords,
+    settings.competitorKeywords,
+  ]);
 
   // Load CRM data from localStorage on mount and merge with data
   useEffect(() => {
@@ -761,11 +808,13 @@ export function RedditTable({
                       </TableCell>
                       <TableCell className="min-w-[300px] px-3">
                         <div
-                          onClick={() => handleOpenInbrowser(post.url)}
+                          onClick={() => openUrl(post.url)}
                           className="line-clamp-2 font-medium cursor-pointer hover:underline"
                         >
-                          {post.title?.slice(0, 100) || "No title"}
-                          {post.title?.length > 100 && "..."}
+                          {highlightKeywords(
+                            post.title ? (post.title.length > 100 ? post.title.slice(0, 100) + "..." : post.title) : "No title",
+                            keywordsToHighlight
+                          )}
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           {post.category === "brand" && (
