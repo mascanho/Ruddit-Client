@@ -24,6 +24,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
+import { AutomationTab } from "./automation-tab";
+import { AutomationRunner } from "./automation-runner";
 
 export type Message = {
   id: string;
@@ -190,6 +192,7 @@ export function SmartDataTables() {
       className="container mx-auto  px-4 w-full max-w-full"
       style={{ fontSize: `${settings.fontSize}px` }}
     >
+      <AutomationRunner />
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center">
           <img src="/ruddit-logo.png" alt="logo" className="h-auto w-12" />
@@ -280,6 +283,7 @@ export function SmartDataTables() {
           {/*   Leads */}
           {/* </TabsTrigger> */}
           <TabsTrigger value="search">Search</TabsTrigger>
+          <TabsTrigger value="automation">Automation</TabsTrigger>
           <TabsTrigger value="ai">AI Assistant</TabsTrigger>
         </TabsList>
 
@@ -310,6 +314,10 @@ export function SmartDataTables() {
             onAddResults={handleAddSearchResults}
             onNotifyNewPosts={handleNotifyNewPosts}
           />
+        </TabsContent>
+
+        <TabsContent value="automation" className="space-y-4">
+          <AutomationTab />
         </TabsContent>
 
         <TabsContent value="ai" className="space-y-4">

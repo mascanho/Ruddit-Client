@@ -88,32 +88,52 @@ const defaultSettings: AppSettings = {
 
 const SETTINGS_STORAGE_KEY = "app-settings";
 
-export function useAppSettings() {
-  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+import { create } from "zustand";
 
-  useEffect(() => {
+interface AppSettingsStore {
+  settings: AppSettings;
+  updateSettings: (newSettings: Partial<AppSettings>) => void;
+  resetSettings: () => void;
+}
+
+const useAppSettingsStore = create<AppSettingsStore>((set) => {
+  // Initial load logic
+  let initialSettings = defaultSettings;
+  if (typeof window !== "undefined") {
     const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (stored) {
       try {
-        setSettings(JSON.parse(stored));
-      } catch (error) {
-        console.error("Failed to parse settings:", error);
+        initialSettings = { ...defaultSettings, ...JSON.parse(stored) };
+      } catch (e) {
+        console.error("Failed to parse settings", e);
       }
     }
+  }
+
+  return {
+    settings: initialSettings,
+    updateSettings: (newSettings) =>
+      set((state) => {
+        const updated = { ...state.settings, ...newSettings };
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+        return { settings: updated };
+      }),
+    resetSettings: () => {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(defaultSettings));
+      return { settings: defaultSettings };
+    },
+  };
+});
+
+export function useAppSettings() {
+  const store = useAppSettingsStore();
+
+  // Hydration fix / Storage listener for multi-tab sync (optional but good)
+  useEffect(() => {
+    // Optional: listen to storage events if we wanted multi-tab sync
   }, []);
 
-  const updateSettings = (newSettings: Partial<AppSettings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
-  };
-
-  const resetSettings = () => {
-    setSettings(defaultSettings);
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(defaultSettings));
-  };
-
-  return { settings, updateSettings, resetSettings };
+  return store;
 }
 
 export function AppSettingsDialog({

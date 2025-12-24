@@ -78,5 +78,62 @@ const useAddSingleSubReddit = create<SingleSubredditTable>((set, get) => ({
   clearSavedSubredditsTable: () => set({ subRedditsSaved: [] }),
 }));
 
-export { useSubredditsStore, useRedditPostsTab, useAddSingleSubReddit };
-export type { PostDataWrapper, RedditPost };
+// AUTOMATION STORE
+interface LogEntry {
+  id: string;
+  timestamp: Date;
+  message: string;
+  type: "info" | "success" | "warning" | "error";
+}
+
+interface AutomationStore {
+  isRunning: boolean;
+  intervalMinutes: number;
+  lastRun: Date | null;
+  logs: LogEntry[];
+  foundPosts: PostDataWrapper[];
+  setIsRunning: (isRunning: boolean) => void;
+  setIntervalMinutes: (minutes: number) => void;
+  setLastRun: (date: Date) => void;
+  addLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
+  clearLogs: () => void;
+  addFoundPosts: (posts: PostDataWrapper[]) => void;
+  clearFoundPosts: () => void;
+}
+
+const useAutomationStore = create<AutomationStore>((set) => ({
+  isRunning: false,
+  intervalMinutes: 15,
+  lastRun: null,
+  logs: [],
+  foundPosts: [],
+  setIsRunning: (isRunning) => set({ isRunning }),
+  setIntervalMinutes: (intervalMinutes) => set({ intervalMinutes }),
+  setLastRun: (lastRun) => set({ lastRun }),
+  addLog: (message, type = "info") =>
+    set((state) => ({
+      logs: [
+        {
+          id: Math.random().toString(36).substring(7),
+          timestamp: new Date(),
+          message,
+          type,
+        },
+        ...state.logs,
+      ].slice(0, 100), // Keep last 100 logs
+    })),
+  clearLogs: () => set({ logs: [] }),
+  addFoundPosts: (newPosts) =>
+    set((state) => {
+      // Avoid duplicates based on ID
+      const existingIds = new Set(state.foundPosts.map((p) => p.id));
+      const uniqueNewPosts = newPosts.filter((p) => !existingIds.has(p.id));
+      return {
+        foundPosts: [...uniqueNewPosts, ...state.foundPosts].slice(0, 500), // Limit total stored posts
+      };
+    }),
+  clearFoundPosts: () => set({ foundPosts: [] }),
+}));
+
+export { useSubredditsStore, useRedditPostsTab, useAddSingleSubReddit, useAutomationStore };
+export type { PostDataWrapper, RedditPost, LogEntry };
