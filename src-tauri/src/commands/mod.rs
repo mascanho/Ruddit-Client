@@ -54,10 +54,10 @@ pub async fn get_reddit_results(
         }
     };
 
-    // HANDLE DB CREATION
-    let mut db = database::adding::DB::new().unwrap();
+    // Clear the current search results ONCE before populating with new filtered results
+    database::adding::DB::clear_current_search_results().unwrap();
 
-    let mut all_fetched_posts: Vec<PostDataWrapper> = Vec::new();
+    let mut unique_posts_map: std::collections::HashMap<i64, PostDataWrapper> = std::collections::HashMap::new();
 
     // Query Reddit for each sort type - ONE REQUEST PER SORT TYPE
     for sort_type in sortTypes { // Use sortTypes here
@@ -92,26 +92,48 @@ pub async fn get_reddit_results(
             };
         }
 
-        // Append to database
-        match db.replace_current_results(&posts_for_this_sort) {
+        // Merge logic
+        for mut post in posts_for_this_sort {
+            match unique_posts_map.get_mut(&post.id) {
+                Some(existing_post) => {
+                    // Append sort_type if not already present
+                    // We check purely string containment for simplicity given "hot", "new", "top" don't overlap as substrings
+                    if !existing_post.sort_type.contains(&sort_type) {
+                        existing_post.sort_type = format!("{},{}", existing_post.sort_type, sort_type);
+                    }
+                }
+                None => {
+                    // Ensure the sort_type for the new post is set correctly
+                    post.sort_type = sort_type.clone();
+                    unique_posts_map.insert(post.id, post);
+                }
+            }
+        }
+    }
+
+    let all_fetched_posts: Vec<PostDataWrapper> = unique_posts_map.into_values().collect();
+
+    // HANDLE DB CREATION
+    let mut db = database::adding::DB::new().unwrap();
+
+    if !all_fetched_posts.is_empty() {
+        // Save to subreddit_search table so it persists for the view
+        match db.replace_current_results(&all_fetched_posts) { 
             Ok(_) => {
                 println!(
-                    "Successfully added {} posts to database for sort type: {}",
-                    posts_for_this_sort.len(),
-                    sort_type
+                    "Successfully added {} merged unique posts to subreddit_search database",
+                    all_fetched_posts.len()
                 );
-                all_fetched_posts.extend(posts_for_this_sort);
             }
             Err(e) => {
                 eprintln!(
-                    "Failed to save {} posts to database: {}",
-                    posts_for_this_sort.len(),
+                    "Failed to save posts to database: {}",
                     e
                 );
             }
         }
     }
-
+    
     println!(
         "Total posts added to database: {}",
         all_fetched_posts.len()
@@ -193,7 +215,7 @@ pub async fn get_post_comments_command(
 ) -> Result<Vec<CommentDataWrapper>, String> {
     let results = search::get_post_comments(&url, &title, &sort_type, &subreddit)
         .await
-        .unwrap();
+        .map_err(|e| e.to_string())?;
 
     Ok(results)
 }
@@ -235,10 +257,22 @@ pub fn update_post_notes(id: i64, notes: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn update_post_assignee(id: i64, assignee: String) -> Result<(), String> {
+pub async fn update_post_assignee(id: i64, assignee: String, title: String) -> Result<(), String> {
     let db = database::adding::DB::new().map_err(|e| e.to_string())?;
     db.update_post_assignee(id, &assignee)
         .map_err(|e| e.to_string())?;
+
+    if !assignee.is_empty() {
+        // Send email in background or await it 
+        // Since this is async command now, we can await it.
+        // We log errors but don't fail the command based on email failure 
+        // to avoid reverting the UI for just a notification failure.
+        match crate::email::sending::send_assignment_email(&assignee, id, &title).await {
+            Ok(_) => println!("Email notification sent for post {}", id),
+            Err(e) => eprintln!("Failed to send email notif: {:?}", e)
+        }
+    }
+    
     Ok(())
 }
 

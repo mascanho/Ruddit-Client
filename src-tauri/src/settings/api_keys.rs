@@ -20,6 +20,12 @@ pub struct ApiKeys {
     #[serde(default)]
     pub sentiment: Vec<String>,
 
+    #[serde(default = "default_high_intent_patterns")]
+    pub intent_high: Vec<String>,
+
+    #[serde(default = "default_medium_intent_patterns")]
+    pub intent_medium: Vec<String>,
+
     #[serde(default)]
     #[serde(rename = "MATCH")]
     pub match_keyword: String,
@@ -50,9 +56,63 @@ impl Default for ApiKeys {
             lead_keywords: vec![],
             branded_keywords: vec![],
             sentiment: vec!["neutral".to_string()],
+            intent_high: default_high_intent_patterns(),
+            intent_medium: default_medium_intent_patterns(),
             match_keyword: "".to_string(),
         }
     }
+}
+
+impl ApiKeys {
+    pub fn calculate_intent(&self, title: &str, body: Option<&str>) -> String {
+        let text = format!("{} {}", title, body.unwrap_or("")).to_lowercase();
+
+        // Check high intent
+        for pattern in &self.intent_high {
+            if text.contains(&pattern.to_lowercase()) {
+                return "High".to_string();
+            }
+        }
+
+        // Check medium intent
+        for pattern in &self.intent_medium {
+            if text.contains(&pattern.to_lowercase()) {
+                return "Medium".to_string();
+            }
+        }
+
+        "Low".to_string()
+    }
+}
+
+fn default_high_intent_patterns() -> Vec<String> {
+    vec![
+        "looking for".to_string(),
+        "recommend".to_string(),
+        "suggestion".to_string(),
+        "alternative to".to_string(),
+        "vs".to_string(),
+        "comparison".to_string(),
+        "review".to_string(),
+        "best".to_string(),
+        "help with".to_string(),
+        "how to".to_string(),
+        "pricing".to_string(),
+        "cost".to_string(),
+        "software".to_string(),
+    ]
+}
+
+fn default_medium_intent_patterns() -> Vec<String> {
+    vec![
+        "issues with".to_string(),
+        "problem".to_string(),
+        "error".to_string(),
+        "question".to_string(),
+        "anyone used".to_string(),
+        "thoughts on".to_string(),
+        "experience with".to_string(),
+    ]
 }
 
 impl ConfigDirs {
@@ -82,36 +142,11 @@ impl ConfigDirs {
         // Path to the config file
         let config_path = app_config_dir.join("settings.toml");
 
-        // Default TOML content
-        let toml_content = r#"
-[api_keys]
-reddit_api_id = "your_api_id_here"
-reddit_api_secret = "your_api_secret_here"
-subreddit = "supplychain"
-relevance = "hot"
-gemini_api_key = "your_api_key_here"
-branded_keywords = ["keyword1", "keyword2"]
-lead_keywords = ["keyword1", "keyword2"]
-sentiment = ["keyword1", "keyword2"]
-MATCH = "OR"
-
-# Assignees with username and email
-[[assignees]]
-id = "user1"
-name = "Alex"
-email = "alex@company.com"
-
-[[assignees]]
-id = "user2"
-name = "Maria"
-email = "maria@company.com"
-
-"#
-        .trim_start();
-
         // Write to file if file does not exist yet
         if !config_path.exists() {
             println!("Creating config file: {}", config_path.display());
+            let default_config = AppConfig::default();
+            let toml_content = toml::to_string_pretty(&default_config)?;
             fs::write(config_path, toml_content)?;
         }
 
@@ -124,6 +159,11 @@ email = "maria@company.com"
 
         // Path to the config file
         let config_path = config_dir.join("ruddit/settings.toml");
+
+        if !config_path.exists() {
+            Self::create_default_config()?;
+        }
+
         println!("Reading config file: {:#?}", config_path);
 
         // Read from file
@@ -159,7 +199,6 @@ email = "maria@company.com"
 
         #[cfg(target_os = "linux")]
         {
-
             use std::process::Command;
             Command::new("xdg-open").arg(config_path).spawn()?;
         }

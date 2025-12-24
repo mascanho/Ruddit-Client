@@ -60,7 +60,9 @@ export type AppSettings = {
 
   // Monitoring
   monitoredSubreddits: string[];
-  monitoredKeywords: string[];
+  monitoredKeywords: string[]; // Keeping for backward compatibility or "General"
+  brandKeywords: string[];
+  competitorKeywords: string[];
 };
 
 const defaultSettings: AppSettings = {
@@ -79,37 +81,59 @@ const defaultSettings: AppSettings = {
   defaultSortField: "none",
   defaultSortDirection: "desc",
   monitoredSubreddits: ["nextjs", "typescript", "webdev"],
-  monitoredKeywords: ["react", "api", "database", "performance"],
+  monitoredKeywords: ["api", "database", "performance"],
+  brandKeywords: ["ruddit", "myproduct"],
+  competitorKeywords: ["competitor1", "competitor2"],
 };
 
 const SETTINGS_STORAGE_KEY = "app-settings";
 
-export function useAppSettings() {
-  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+import { create } from "zustand";
 
-  useEffect(() => {
+interface AppSettingsStore {
+  settings: AppSettings;
+  updateSettings: (newSettings: Partial<AppSettings>) => void;
+  resetSettings: () => void;
+}
+
+const useAppSettingsStore = create<AppSettingsStore>((set) => {
+  // Initial load logic
+  let initialSettings = defaultSettings;
+  if (typeof window !== "undefined") {
     const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (stored) {
       try {
-        setSettings(JSON.parse(stored));
-      } catch (error) {
-        console.error("Failed to parse settings:", error);
+        initialSettings = { ...defaultSettings, ...JSON.parse(stored) };
+      } catch (e) {
+        console.error("Failed to parse settings", e);
       }
     }
+  }
+
+  return {
+    settings: initialSettings,
+    updateSettings: (newSettings) =>
+      set((state) => {
+        const updated = { ...state.settings, ...newSettings };
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+        return { settings: updated };
+      }),
+    resetSettings: () => {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(defaultSettings));
+      return { settings: defaultSettings };
+    },
+  };
+});
+
+export function useAppSettings() {
+  const store = useAppSettingsStore();
+
+  // Hydration fix / Storage listener for multi-tab sync (optional but good)
+  useEffect(() => {
+    // Optional: listen to storage events if we wanted multi-tab sync
   }, []);
 
-  const updateSettings = (newSettings: Partial<AppSettings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
-  };
-
-  const resetSettings = () => {
-    setSettings(defaultSettings);
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(defaultSettings));
-  };
-
-  return { settings, updateSettings, resetSettings };
+  return store;
 }
 
 export function AppSettingsDialog({
@@ -125,6 +149,8 @@ export function AppSettingsDialog({
   const { toast } = useToast();
   const [newSubreddit, setNewSubreddit] = useState("");
   const [newKeyword, setNewKeyword] = useState("");
+  const [newBrandKeyword, setNewBrandKeyword] = useState("");
+  const [newCompetitorKeyword, setNewCompetitorKeyword] = useState("");
 
   const handleReset = () => {
     resetSettings();
@@ -205,6 +231,44 @@ export function AppSettingsDialog({
       title: "Keyword removed",
       description: `Stopped monitoring "${keyword}"`,
     });
+  };
+
+  const addBrandKeyword = () => {
+    if (!newBrandKeyword.trim()) return;
+    const cleaned = newBrandKeyword.trim().toLowerCase();
+    if (settings.brandKeywords.includes(cleaned)) {
+      toast({ title: "Already monitoring", description: `"${cleaned}" is already in your list.` });
+      return;
+    }
+    updateSettings({ brandKeywords: [...(settings.brandKeywords || []), cleaned] });
+    setNewBrandKeyword("");
+    toast({ title: "Brand Keyword added", description: `Now monitoring "${cleaned}"` });
+  };
+
+  const removeBrandKeyword = (keyword: string) => {
+    updateSettings({
+      brandKeywords: (settings.brandKeywords || []).filter((k) => k !== keyword),
+    });
+    toast({ title: "Keyword removed", description: `Stopped monitoring "${keyword}"` });
+  };
+
+  const addCompetitorKeyword = () => {
+    if (!newCompetitorKeyword.trim()) return;
+    const cleaned = newCompetitorKeyword.trim().toLowerCase();
+    if (settings.competitorKeywords.includes(cleaned)) {
+      toast({ title: "Already monitoring", description: `"${cleaned}" is already in your list.` });
+      return;
+    }
+    updateSettings({ competitorKeywords: [...(settings.competitorKeywords || []), cleaned] });
+    setNewCompetitorKeyword("");
+    toast({ title: "Competitor Keyword added", description: `Now monitoring "${cleaned}"` });
+  };
+
+  const removeCompetitorKeyword = (keyword: string) => {
+    updateSettings({
+      competitorKeywords: (settings.competitorKeywords || []).filter((k) => k !== keyword),
+    });
+    toast({ title: "Keyword removed", description: `Stopped monitoring "${keyword}"` });
   };
 
   return (
@@ -707,9 +771,71 @@ export function AppSettingsDialog({
                       ))}
                       {settings.monitoredKeywords.length === 0 && (
                         <p className="text-sm text-muted-foreground">
-                          No keywords added yet
+                          No general keywords added yet
                         </p>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Brand Keywords */}
+                  <div>
+                    <Label className="text-base font-semibold text-blue-500">
+                      Brand Keywords
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Keywords specific to your product (High Priority)
+                    </p>
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        placeholder="e.g., myproduct, mycompany"
+                        value={newBrandKeyword}
+                        onChange={(e) => setNewBrandKeyword(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addBrandKeyword()}
+                      />
+                      <Button onClick={addBrandKeyword} size="icon" variant="default" className="bg-blue-600 hover:bg-blue-700">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(settings.brandKeywords || []).map((keyword) => (
+                        <Badge key={keyword} className="px-3 py-1.5 bg-blue-100 text-blue-800 hover:bg-blue-200">
+                          {keyword}
+                          <Button variant="ghost" size="icon" className="h-4 w-4 ml-2 hover:bg-transparent text-blue-800" onClick={() => removeBrandKeyword(keyword)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Competitor Keywords */}
+                  <div>
+                    <Label className="text-base font-semibold text-orange-500">
+                      Competitor Keywords
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Keywords for tracking competitors
+                    </p>
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        placeholder="e.g., competitor1, alternative to me"
+                        value={newCompetitorKeyword}
+                        onChange={(e) => setNewCompetitorKeyword(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addCompetitorKeyword()}
+                      />
+                      <Button onClick={addCompetitorKeyword} size="icon" variant="default" className="bg-orange-600 hover:bg-orange-700">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(settings.competitorKeywords || []).map((keyword) => (
+                        <Badge key={keyword} className="px-3 py-1.5 bg-orange-100 text-orange-800 hover:bg-orange-200">
+                          {keyword}
+                          <Button variant="ghost" size="icon" className="h-4 w-4 ml-2 hover:bg-transparent text-orange-800" onClick={() => removeCompetitorKeyword(keyword)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ))}
                     </div>
                   </div>
 

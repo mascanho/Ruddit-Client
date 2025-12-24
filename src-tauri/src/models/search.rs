@@ -73,11 +73,25 @@ pub enum RedditError {
     ParseError(String),
 }
 
+impl std::fmt::Display for RedditError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RedditError::Reqwest(e) => write!(f, "Network error: {}", e),
+            RedditError::TokenExtraction => write!(f, "Failed to extract access token"),
+            RedditError::HttpError(code, text) => write!(f, "HTTP Error {}: {}", code, text),
+            RedditError::ParseError(msg) => write!(f, "Parse error: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for RedditError {}
+
 impl From<reqwest::Error> for RedditError {
     fn from(e: reqwest::Error) -> Self {
         RedditError::Reqwest(e)
     }
 }
+
 
 pub struct AppState {
     pub data: Vec<PostDataWrapper>,
@@ -154,6 +168,7 @@ pub async fn get_subreddit_posts(
     sort_type: &str, // Renamed from relevance
 ) -> Result<Vec<PostDataWrapper>, RedditError> {
     let client = Client::new();
+    let config = api_keys::ConfigDirs::read_config().unwrap_or_default();
 
     // Clean the subreddit name - remove "r/" if present
     let subreddit_clean = subreddit.trim_start_matches("r/");
@@ -206,8 +221,9 @@ pub async fn get_subreddit_posts(
         .into_iter()
         .filter_map(|child| {
             if let RedditData::Post(post) = child.data {
+                let intent = config.api_keys.calculate_intent(&post.title, post.selftext.as_deref());
                 Some(PostDataWrapper {
-                    id: post.id.parse().unwrap_or(0),
+                    id: i64::from_str_radix(&post.id, 36).unwrap_or(0),
                     title: post.title.clone(),
                     url: post.url.clone(),
                     timestamp: post.created_utc as i64,
@@ -227,6 +243,7 @@ pub async fn get_subreddit_posts(
                     thumbnail: post.thumbnail,
                     is_self: post.is_self,
                     num_comments: post.num_comments,
+                    intent,
                 })
             } else {
                 None
@@ -235,7 +252,9 @@ pub async fn get_subreddit_posts(
         .collect();
 
     println!("Processed {} ", subreddit_clean);
-    println!("Post: {:?}", &posts[0]);
+    if !posts.is_empty() {
+        println!("Post: {:?}", &posts[0]);
+    }
     Ok(posts)
 }
 
@@ -245,6 +264,7 @@ pub async fn search_subreddit_posts(
     sort_type: &str, // Renamed from relevance
 ) -> Result<Vec<PostDataWrapper>, RedditError> {
     let client = Client::new();
+    let config = api_keys::ConfigDirs::read_config().unwrap_or_default();
 
     // Include the sort parameter in the URL
 
@@ -277,8 +297,9 @@ pub async fn search_subreddit_posts(
         .into_iter()
         .filter_map(|child| {
             if let RedditData::Post(post) = &child.data {
+                let intent = config.api_keys.calculate_intent(&post.title, post.selftext.as_deref());
                 Some(PostDataWrapper {
-                    id: post.id.parse().unwrap_or(0),
+                    id: i64::from_str_radix(&post.id, 36).unwrap_or(0),
                     title: post.title.clone(),
                     url: post.url.clone(),
                     timestamp: post.created_utc as i64,
@@ -298,6 +319,7 @@ pub async fn search_subreddit_posts(
                     thumbnail: post.thumbnail.clone(),
                     is_self: post.is_self.clone(),
                     num_comments: post.num_comments.clone(),
+                    intent,
                 })
             } else {
                 None
@@ -306,7 +328,9 @@ pub async fn search_subreddit_posts(
         .collect();
 
     println!("Processed {} posts for sort: {}", posts.len(), sort_type);
-    println!("Post: {:#?}", &posts[0]);
+    if !posts.is_empty() {
+        println!("Post: {:#?}", &posts[0]);
+    }
     Ok(posts)
 }
 
@@ -317,7 +341,7 @@ struct CommentResponse {
 
 #[derive(Debug, Deserialize)]
 struct CommentResponseData {
-    children: Vec<CommentChild>,
+    children: Vec<serde_json::Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -444,40 +468,75 @@ pub async fn get_post_comments(
             RedditError::ParseError(e.to_string())
         })?;
 
-    // Convert to CommentDataWrapper
-    let comments: Vec<CommentDataWrapper> = comments_data
-        .data
-        .children
-        .into_iter()
-        .map(|child| {
-            let data = child.data;
-            CommentDataWrapper {
-                id: data.id,
-                post_id: post_id.to_string(),
-                body: data.body,
-                author: data.author,
-                timestamp: data.created_utc as i64,
-                formatted_date: database::adding::DB::format_timestamp(data.created_utc as i64)
-                    .expect("Failed to format timestamp"),
-                score: data.score,
-                permalink: data.permalink,
-                parent_id: data.parent_id,
-                subreddit: subreddit.to_string(),
-                post_title: post_title.to_string(),
-                engaged: 0,
-                assignee: "".to_string(),
-            }
-        })
-        .collect();
+    // Flatten recursive comments
+    let mut comments: Vec<CommentDataWrapper> = Vec::new();
+    for child_json in comments_data.data.children {
+        if let Ok(child) = serde_json::from_value::<CommentChild>(child_json) {
+            flatten_comments(
+                child.data,
+                &mut comments,
+                &post_id,
+                subreddit,
+                post_title,
+            );
+        }
+    }
 
-    println!("Successfully fetched {} comments", comments.len());
+    println!("Successfully fetched and flattened {} comments", comments.len());
 
     // Save to database
-    let mut db = database::adding::DB::new().unwrap();
-    db.append_comments(&comments).unwrap();
+    let mut db = database::adding::DB::new().map_err(|e| RedditError::ParseError(e.to_string()))?;
+    db.append_comments(&comments).map_err(|e| RedditError::ParseError(e.to_string()))?;
 
     Ok(comments)
 }
+
+fn flatten_comments(
+    data: CommentData,
+    comments: &mut Vec<CommentDataWrapper>,
+    post_id: &str,
+    subreddit: &str,
+    post_title: &str,
+) {
+    // Add the current comment
+    comments.push(CommentDataWrapper {
+        id: data.id.clone(),
+        post_id: post_id.to_string(),
+        body: data.body,
+        author: data.author,
+        timestamp: data.created_utc as i64,
+        formatted_date: database::adding::DB::format_timestamp(data.created_utc as i64)
+            .expect("Failed to format timestamp"),
+        score: data.score,
+        permalink: data.permalink,
+        parent_id: data.parent_id,
+        subreddit: subreddit.to_string(),
+        post_title: post_title.to_string(),
+        engaged: 0,
+        assignee: "".to_string(),
+    });
+
+    // Check for replies
+    if let Some(replies_json) = data.replies.as_object() {
+        if let Some(data_val) = replies_json.get("data") {
+            if let Some(children) = data_val.get("children").and_then(|c| c.as_array()) {
+                for child_json in children {
+                    if let Ok(child) = serde_json::from_value::<CommentChild>(child_json.clone()) {
+                        // Recursively flatten
+                        flatten_comments(
+                            child.data,
+                            comments,
+                            post_id,
+                            subreddit,
+                            post_title,
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn extract_post_id_from_url(url: &str) -> Option<String> {
     // Regex to capture post ID from various Reddit URL formats
     // 1. /r/{subreddit}/comments/{id}/...
