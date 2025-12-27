@@ -65,6 +65,7 @@ export type AppSettings = {
   monitoredKeywords: string[]; // Keeping for backward compatibility or "General"
   brandKeywords: string[];
   competitorKeywords: string[];
+  monitoredUsernames: string[];
 };
 
 const defaultSettings: AppSettings = {
@@ -86,6 +87,7 @@ const defaultSettings: AppSettings = {
   monitoredKeywords: ["api", "database", "performance"],
   brandKeywords: ["ruddit", "myproduct"],
   competitorKeywords: ["competitor1", "competitor2"],
+  monitoredUsernames: [],
 };
 
 const SETTINGS_STORAGE_KEY = "app-settings";
@@ -156,6 +158,7 @@ export function AppSettingsDialog({
   const [newKeyword, setNewKeyword] = useState("");
   const [newBrandKeyword, setNewBrandKeyword] = useState("");
   const [newCompetitorKeyword, setNewCompetitorKeyword] = useState("");
+  const [newUsername, setNewUsername] = useState("");
 
   const handleReset = () => {
     resetSettings();
@@ -299,6 +302,38 @@ export function AppSettingsDialog({
     toast({
       title: "Keyword removed",
       description: `Stopped monitoring "${keyword}"`,
+    });
+  };
+
+  const addUsername = () => {
+    if (!newUsername.trim()) return;
+    const cleaned = newUsername.trim().toLowerCase();
+    if ((settings.monitoredUsernames || []).includes(cleaned)) {
+      toast({
+        title: "Already monitoring",
+        description: `User "${cleaned}" is already in your list.`,
+      });
+      return;
+    }
+    updateSettings({
+      monitoredUsernames: [...(settings.monitoredUsernames || []), cleaned],
+    });
+    setNewUsername("");
+    toast({
+      title: "User added",
+      description: `Now monitoring user "${cleaned}"`,
+    });
+  };
+
+  const removeUsername = (username: string) => {
+    updateSettings({
+      monitoredUsernames: (settings.monitoredUsernames || []).filter(
+        (u) => u !== username,
+      ),
+    });
+    toast({
+      title: "User removed",
+      description: `Stopped monitoring user "${username}"`,
     });
   };
 
@@ -903,6 +938,55 @@ export function AppSettingsDialog({
                           </Button>
                         </Badge>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Monitored Usernames */}
+                  <div>
+                    <Label className="text-base font-semibold text-green-500">
+                      Monitored Usernames
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Highlight comments from specific users
+                    </p>
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        placeholder="e.g., user1, user2"
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addUsername()}
+                      />
+                      <Button
+                        onClick={addUsername}
+                        size="icon"
+                        variant="default"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(settings.monitoredUsernames || []).map((username) => (
+                        <Badge
+                          key={username}
+                          className="px-3 py-1.5 bg-green-100 text-green-800 hover:bg-green-200"
+                        >
+                          {username}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 ml-2 hover:bg-transparent text-green-800"
+                            onClick={() => removeUsername(username)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ))}
+                      {(settings.monitoredUsernames || []).length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No usernames added yet
+                        </p>
+                      )}
                     </div>
                   </div>
 
