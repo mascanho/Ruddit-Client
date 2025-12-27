@@ -138,6 +138,7 @@ export type RedditPost = {
   is_self?: boolean;
   selftext?: string;
   name?: string;
+  date_added: number;
   // Client-side fields
   status?: "new" | "investigating" | "replied" | "closed" | "ignored";
   intent?: string;
@@ -247,19 +248,25 @@ export function RedditTable({
     null,
   );
   const [currentNote, setCurrentNote] = useState("");
-  const [lastSeenTimestamp, setLastSeenTimestamp] = useState<number>(() => {
-    return parseInt(localStorage.getItem("ruddit-last-seen-timestamp") || "0", 10);
+  const [lastVisitTimestamp, setLastVisitTimestamp] = useState<number>(() => {
+    return parseInt(localStorage.getItem("ruddit-last-visit-timestamp") || "0", 10);
   });
 
-  const latestPostTimestamp = useMemo(() => {
+  const maxDateAdded = useMemo(() => {
     if (data.length === 0) return 0;
-    return Math.max(...data.map(p => p.timestamp));
+    return Math.max(...data.map(p => p.date_added));
   }, [data]);
 
+  const latestPostTimestamp = useMemo(() => {
+    const newPosts = data.filter(p => p.date_added > lastVisitTimestamp);
+    if (newPosts.length === 0) return 0;
+    return Math.max(...newPosts.map(p => p.timestamp));
+  }, [data, lastVisitTimestamp]);
+
   const handleTableInteraction = () => {
-    if (latestPostTimestamp > lastSeenTimestamp) {
-      setLastSeenTimestamp(latestPostTimestamp);
-      localStorage.setItem("ruddit-last-seen-timestamp", latestPostTimestamp.toString());
+    if (maxDateAdded > lastVisitTimestamp) {
+      setLastVisitTimestamp(maxDateAdded);
+      localStorage.setItem("ruddit-last-visit-timestamp", maxDateAdded.toString());
     }
   };
 
@@ -803,10 +810,11 @@ export function RedditTable({
                   <Fragment key={post.id}>
                     <TableRow
                       key={post.id}
-                      className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-2 ${post.timestamp === latestPostTimestamp && post.timestamp > lastSeenTimestamp
-                        ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"
-                        : post.timestamp > lastSeenTimestamp
-                          ? "bg-green-500/5 dark:bg-green-500/10 border-l-green-400"
+                      onClick={handleTableInteraction}
+                      className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-2 ${post.date_added > lastVisitTimestamp
+                          ? post.timestamp === latestPostTimestamp
+                            ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"
+                            : "bg-green-500/5 dark:bg-green-500/10 border-l-green-400"
                           : "border-l-transparent"
                         } ${settings.tableDensity === "compact"
                           ? "h-2"

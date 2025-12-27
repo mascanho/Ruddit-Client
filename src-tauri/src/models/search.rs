@@ -245,6 +245,7 @@ pub async fn get_subreddit_posts(
                     is_self: post.is_self,
                     num_comments: post.num_comments,
                     intent,
+                    date_added: 0,
                 })
             } else {
                 None
@@ -323,6 +324,7 @@ pub async fn search_subreddit_posts(
                     is_self: post.is_self.clone(),
                     num_comments: post.num_comments.clone(),
                     intent,
+                    date_added: 0,
                 })
             } else {
                 None

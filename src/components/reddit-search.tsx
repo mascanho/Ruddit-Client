@@ -57,6 +57,7 @@ type SearchResult = {
   thumbnail?: string | null;
   intent?: string; // allow string from backend
   category?: "brand" | "competitor" | "general";
+  date_added?: number;
 };
 
 type SortType = "hot" | "top" | "new";
@@ -169,7 +170,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -209,7 +210,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -275,7 +276,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -349,6 +350,7 @@ export function RedditSearch({
           is_self: result.is_self || false,
           num_comments: result.num_comments || 0,
           intent: result.intent || "Low", // Use result intent
+          date_added: result.date_added || 0,
         },
       });
 
@@ -381,6 +383,7 @@ export function RedditSearch({
           settings.brandKeywords,
           settings.competitorKeywords,
         ),
+        date_added: result.date_added || 0,
       };
 
       if (!isInserted) {
@@ -483,6 +486,7 @@ export function RedditSearch({
           settings.brandKeywords,
           settings.competitorKeywords,
         ),
+        date_added: result.date_added || 0,
       };
 
       // Client-side duplicate check
@@ -663,7 +667,7 @@ export function RedditSearch({
   function isColoredRelevance(sortType: string) {
     // Renamed parameter
     switch (
-      sortType // Use new parameter
+    sortType // Use new parameter
     ) {
       case "hot":
         return "bg-red-500";
@@ -1066,10 +1070,10 @@ export function RedditSearch({
         post={
           commentsPost
             ? {
-                title: commentsPost.title,
-                url: commentsPost.url,
-                subreddit: commentsPost.subreddit,
-              }
+              title: commentsPost.title,
+              url: commentsPost.url,
+              subreddit: commentsPost.subreddit,
+            }
             : null
         }
         comments={comments}

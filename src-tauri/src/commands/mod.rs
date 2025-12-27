@@ -66,7 +66,7 @@ pub async fn get_reddit_results(
         // Use sortTypes here
         println!("Querying with sort type: {}", sort_type);
 
-        let mut posts_for_this_sort: Vec<PostDataWrapper> = Vec::new();
+        let posts_for_this_sort: Vec<PostDataWrapper>;
 
         // if query contains "r/" then it's a subreddit search
         if query.starts_with("r/") {
