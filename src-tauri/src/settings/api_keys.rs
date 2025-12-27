@@ -29,6 +29,12 @@ pub struct ApiKeys {
     #[serde(default)]
     #[serde(rename = "MATCH")]
     pub match_keyword: String,
+
+    #[serde(default)]
+    pub reddit_username: String,
+
+    #[serde(default)]
+    pub reddit_password: String,
 }
 
 #[derive(Debug)]
@@ -59,6 +65,8 @@ impl Default for ApiKeys {
             intent_high: default_high_intent_patterns(),
             intent_medium: default_medium_intent_patterns(),
             match_keyword: "".to_string(),
+            reddit_username: "".to_string(),
+            reddit_password: "".to_string(),
         }
     }
 }
@@ -173,6 +181,17 @@ impl ConfigDirs {
         let app_config: AppConfig = toml::from_str(&toml_content)?;
 
         Ok(app_config)
+    }
+
+    pub fn save_config(config: &AppConfig) -> Result<(), Box<dyn std::error::Error>> {
+        let base_dirs = BaseDirs::new().ok_or("Failed to get base directories")?;
+        let config_dir = base_dirs.config_dir();
+        let config_path = config_dir.join("ruddit/settings.toml");
+
+        let toml_content = toml::to_string_pretty(config)?;
+        fs::write(config_path, toml_content)?;
+
+        Ok(())
     }
 
     pub fn edit_config_file() -> Result<(), Box<dyn std::error::Error>> {

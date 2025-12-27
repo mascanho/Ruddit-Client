@@ -1070,6 +1070,7 @@ export function RedditSearch({
         post={
           commentsPost
             ? {
+              id: commentsPost.name || commentsPost.id,
               title: commentsPost.title,
               url: commentsPost.url,
               subreddit: commentsPost.subreddit,

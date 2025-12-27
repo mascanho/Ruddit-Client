@@ -559,3 +559,78 @@ fn extract_subreddit_from_url(url: &str) -> Option<String> {
     }
     None
 }
+
+pub async fn get_user_access_token(
+    client_id: &str,
+    client_secret: &str,
+    username: &str,
+    password: &str,
+) -> Result<String, RedditError> {
+    let client_id = client_id.trim();
+    let client_secret = client_secret.trim();
+    let username = username.trim();
+    let password = password.trim();
+
+    let credentials = format!("{}:{}", client_id, client_secret);
+    let encoded = general_purpose::STANDARD.encode(credentials);
+
+    let client = Client::new();
+    let response = client
+        .post("https://www.reddit.com/api/v1/access_token")
+        .header("Authorization", format!("Basic {}", encoded))
+        .header("User-Agent", format!("macos:com.ruddit.client:v0.1.0 (by /u/{})", username))
+        .form(&[
+            ("grant_type", "password"),
+            ("username", username),
+            ("password", password),
+        ])
+        .send()
+        .await?;
+
+    let json: serde_json::Value = response.json().await?;
+    if let Some(err) = json["error"].as_str() {
+        if err == "unauthorized_client" {
+            return Err(RedditError::HttpError(401, "unauthorized_client: Check that your Reddit App Type is set to 'script' and your Client ID/Secret are correct.".to_string()));
+        }
+        return Err(RedditError::HttpError(401, err.to_string()));
+    }
+
+    json["access_token"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or(RedditError::TokenExtraction)
+}
+
+pub async fn post_comment(
+    access_token: &str,
+    parent_id: &str,
+    text: &str,
+) -> Result<(), RedditError> {
+    let client = Client::new();
+    let response = client
+        .post("https://oauth.reddit.com/api/comment")
+        .header("Authorization", format!("Bearer {}", access_token))
+        .header("User-Agent", "RudditApp/0.1 by Ruddit")
+        .form(&[("thing_id", parent_id), ("text", text), ("api_type", "json")])
+        .send()
+        .await?;
+
+    if !response.status().is_success() {
+        return Err(RedditError::HttpError(
+            response.status().as_u16(),
+            response.text().await.unwrap_or_default(),
+        ));
+    }
+
+    let json: serde_json::Value = response.json().await?;
+    if let Some(errors) = json["json"]["errors"].as_array() {
+        if !errors.is_empty() {
+            return Err(RedditError::HttpError(
+                400,
+                format!("{:?}", errors[0]),
+            ));
+        }
+    }
+
+    Ok(())
+}

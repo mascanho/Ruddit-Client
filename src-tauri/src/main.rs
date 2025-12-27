@@ -43,7 +43,10 @@ async fn main() {
             commands::open_db_folder_command,
             commands::update_post_notes,
             commands::update_post_assignee,
-            commands::update_post_engaged_status
+            commands::update_post_engaged_status,
+            commands::get_reddit_config_command,
+            commands::update_reddit_config_command,
+            commands::submit_reddit_comment_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

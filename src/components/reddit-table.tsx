@@ -812,10 +812,10 @@ export function RedditTable({
                       key={post.id}
                       onClick={handleTableInteraction}
                       className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-2 ${post.date_added > lastVisitTimestamp
-                          ? post.timestamp === latestPostTimestamp
-                            ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"
-                            : "bg-green-500/5 dark:bg-green-500/10 border-l-green-400"
-                          : "border-l-transparent"
+                        ? post.timestamp === latestPostTimestamp
+                          ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"
+                          : "bg-green-500/5 dark:bg-green-500/10 border-l-green-400"
+                        : "border-l-transparent"
                         } ${settings.tableDensity === "compact"
                           ? "h-2"
                           : settings.tableDensity === "spacious"
@@ -1373,7 +1373,12 @@ export function RedditTable({
       <RedditCommentsView
         isOpen={commentsPost !== null}
         onOpenChange={(open) => !open && setCommentsPost(null)}
-        post={commentsPost}
+        post={commentsPost ? {
+          id: commentsPost.name || String(commentsPost.id),
+          title: commentsPost.title,
+          url: commentsPost.url,
+          subreddit: commentsPost.subreddit
+        } : null}
         comments={comments}
         sortType={sortTypeForComments}
         onSortTypeChange={handleSortTypeForCommentsChange}

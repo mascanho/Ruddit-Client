@@ -283,3 +283,40 @@ pub fn update_post_engaged_status(id: i64, engaged: i64) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     Ok(())
 }
+#[tauri::command]
+pub fn get_reddit_config_command() -> Result<api_keys::ApiKeys, String> {
+    let config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
+    Ok(config.api_keys)
+}
+
+#[tauri::command]
+pub fn update_reddit_config_command(new_api_keys: api_keys::ApiKeys) -> Result<(), String> {
+    let mut config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
+    config.api_keys = new_api_keys;
+    api_keys::ConfigDirs::save_config(&config).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn submit_reddit_comment_command(
+    parent_id: String,
+    text: String,
+) -> Result<(), String> {
+    let config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
+    let api_keys = config.api_keys;
+
+    let token = search::get_user_access_token(
+        &api_keys.reddit_api_id,
+        &api_keys.reddit_api_secret,
+        &api_keys.reddit_username,
+        &api_keys.reddit_password,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
+    search::post_comment(&token, &parent_id, &text)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}

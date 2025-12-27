@@ -108,6 +108,12 @@ impl DB {
             [],
         )?;
 
+        // Migration: Add date_added to reddit_posts if it doesn't exist
+        let _ = self.conn.execute(
+            "ALTER TABLE reddit_posts ADD COLUMN date_added INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+
         self.create_comments_table()?;
         Ok(())
     }
@@ -179,11 +185,17 @@ impl DB {
                 thumbnail TEXT NOT NULL DEFAULT '',
                 is_self BOOLEAN NOT NULL DEFAULT FALSE,
                 num_comments INTEGER NOT NULL DEFAULT 0,
-                intent TEXT NOT NULL DEFAULT 'low'
-
+                intent TEXT NOT NULL DEFAULT 'low',
+                date_added INTEGER NOT NULL DEFAULT 0
             )",
             [],
         )?;
+
+        // Migration: Add date_added to subreddit_search if it doesn't exist
+        let _ = self.conn.execute(
+            "ALTER TABLE subreddit_search ADD COLUMN date_added INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
 
         // Create comments table
         self.create_comments_table()?;
@@ -222,7 +234,7 @@ impl DB {
             let mut stmt = tx.prepare(
                 "INSERT OR IGNORE INTO reddit_posts
                 (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)",
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
             )?;
 
             for result in results {

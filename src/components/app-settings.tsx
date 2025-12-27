@@ -30,7 +30,9 @@ import {
   Plus,
   X,
   Radar,
+  UserCog,
 } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -308,6 +310,10 @@ export function AppSettingsDialog({
             <TabsTrigger value="monitoring" className="text-xs sm:text-sm">
               <Radar className="h-4 w-4 mr-1.5" />
               Monitor
+            </TabsTrigger>
+            <TabsTrigger value="reddit" className="text-xs sm:text-sm">
+              <UserCog className="h-4 w-4 mr-1.5" />
+              Reddit Auth
             </TabsTrigger>
           </TabsList>
 
@@ -849,6 +855,10 @@ export function AppSettingsDialog({
                 </div>
               </Card>
             </TabsContent>
+
+            <TabsContent value="reddit" className="space-y-6 mt-0">
+              <RedditAuthConfig />
+            </TabsContent>
           </div>
         </Tabs>
 
@@ -860,5 +870,138 @@ export function AppSettingsDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RedditAuthConfig() {
+  const [config, setConfig] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  const loadConfig = async () => {
+    setIsLoading(true);
+    try {
+      const keys = await invoke("get_reddit_config_command");
+      setConfig(keys);
+    } catch (error) {
+      console.error("Failed to load Reddit config:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load Reddit configuration.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!config) return;
+    setIsSaving(true);
+    try {
+      await invoke("update_reddit_config_command", { newApiKeys: config });
+      toast({
+        title: "Success",
+        description: "Reddit configuration saved successfully.",
+      });
+    } catch (error) {
+      console.error("Failed to save Reddit config:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save Reddit configuration.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <Card className="p-4 space-y-4">
+      <div className="space-y-4">
+        <div>
+          <Label className="text-base font-semibold">Reddit API Credentials</Label>
+          <p className="text-sm text-muted-foreground mb-3">
+            Your Reddit App (Script) credentials from <a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noreferrer" className="text-primary hover:underline">Reddit App Prefs</a>.
+          </p>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="reddit_id">Client ID</Label>
+              <Input
+                id="reddit_id"
+                value={config?.reddit_api_id || ""}
+                onChange={(e) => setConfig({ ...config, reddit_api_id: e.target.value })}
+                placeholder="Client ID (the string under 'personal use script')"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="reddit_secret">Client Secret</Label>
+              <Input
+                id="reddit_secret"
+                type="password"
+                value={config?.reddit_api_secret || ""}
+                onChange={(e) => setConfig({ ...config, reddit_api_secret: e.target.value })}
+                placeholder="Client Secret"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-base font-semibold">User Account (for Commenting)</Label>
+          <p className="text-sm text-muted-foreground mb-3">
+            Necessary if you want to reply to threads directly from Ruddit.
+          </p>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="reddit_user">Username</Label>
+              <Input
+                id="reddit_user"
+                value={config?.reddit_username || ""}
+                onChange={(e) => setConfig({ ...config, reddit_username: e.target.value })}
+                placeholder="Reddit Username"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="reddit_pass">Password</Label>
+              <Input
+                id="reddit_pass"
+                type="password"
+                value={config?.reddit_password || ""}
+                onChange={(e) => setConfig({ ...config, reddit_password: e.target.value })}
+                placeholder="Reddit Password"
+              />
+            </div>
+          </div>
+        </div>
+
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="w-full"
+        >
+          {isSaving ? "Saving..." : "Save Credentials"}
+        </Button>
+
+        <div className="bg-muted/50 p-4 rounded-lg">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Note: These credentials are saved locally in your `settings.toml` and are used to obtain an OAuth token for commenting.
+          </p>
+        </div>
+      </div>
+    </Card>
   );
 }
