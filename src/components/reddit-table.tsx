@@ -133,11 +133,19 @@ export type RedditPost = {
   assignee: string;
   notes: string;
   num_comments?: number;
+  author?: string;
+  score?: number;
+  is_self?: boolean;
+  selftext?: string;
+  name?: string;
   // Client-side fields
   status?: "new" | "investigating" | "replied" | "closed" | "ignored";
   intent?: string;
   category?: "brand" | "competitor" | "general";
 };
+
+// Icons specific to post types
+import { FileText, Link as LinkIcon } from "lucide-react";
 
 const teamMembers = [
   { id: "user1", name: "Alex" },
@@ -239,8 +247,24 @@ export function RedditTable({
     null,
   );
   const [currentNote, setCurrentNote] = useState("");
+  const [lastSeenTimestamp, setLastSeenTimestamp] = useState<number>(() => {
+    return parseInt(localStorage.getItem("ruddit-last-seen-timestamp") || "0", 10);
+  });
+
+  const latestPostTimestamp = useMemo(() => {
+    if (data.length === 0) return 0;
+    return Math.max(...data.map(p => p.timestamp));
+  }, [data]);
+
+  const handleTableInteraction = () => {
+    if (latestPostTimestamp > lastSeenTimestamp) {
+      setLastSeenTimestamp(latestPostTimestamp);
+      localStorage.setItem("ruddit-last-seen-timestamp", latestPostTimestamp.toString());
+    }
+  };
 
   const handleEditNote = (post: RedditPost) => {
+    handleTableInteraction();
     setEditingNotePost(post);
     setCurrentNote(post.notes || "");
   };
@@ -778,13 +802,18 @@ export function RedditTable({
                 paginatedData.map((post, index) => (
                   <Fragment key={post.id}>
                     <TableRow
-                      className={`group text-xs p-0 h-2 ${
-                        settings.tableDensity === "compact"
+                      key={post.id}
+                      className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-2 ${post.timestamp === latestPostTimestamp && post.timestamp > lastSeenTimestamp
+                        ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"
+                        : post.timestamp > lastSeenTimestamp
+                          ? "bg-green-500/5 dark:bg-green-500/10 border-l-green-400"
+                          : "border-l-transparent"
+                        } ${settings.tableDensity === "compact"
                           ? "h-2"
                           : settings.tableDensity === "spacious"
                             ? "h-2"
                             : "h-2"
-                      }`}
+                        }`}
                     >
                       <TableCell className="px-3 p-0">
                         <Button
@@ -794,9 +823,8 @@ export function RedditTable({
                           className="h-8 w-8"
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${
-                              expandedRows.has(post.id) ? "rotate-180" : ""
-                            }`}
+                            className={`h-4 w-4 transition-transform ${expandedRows.has(post.id) ? "rotate-180" : ""
+                              }`}
                           />
                         </Button>
                       </TableCell>
@@ -807,14 +835,19 @@ export function RedditTable({
                         {post?.formatted_date?.slice(0, 10).trim() || "N/A"}
                       </TableCell>
                       <TableCell className="min-w-[300px] px-3">
-                        <div
-                          onClick={() => openUrl(post.url)}
-                          className="line-clamp-2 font-medium cursor-pointer hover:underline"
-                        >
-                          {highlightKeywords(
-                            post.title ? (post.title.length > 100 ? post.title.slice(0, 100) + "..." : post.title) : "No title",
-                            keywordsToHighlight
-                          )}
+                        <div className="flex items-center gap-2">
+                          <div className="mt-0.5 text-muted-foreground/50">
+                            {post.is_self ? <FileText className="h-3.5 w-3.5" /> : <LinkIcon className="h-3.5 w-3.5" />}
+                          </div>
+                          <div
+                            onClick={() => openUrl(post.url)}
+                            className="line-clamp-1 font-medium cursor-pointer hover:underline flex-1"
+                          >
+                            {highlightKeywords(
+                              post.title ? (post.title.length > 80 ? post.title.slice(0, 80) + "..." : post.title) : "No title",
+                              keywordsToHighlight
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           {post.category === "brand" && (
@@ -834,21 +867,32 @@ export function RedditTable({
                             </Badge>
                           )}
                           <div
-                            className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer hover:text-primary"
-                            onClick={() =>
-                              handleGetComments(post, post.sort_type)
-                            }
-                            title="Get comments"
+                            className="flex items-center gap-3 text-[10px] text-muted-foreground"
                           >
-                            <MessageCircle className="h-3 w-3" />
-                            <span>{post.num_comments ?? 0}</span>
+                            <div className="flex items-center gap-1 cursor-pointer hover:text-primary"
+                              onClick={() => handleGetComments(post, post.sort_type)}>
+                              <MessageCircle className="h-3 w-3" />
+                              <span>{post.num_comments ?? 0}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <ArrowUpDown className="h-3 w-3" />
+                              <span>{post.score ?? 0}</span>
+                            </div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="w-[150px] px-3">
-                        <Badge variant="outline" className="font-mono">
-                          r/{post.subreddit}
-                        </Badge>
+                        <div className="flex flex-col gap-0.5">
+                          <Badge variant="outline" className="font-mono w-fit text-[10px] py-0 h-4">
+                            r/{post.subreddit}
+                          </Badge>
+                          {post.author && (
+                            <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <User className="h-2.5 w-2.5" />
+                              u/{post.author}
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
 
                       <TableCell className="w-[100px] px-3 text-center">
@@ -920,7 +964,7 @@ export function RedditTable({
                             <SelectTrigger className="w-8 h-8 rounded-full p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden flex items-center justify-center">
                               <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
                                 {post.assignee &&
-                                post.assignee !== "unassigned" ? (
+                                  post.assignee !== "unassigned" ? (
                                   <>
                                     <AvatarImage
                                       src={`https://avatar.vercel.sh/${post.assignee}`}
@@ -1029,28 +1073,53 @@ export function RedditTable({
                         <TableCell colSpan={11} className="p-0">
                           {" "}
                           {/* Updated colSpan */}
-                          <div className="p-4 bg-muted/50">
-                            <Card>
-                              <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle>Notes</CardTitle>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditNote(post)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              </CardHeader>
-                              <CardContent>
-                                {post.notes ? (
-                                  <p>{post.notes}</p>
-                                ) : (
-                                  <p className="text-muted-foreground">
-                                    No notes for this post yet.
-                                  </p>
-                                )}
-                              </CardContent>
-                            </Card>
+                          <div className="p-4 bg-muted/30 border-x border-b rounded-b-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <Card className="bg-background/50">
+                                <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
+                                  <CardTitle className="text-sm font-medium">Post Content</CardTitle>
+                                  {post.permalink && (
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openUrl(post.permalink)}>
+                                      <ExternalLink className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </CardHeader>
+                                <CardContent className="py-0 px-4 pb-4">
+                                  <ScrollArea className="h-[120px] w-full pr-4">
+                                    <div className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                      {post.selftext || (post.is_self ? "No content." : "This is an external link post.")}
+                                    </div>
+                                  </ScrollArea>
+                                </CardContent>
+                              </Card>
+
+                              <Card className="bg-background/50">
+                                <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
+                                  <CardTitle className="text-sm font-medium">Internal Notes</CardTitle>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => handleEditNote(post)}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                </CardHeader>
+                                <CardContent className="py-0 px-4 pb-4">
+                                  <ScrollArea className="h-[120px] w-full pr-4">
+                                    <div className="text-xs">
+                                      {post.notes ? (
+                                        <p>{post.notes}</p>
+                                      ) : (
+                                        <p className="text-muted-foreground italic">
+                                          No notes for this post yet.
+                                        </p>
+                                      )}
+                                    </div>
+                                  </ScrollArea>
+                                </CardContent>
+                              </Card>
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>
