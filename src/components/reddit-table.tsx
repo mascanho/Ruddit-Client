@@ -14,6 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Message, SearchState } from "./smart-data-tables";
 import { RedditCommentsView } from "./reddit-comments-view";
 import { useAppSettings } from "./app-settings";
+import { Radar } from "lucide-react";
+import { KeywordHighlighter } from "./keyword-highlighter";
 import { invoke } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
@@ -83,39 +85,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const initialData: RedditPost[] = []; // Declare initialData here
 
-const highlightKeywords = (text: string, keywords: string[]) => {
-  if (!text) return null;
 
-  const parts: (string | JSX.Element)[] = [];
-  let lastIndex = 0;
-  let keyCounter = 0;
-
-  const pattern = keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-  const regex = new RegExp(`(${pattern})`, 'gi');
-
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    const matchedText = match[0];
-    const index = match.index;
-
-    if (index > lastIndex) {
-      parts.push(text.substring(lastIndex, index));
-    }
-
-    parts.push(
-      <span key={keyCounter++} className="bg-yellow-200 dark:bg-yellow-700 rounded px-0.5">
-        {matchedText}
-      </span>
-    );
-    lastIndex = index + matchedText.length;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(text.substring(lastIndex));
-  }
-
-  return <>{parts}</>;
-};
 
 
 // Define RedditPost type to match Rust's PostDataWrapper
@@ -175,7 +145,26 @@ export function RedditTable({
   onSearchStateChange: (state: SearchState) => void;
 }) {
   const [data, setData] = useState<RedditPost[]>(initialData);
-  const { settings } = useAppSettings();
+  const { settings, updateSettings } = useAppSettings();
+
+  const addSubredditToMonitoring = (subreddit: string) => {
+    const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
+    if (settings.monitoredSubreddits.includes(cleaned)) {
+      toast.info(`Already monitoring r/${cleaned}`, {
+        position: "bottom-center",
+      });
+      return;
+    }
+
+    updateSettings({
+      monitoredSubreddits: [...settings.monitoredSubreddits, cleaned],
+    });
+
+    toast.success(`Now monitoring r/${cleaned}`, {
+      position: "bottom-center",
+    });
+  };
+
   const openUrl = useOpenUrl();
   const keywordsToHighlight = useMemo(() => {
     return [
@@ -851,10 +840,13 @@ export function RedditTable({
                             onClick={() => openUrl(post.url)}
                             className="line-clamp-1 font-medium cursor-pointer hover:underline flex-1"
                           >
-                            {highlightKeywords(
-                              post.title ? (post.title.length > 80 ? post.title.slice(0, 80) + "..." : post.title) : "No title",
-                              keywordsToHighlight
-                            )}
+                            <KeywordHighlighter
+                              text={post.title || "No title"}
+                              brandKeywords={settings.brandKeywords}
+                              competitorKeywords={settings.competitorKeywords}
+                              generalKeywords={settings.monitoredKeywords}
+                              searchQuery={searchQuery}
+                            />
                           </div>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
@@ -891,9 +883,19 @@ export function RedditTable({
                       </TableCell>
                       <TableCell className="w-[150px] px-3">
                         <div className="flex flex-col gap-0.5">
-                          <Badge variant="outline" className="font-mono w-fit text-[10px] py-0 h-4">
-                            r/{post.subreddit}
-                          </Badge>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Badge variant="outline" className="font-mono w-fit text-[10px] py-0 h-4 cursor-pointer hover:bg-accent/50 selection:bg-transparent">
+                                r/{post.subreddit}
+                              </Badge>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem onClick={() => addSubredditToMonitoring(post.subreddit)}>
+                                <Radar className="h-4 w-4 mr-2" />
+                                Add to Monitoring
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           {post.author && (
                             <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                               <User className="h-2.5 w-2.5" />

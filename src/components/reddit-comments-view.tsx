@@ -25,6 +25,8 @@ import moment from "moment";
 import { invoke } from "@tauri-apps/api/core";
 import { useToast } from "@/hooks/use-toast";
 import type { Message } from "./smart-data-tables";
+import { useAppSettings } from "./app-settings";
+import { KeywordHighlighter } from "./keyword-highlighter";
 
 interface CommentTree extends Message {
     children: CommentTree[];
@@ -65,6 +67,7 @@ const CommentItem = ({
     isConfigured?: boolean;
 }) => {
     const [isReplying, setIsReplying] = useState(false);
+    const { settings } = useAppSettings();
 
     return (
         <div style={{ marginLeft: depth > 0 ? `${Math.min(depth * 12, 48)}px` : "0" }}>
@@ -86,7 +89,13 @@ const CommentItem = ({
                                 {moment(comment?.formatted_date, "YYYY-MM-DD").fromNow()}
                             </span>
                         </div>
-                        <p className="text-sm leading-relaxed break-words whitespace-pre-wrap mb-2">{comment?.body}</p>
+                        <KeywordHighlighter
+                            text={comment?.body || ""}
+                            className="text-sm leading-relaxed break-words whitespace-pre-wrap mb-2 block"
+                            brandKeywords={settings.brandKeywords}
+                            competitorKeywords={settings.competitorKeywords}
+                            generalKeywords={settings.monitoredKeywords}
+                        />
 
                         {isConfigured && (
                             <Button

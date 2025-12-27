@@ -37,6 +37,7 @@ import { RedditCommentsView } from "./reddit-comments-view";
 import { toast } from "sonner";
 import moment from "moment";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { KeywordHighlighter } from "./keyword-highlighter";
 import {
   calculateIntent,
   categorizePost,
@@ -101,9 +102,7 @@ export function RedditSearch({
   const [sortTypeForComments, setSortTypeForComments] = useState("best");
 
   // Helper function to escape special characters for regex
-  const escapeRegExp = (string: string) => {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
-  };
+
 
   // Persist query and sorts
   useEffect(() => {
@@ -125,43 +124,7 @@ export function RedditSearch({
     localStorage.setItem("lastRedditSearchRows", rowsPerPage.toString());
   }, [rowsPerPage]);
 
-  // Helper function to highlight keywords in text
-  const highlightKeywords = (text: string, currentQuery: string) => {
-    if (!text || !currentQuery.trim()) return text;
 
-    const rawKeywords = currentQuery.split(/\s+/).filter((k) => k.length > 0);
-
-    if (rawKeywords.length === 0) return text;
-
-    // Create a single regex with all keywords joined by |
-    // Escape keywords for the regex pattern
-    const escapedKeywords = rawKeywords.map(escapeRegExp);
-    const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
-
-    // Split the text based on the regex. capturing groups are included in the result.
-    const parts = text.split(regex);
-
-    return (
-      <>
-        {parts.map((part, i) => {
-          // Check if this part matches any of the keywords (case insensitive)
-          // We check if the part (lowercased) matches any of the raw keywords (lowercased)
-          const isMatch = rawKeywords.some(
-            (k) => part.toLowerCase() === k.toLowerCase(),
-          );
-
-          if (isMatch) {
-            return (
-              <span key={i} className="bg-yellow-200 font-bold text-black">
-                {part}
-              </span>
-            );
-          }
-          return <span key={i}>{part}</span>;
-        })}
-      </>
-    );
-  };
 
   const addSubredditToMonitoring = (subreddit: string) => {
     const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
@@ -907,7 +870,13 @@ export function RedditSearch({
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium mb-1 line-clamp-2 text-base">
-                          {highlightKeywords(result.title, query)}
+                          <KeywordHighlighter
+                            text={result.title}
+                            searchQuery={query}
+                            brandKeywords={settings.brandKeywords}
+                            competitorKeywords={settings.competitorKeywords}
+                            generalKeywords={settings.monitoredKeywords}
+                          />
                         </h4>
                         {result.snippet && (
                           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
