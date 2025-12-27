@@ -121,7 +121,10 @@ const useAppSettingsStore = create<AppSettingsStore>((set) => {
         return { settings: updated };
       }),
     resetSettings: () => {
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(defaultSettings));
+      localStorage.setItem(
+        SETTINGS_STORAGE_KEY,
+        JSON.stringify(defaultSettings),
+      );
       return { settings: defaultSettings };
     },
   };
@@ -239,43 +242,69 @@ export function AppSettingsDialog({
     if (!newBrandKeyword.trim()) return;
     const cleaned = newBrandKeyword.trim().toLowerCase();
     if (settings.brandKeywords.includes(cleaned)) {
-      toast({ title: "Already monitoring", description: `"${cleaned}" is already in your list.` });
+      toast({
+        title: "Already monitoring",
+        description: `"${cleaned}" is already in your list.`,
+      });
       return;
     }
-    updateSettings({ brandKeywords: [...(settings.brandKeywords || []), cleaned] });
+    updateSettings({
+      brandKeywords: [...(settings.brandKeywords || []), cleaned],
+    });
     setNewBrandKeyword("");
-    toast({ title: "Brand Keyword added", description: `Now monitoring "${cleaned}"` });
+    toast({
+      title: "Brand Keyword added",
+      description: `Now monitoring "${cleaned}"`,
+    });
   };
 
   const removeBrandKeyword = (keyword: string) => {
     updateSettings({
-      brandKeywords: (settings.brandKeywords || []).filter((k) => k !== keyword),
+      brandKeywords: (settings.brandKeywords || []).filter(
+        (k) => k !== keyword,
+      ),
     });
-    toast({ title: "Keyword removed", description: `Stopped monitoring "${keyword}"` });
+    toast({
+      title: "Keyword removed",
+      description: `Stopped monitoring "${keyword}"`,
+    });
   };
 
   const addCompetitorKeyword = () => {
     if (!newCompetitorKeyword.trim()) return;
     const cleaned = newCompetitorKeyword.trim().toLowerCase();
     if (settings.competitorKeywords.includes(cleaned)) {
-      toast({ title: "Already monitoring", description: `"${cleaned}" is already in your list.` });
+      toast({
+        title: "Already monitoring",
+        description: `"${cleaned}" is already in your list.`,
+      });
       return;
     }
-    updateSettings({ competitorKeywords: [...(settings.competitorKeywords || []), cleaned] });
+    updateSettings({
+      competitorKeywords: [...(settings.competitorKeywords || []), cleaned],
+    });
     setNewCompetitorKeyword("");
-    toast({ title: "Competitor Keyword added", description: `Now monitoring "${cleaned}"` });
+    toast({
+      title: "Competitor Keyword added",
+      description: `Now monitoring "${cleaned}"`,
+    });
   };
 
   const removeCompetitorKeyword = (keyword: string) => {
     updateSettings({
-      competitorKeywords: (settings.competitorKeywords || []).filter((k) => k !== keyword),
+      competitorKeywords: (settings.competitorKeywords || []).filter(
+        (k) => k !== keyword,
+      ),
     });
-    toast({ title: "Keyword removed", description: `Stopped monitoring "${keyword}"` });
+    toast({
+      title: "Keyword removed",
+      description: `Stopped monitoring "${keyword}"`,
+    });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] min-h-[90vh] h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings2 className="h-5 w-5" />
@@ -290,23 +319,23 @@ export function AppSettingsDialog({
           defaultValue="appearance"
           className="flex-1 overflow-hidden flex flex-col"
         >
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="appearance" className="text-xs sm:text-sm">
-              <Palette className="h-4 w-4 mr-1.5" />
-              Appearance
-            </TabsTrigger>
-            <TabsTrigger value="table" className="text-xs sm:text-sm">
-              <Table2 className="h-4 w-4 mr-1.5" />
-              Table
-            </TabsTrigger>
-            <TabsTrigger value="behavior" className="text-xs sm:text-sm">
-              <Bell className="h-4 w-4 mr-1.5" />
-              Behavior
-            </TabsTrigger>
-            <TabsTrigger value="defaults" className="text-xs sm:text-sm">
-              <Database className="h-4 w-4 mr-1.5" />
-              Defaults
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2">
+            {/* <TabsTrigger value="appearance" className="text-xs sm:text-sm"> */}
+            {/*   <Palette className="h-4 w-4 mr-1.5" /> */}
+            {/*   Appearance */}
+            {/* </TabsTrigger> */}
+            {/* <TabsTrigger value="table" className="text-xs sm:text-sm"> */}
+            {/*   <Table2 className="h-4 w-4 mr-1.5" /> */}
+            {/*   Table */}
+            {/* </TabsTrigger> */}
+            {/* <TabsTrigger value="behavior" className="text-xs sm:text-sm"> */}
+            {/*   <Bell className="h-4 w-4 mr-1.5" /> */}
+            {/*   Behavior */}
+            {/* </TabsTrigger> */}
+            {/* <TabsTrigger value="defaults" className="text-xs sm:text-sm"> */}
+            {/*   <Database className="h-4 w-4 mr-1.5" /> */}
+            {/*   Defaults */}
+            {/* </TabsTrigger> */}
             <TabsTrigger value="monitoring" className="text-xs sm:text-sm">
               <Radar className="h-4 w-4 mr-1.5" />
               Monitor
@@ -796,17 +825,32 @@ export function AppSettingsDialog({
                         placeholder="e.g., myproduct, mycompany"
                         value={newBrandKeyword}
                         onChange={(e) => setNewBrandKeyword(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && addBrandKeyword()}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && addBrandKeyword()
+                        }
                       />
-                      <Button onClick={addBrandKeyword} size="icon" variant="default" className="bg-blue-600 hover:bg-blue-700">
+                      <Button
+                        onClick={addBrandKeyword}
+                        size="icon"
+                        variant="default"
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {(settings.brandKeywords || []).map((keyword) => (
-                        <Badge key={keyword} className="px-3 py-1.5 bg-blue-100 text-blue-800 hover:bg-blue-200">
+                        <Badge
+                          key={keyword}
+                          className="px-3 py-1.5 bg-blue-100 text-blue-800 hover:bg-blue-200"
+                        >
                           {keyword}
-                          <Button variant="ghost" size="icon" className="h-4 w-4 ml-2 hover:bg-transparent text-blue-800" onClick={() => removeBrandKeyword(keyword)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 ml-2 hover:bg-transparent text-blue-800"
+                            onClick={() => removeBrandKeyword(keyword)}
+                          >
                             <X className="h-3 w-3" />
                           </Button>
                         </Badge>
@@ -826,18 +870,35 @@ export function AppSettingsDialog({
                       <Input
                         placeholder="e.g., competitor1, alternative to me"
                         value={newCompetitorKeyword}
-                        onChange={(e) => setNewCompetitorKeyword(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && addCompetitorKeyword()}
+                        onChange={(e) =>
+                          setNewCompetitorKeyword(e.target.value)
+                        }
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && addCompetitorKeyword()
+                        }
                       />
-                      <Button onClick={addCompetitorKeyword} size="icon" variant="default" className="bg-orange-600 hover:bg-orange-700">
+                      <Button
+                        onClick={addCompetitorKeyword}
+                        size="icon"
+                        variant="default"
+                        className="bg-orange-600 hover:bg-orange-700"
+                      >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {(settings.competitorKeywords || []).map((keyword) => (
-                        <Badge key={keyword} className="px-3 py-1.5 bg-orange-100 text-orange-800 hover:bg-orange-200">
+                        <Badge
+                          key={keyword}
+                          className="px-3 py-1.5 bg-orange-100 text-orange-800 hover:bg-orange-200"
+                        >
                           {keyword}
-                          <Button variant="ghost" size="icon" className="h-4 w-4 ml-2 hover:bg-transparent text-orange-800" onClick={() => removeCompetitorKeyword(keyword)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 ml-2 hover:bg-transparent text-orange-800"
+                            onClick={() => removeCompetitorKeyword(keyword)}
+                          >
                             <X className="h-3 w-3" />
                           </Button>
                         </Badge>
@@ -933,9 +994,20 @@ function RedditAuthConfig() {
     <Card className="p-4 space-y-4">
       <div className="space-y-4">
         <div>
-          <Label className="text-base font-semibold">Reddit API Credentials</Label>
+          <Label className="text-base font-semibold">
+            Reddit API Credentials
+          </Label>
           <p className="text-sm text-muted-foreground mb-3">
-            Your Reddit App (Script) credentials from <a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noreferrer" className="text-primary hover:underline">Reddit App Prefs</a>.
+            Your Reddit App (Script) credentials from{" "}
+            <a
+              href="https://www.reddit.com/prefs/apps"
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary hover:underline"
+            >
+              Reddit App Prefs
+            </a>
+            .
           </p>
           <div className="space-y-3">
             <div className="space-y-1">
@@ -943,7 +1015,9 @@ function RedditAuthConfig() {
               <Input
                 id="reddit_id"
                 value={config?.reddit_api_id || ""}
-                onChange={(e) => setConfig({ ...config, reddit_api_id: e.target.value })}
+                onChange={(e) =>
+                  setConfig({ ...config, reddit_api_id: e.target.value })
+                }
                 placeholder="Client ID (the string under 'personal use script')"
               />
             </div>
@@ -953,7 +1027,9 @@ function RedditAuthConfig() {
                 id="reddit_secret"
                 type="password"
                 value={config?.reddit_api_secret || ""}
-                onChange={(e) => setConfig({ ...config, reddit_api_secret: e.target.value })}
+                onChange={(e) =>
+                  setConfig({ ...config, reddit_api_secret: e.target.value })
+                }
                 placeholder="Client Secret"
               />
             </div>
@@ -961,7 +1037,9 @@ function RedditAuthConfig() {
         </div>
 
         <div>
-          <Label className="text-base font-semibold">User Account (for Commenting)</Label>
+          <Label className="text-base font-semibold">
+            User Account (for Commenting)
+          </Label>
           <p className="text-sm text-muted-foreground mb-3">
             Necessary if you want to reply to threads directly from Ruddit.
           </p>
@@ -971,7 +1049,9 @@ function RedditAuthConfig() {
               <Input
                 id="reddit_user"
                 value={config?.reddit_username || ""}
-                onChange={(e) => setConfig({ ...config, reddit_username: e.target.value })}
+                onChange={(e) =>
+                  setConfig({ ...config, reddit_username: e.target.value })
+                }
                 placeholder="Reddit Username"
               />
             </div>
@@ -981,24 +1061,23 @@ function RedditAuthConfig() {
                 id="reddit_pass"
                 type="password"
                 value={config?.reddit_password || ""}
-                onChange={(e) => setConfig({ ...config, reddit_password: e.target.value })}
+                onChange={(e) =>
+                  setConfig({ ...config, reddit_password: e.target.value })
+                }
                 placeholder="Reddit Password"
               />
             </div>
           </div>
         </div>
 
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="w-full"
-        >
+        <Button onClick={handleSave} disabled={isSaving} className="w-full">
           {isSaving ? "Saving..." : "Save Credentials"}
         </Button>
 
         <div className="bg-muted/50 p-4 rounded-lg">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Note: These credentials are saved locally in your `settings.toml` and are used to obtain an OAuth token for commenting.
+            Note: These credentials are saved locally in your `settings.toml`
+            and are used to obtain an OAuth token for commenting.
           </p>
         </div>
       </div>
