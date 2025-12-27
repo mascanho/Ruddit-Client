@@ -20,13 +20,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { MessageCircle, Reply, Send, Loader2 } from "lucide-react";
+import { MessageCircle, Reply, Send, Loader2, ArrowUpDown, User } from "lucide-react";
 import moment from "moment";
 import { invoke } from "@tauri-apps/api/core";
 import { useToast } from "@/hooks/use-toast";
 import type { Message } from "./smart-data-tables";
 import { useAppSettings } from "./app-settings";
 import { KeywordHighlighter } from "./keyword-highlighter";
+import { useOpenUrl } from "@/hooks/useOpenUrl";
+import type { RedditPost } from "./reddit-table";
 
 interface CommentTree extends Message {
     children: CommentTree[];
@@ -68,6 +70,7 @@ const CommentItem = ({
 }) => {
     const [isReplying, setIsReplying] = useState(false);
     const { settings } = useAppSettings();
+    const openUrl = useOpenUrl();
 
     return (
         <div style={{ marginLeft: depth > 0 ? `${Math.min(depth * 12, 48)}px` : "0" }}>
@@ -80,7 +83,12 @@ const CommentItem = ({
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-medium text-sm truncate max-w-[150px]">{comment?.author}</span>
+                            <span
+                                className="font-medium text-sm truncate max-w-[150px] cursor-pointer hover:underline"
+                                onClick={() => openUrl(`https://www.reddit.com/user/${comment.author}/`)}
+                            >
+                                {comment?.author}
+                            </span>
                             <span className="text-xs text-muted-foreground">•</span>
                             <span className="text-xs text-muted-foreground">
                                 {comment?.formatted_date?.slice(0, 10)}
@@ -217,7 +225,7 @@ function ReplySection({
 interface RedditCommentsViewProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    post: { id: string; title: string; url: string; subreddit: string } | null;
+    post: RedditPost | null;
     comments: Message[];
     sortType: string;
     onSortTypeChange: (sortType: string) => void;
@@ -233,6 +241,7 @@ export function RedditCommentsView({
 }: RedditCommentsViewProps) {
     const [isConfigured, setIsConfigured] = useState(false);
     const commentTree = useMemo(() => buildCommentTree(comments), [comments]);
+    const openUrl = useOpenUrl();
 
     useEffect(() => {
         if (!isOpen) return;
@@ -263,18 +272,39 @@ export function RedditCommentsView({
                         <DialogHeader className="mb-0">
                             <DialogTitle className="flex items-center gap-2 pr-8 text-lg font-bold">
                                 <MessageCircle className="h-5 w-5 text-primary" />
-                                <span className="truncate">{post?.title}</span>
+                                <span
+                                    className="truncate cursor-pointer hover:underline"
+                                    onClick={() => post?.url && openUrl(post.url)}
+                                >
+                                    {post?.title}
+                                </span>
                             </DialogTitle>
                             {post && (
                                 <DialogDescription asChild>
                                     <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                        <section className="flex items-center gap-2">
-                                            <Badge variant="outline" className="font-mono text-[10px] py-0">
+                                        <section className="flex items-center gap-3 flex-wrap">
+                                            <Badge variant="outline" className="font-mono text-[10px] py-0 h-5">
                                                 r/{post.subreddit}
                                             </Badge>
-                                            <span className="text-xs text-muted-foreground">•</span>
+                                            {post.author && (
+                                                <div
+                                                    className="text-xs text-muted-foreground flex items-center gap-1 cursor-pointer hover:underline"
+                                                    onClick={() => openUrl(`https://www.reddit.com/user/${post.author}/`)}
+                                                >
+                                                    <User className="h-3 w-3" />
+                                                    u/{post.author}
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                <ArrowUpDown className="h-3 w-3" />
+                                                <span>{post.score ?? 0}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                <MessageCircle className="h-3 w-3" />
+                                                <span>{comments.length} comments</span>
+                                            </div>
                                             <span className="text-xs text-muted-foreground">
-                                                {comments.length} comments
+                                                {moment(post.timestamp * 1000).fromNow()}
                                             </span>
                                         </section>
                                         <section className="flex items-center gap-2">

@@ -1375,12 +1375,7 @@ export function RedditTable({
       <RedditCommentsView
         isOpen={commentsPost !== null}
         onOpenChange={(open) => !open && setCommentsPost(null)}
-        post={commentsPost ? {
-          id: commentsPost.name || String(commentsPost.id),
-          title: commentsPost.title,
-          url: commentsPost.url,
-          subreddit: commentsPost.subreddit
-        } : null}
+        post={commentsPost}
         comments={comments}
         sortType={sortTypeForComments}
         onSortTypeChange={handleSortTypeForCommentsChange}
