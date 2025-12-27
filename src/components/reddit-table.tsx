@@ -85,9 +85,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const initialData: RedditPost[] = []; // Declare initialData here
 
-
-
-
 // Define RedditPost type to match Rust's PostDataWrapper
 export type RedditPost = {
   id: string;
@@ -121,7 +118,7 @@ import { FileText, Link as LinkIcon } from "lucide-react";
 const teamMembers = [
   { id: "user1", name: "Alex" },
   { id: "user2", name: "Maria" },
-  { id: "user3", "name": "David" },
+  { id: "user3", name: "David" },
   { id: "user4", name: "Sarah" },
 ];
 
@@ -146,6 +143,8 @@ export function RedditTable({
 }) {
   const [data, setData] = useState<RedditPost[]>(initialData);
   const { settings, updateSettings } = useAppSettings();
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [engagementFilter, setEngagementFilter] = useState("all");
 
   const addSubredditToMonitoring = (subreddit: string) => {
     const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
@@ -238,24 +237,30 @@ export function RedditTable({
   );
   const [currentNote, setCurrentNote] = useState("");
   const [lastVisitTimestamp, setLastVisitTimestamp] = useState<number>(() => {
-    return parseInt(localStorage.getItem("ruddit-last-visit-timestamp") || "0", 10);
+    return parseInt(
+      localStorage.getItem("ruddit-last-visit-timestamp") || "0",
+      10,
+    );
   });
 
   const maxDateAdded = useMemo(() => {
     if (data.length === 0) return 0;
-    return Math.max(...data.map(p => p.date_added));
+    return Math.max(...data.map((p) => p.date_added));
   }, [data]);
 
   const latestPostTimestamp = useMemo(() => {
-    const newPosts = data.filter(p => p.date_added > lastVisitTimestamp);
+    const newPosts = data.filter((p) => p.date_added > lastVisitTimestamp);
     if (newPosts.length === 0) return 0;
-    return Math.max(...newPosts.map(p => p.timestamp));
+    return Math.max(...newPosts.map((p) => p.timestamp));
   }, [data, lastVisitTimestamp]);
 
   const handleTableInteraction = () => {
     if (maxDateAdded > lastVisitTimestamp) {
       setLastVisitTimestamp(maxDateAdded);
-      localStorage.setItem("ruddit-last-visit-timestamp", maxDateAdded.toString());
+      localStorage.setItem(
+        "ruddit-last-visit-timestamp",
+        maxDateAdded.toString(),
+      );
     }
   };
 
@@ -430,7 +435,21 @@ export function RedditTable({
           post.relevance_score < 80) ||
         (relevanceFilter === "low" && post.relevance_score < 60);
 
-      return matchesSearch && matchesSubreddit && matchesRelevance;
+      const matchesStatus =
+        statusFilter === "all" || (post.status || "new") === statusFilter;
+
+      const matchesEngagement =
+        engagementFilter === "all" ||
+        (engagementFilter === "engaged" && post.engaged === 1) ||
+        (engagementFilter === "not_engaged" && post.engaged !== 1);
+
+      return (
+        matchesSearch &&
+        matchesSubreddit &&
+        matchesRelevance &&
+        matchesStatus &&
+        matchesEngagement
+      );
     });
 
     if (sortField) {
@@ -458,6 +477,8 @@ export function RedditTable({
     searchQuery,
     subredditFilter,
     relevanceFilter,
+    statusFilter,
+    engagementFilter,
     sortField,
     sortDirection,
     externalPosts,
@@ -473,7 +494,7 @@ export function RedditTable({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, subredditFilter, relevanceFilter]);
+  }, [searchQuery, subredditFilter, relevanceFilter, statusFilter, engagementFilter]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -524,7 +545,7 @@ export function RedditTable({
       const newComments = (await invoke("get_post_comments_command", {
         url: commentsPost.url,
         title: commentsPost.title,
-        sortType: newSortType, // Use new parameter, camelCase for Tauri
+        sortType: newSortType, // Use new parameter, camelCase for Taure
         subreddit: commentsPost.subreddit, // Add subreddit here
       })) as Message[];
       setComments(newComments);
@@ -685,6 +706,29 @@ export function RedditTable({
                 <SelectItem value="low">Low (&lt;60)</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="investigating">Investigating</SelectItem>
+                <SelectItem value="replied">Replied</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="ignored">Ignored</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={engagementFilter} onValueChange={setEngagementFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="All engagement" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Engagement</SelectItem>
+                <SelectItem value="engaged">Engaged</SelectItem>
+                <SelectItem value="not_engaged">Not Engaged</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" onClick={handleExportToCsv}>
               Export to CSV
             </Button>
@@ -800,17 +844,19 @@ export function RedditTable({
                     <TableRow
                       key={post.id}
                       onClick={handleTableInteraction}
-                      className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-2 ${post.date_added > lastVisitTimestamp
-                        ? post.timestamp === latestPostTimestamp
-                          ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"
-                          : "bg-green-500/5 dark:bg-green-500/10 border-l-green-400"
-                        : "border-l-transparent"
-                        } ${settings.tableDensity === "compact"
+                      className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-2 ${
+                        post.date_added > lastVisitTimestamp
+                          ? post.timestamp === latestPostTimestamp
+                            ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"
+                            : "bg-green-500/5 dark:bg-green-500/10 border-l-green-400"
+                          : "border-l-transparent"
+                      } ${
+                        settings.tableDensity === "compact"
                           ? "h-2"
                           : settings.tableDensity === "spacious"
                             ? "h-2"
                             : "h-2"
-                        }`}
+                      }`}
                     >
                       <TableCell className="px-3 p-0">
                         <Button
@@ -820,8 +866,9 @@ export function RedditTable({
                           className="h-8 w-8"
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${expandedRows.has(post.id) ? "rotate-180" : ""
-                              }`}
+                            className={`h-4 w-4 transition-transform ${
+                              expandedRows.has(post.id) ? "rotate-180" : ""
+                            }`}
                           />
                         </Button>
                       </TableCell>
@@ -834,7 +881,11 @@ export function RedditTable({
                       <TableCell className="min-w-[300px] px-3">
                         <div className="flex items-center gap-2">
                           <div className="mt-0.5 text-muted-foreground/50">
-                            {post.is_self ? <FileText className="h-3.5 w-3.5" /> : <LinkIcon className="h-3.5 w-3.5" />}
+                            {post.is_self ? (
+                              <FileText className="h-3.5 w-3.5" />
+                            ) : (
+                              <LinkIcon className="h-3.5 w-3.5" />
+                            )}
                           </div>
                           <div
                             onClick={() => openUrl(post.url)}
@@ -866,11 +917,13 @@ export function RedditTable({
                               Competitor
                             </Badge>
                           )}
-                          <div
-                            className="flex items-center gap-3 text-[10px] text-muted-foreground"
-                          >
-                            <div className="flex items-center gap-1 cursor-pointer hover:text-primary"
-                              onClick={() => handleGetComments(post, post.sort_type)}>
+                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                            <div
+                              className="flex items-center gap-1 cursor-pointer hover:text-primary"
+                              onClick={() =>
+                                handleGetComments(post, post.sort_type)
+                              }
+                            >
                               <MessageCircle className="h-3 w-3" />
                               <span>{post.num_comments ?? 0}</span>
                             </div>
@@ -885,12 +938,19 @@ export function RedditTable({
                         <div className="flex flex-col gap-0.5">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Badge variant="outline" className="font-mono w-fit text-[10px] py-0 h-4 cursor-pointer hover:bg-accent/50 selection:bg-transparent">
+                              <Badge
+                                variant="outline"
+                                className="font-mono w-fit text-[10px] py-0 h-4 cursor-pointer hover:bg-accent/50 selection:bg-transparent"
+                              >
                                 r/{post.subreddit}
                               </Badge>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">
-                              <DropdownMenuItem onClick={() => addSubredditToMonitoring(post.subreddit)}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  addSubredditToMonitoring(post.subreddit)
+                                }
+                              >
                                 <Radar className="h-4 w-4 mr-2" />
                                 Add to Monitoring
                               </DropdownMenuItem>
@@ -974,7 +1034,7 @@ export function RedditTable({
                             <SelectTrigger className="w-8 h-8 rounded-full p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden flex items-center justify-center">
                               <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
                                 {post.assignee &&
-                                  post.assignee !== "unassigned" ? (
+                                post.assignee !== "unassigned" ? (
                                   <>
                                     <AvatarImage
                                       src={`https://avatar.vercel.sh/${post.assignee}`}
@@ -1087,9 +1147,16 @@ export function RedditTable({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <Card className="bg-background/50">
                                 <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
-                                  <CardTitle className="text-sm font-medium">Post Content</CardTitle>
+                                  <CardTitle className="text-sm font-medium">
+                                    Post Content
+                                  </CardTitle>
                                   {post.permalink && (
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openUrl(post.permalink)}>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => openUrl(post.permalink)}
+                                    >
                                       <ExternalLink className="h-3 w-3" />
                                     </Button>
                                   )}
@@ -1097,7 +1164,10 @@ export function RedditTable({
                                 <CardContent className="py-0 px-4 pb-4">
                                   <ScrollArea className="h-[120px] w-full pr-4">
                                     <div className="text-xs text-muted-foreground whitespace-pre-wrap">
-                                      {post.selftext || (post.is_self ? "No content." : "This is an external link post.")}
+                                      {post.selftext ||
+                                        (post.is_self
+                                          ? "No content."
+                                          : "This is an external link post.")}
                                     </div>
                                   </ScrollArea>
                                 </CardContent>
@@ -1105,7 +1175,9 @@ export function RedditTable({
 
                               <Card className="bg-background/50">
                                 <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
-                                  <CardTitle className="text-sm font-medium">Internal Notes</CardTitle>
+                                  <CardTitle className="text-sm font-medium">
+                                    Internal Notes
+                                  </CardTitle>
                                   <Button
                                     variant="ghost"
                                     size="icon"
