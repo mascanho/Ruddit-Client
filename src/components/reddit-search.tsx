@@ -18,7 +18,14 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ArrowUpDown,
+  Radar,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAppSettings } from "./app-settings";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -84,7 +91,7 @@ export function RedditSearch({
   const [rowsPerPage, setRowsPerPage] = useState(() => {
     return parseInt(localStorage.getItem("lastRedditSearchRows") || "100", 10);
   });
-  const { settings } = useAppSettings();
+  const { settings, updateSettings } = useAppSettings();
   const { setSubreddits, subreddits } = useSubredditsStore();
   const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
 
@@ -154,6 +161,24 @@ export function RedditSearch({
         })}
       </>
     );
+  };
+
+  const addSubredditToMonitoring = (subreddit: string) => {
+    const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
+    if (settings.monitoredSubreddits.includes(cleaned)) {
+      toast.info(`Already monitoring r/${cleaned}`, {
+        position: "bottom-center",
+      });
+      return;
+    }
+
+    updateSettings({
+      monitoredSubreddits: [...settings.monitoredSubreddits, cleaned],
+    });
+
+    toast.success(`Now monitoring r/${cleaned}`, {
+      position: "bottom-center",
+    });
   };
 
   async function handleFetchSubreddits() {
@@ -901,12 +926,22 @@ export function RedditSearch({
                             </Badge>
                           )}
 
-                          <Badge
-                            variant="outline"
-                            className="font-mono text-xs"
-                          >
-                            r/{result.subreddit}
-                          </Badge>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Badge
+                                variant="outline"
+                                className="font-mono text-xs cursor-pointer hover:bg-accent/50 selection:bg-transparent"
+                              >
+                                r/{result.subreddit}
+                              </Badge>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem onClick={() => addSubredditToMonitoring(result.subreddit)}>
+                                <Radar className="h-4 w-4 mr-2" />
+                                Add to Monitoring
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
 
                           {result.sort_type?.split(",").map((type) => (
                             <Badge
