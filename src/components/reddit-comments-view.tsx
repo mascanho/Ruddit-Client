@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -57,10 +57,12 @@ const CommentItem = ({
     comment,
     depth = 0,
     onReplySuccess,
+    isConfigured = false,
 }: {
     comment: CommentTree;
     depth?: number;
     onReplySuccess: () => void;
+    isConfigured?: boolean;
 }) => {
     const [isReplying, setIsReplying] = useState(false);
 
@@ -86,15 +88,17 @@ const CommentItem = ({
                         </div>
                         <p className="text-sm leading-relaxed break-words whitespace-pre-wrap mb-2">{comment?.body}</p>
 
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 px-2 text-xs text-muted-foreground hover:text-primary"
-                            onClick={() => setIsReplying(!isReplying)}
-                        >
-                            <Reply className="h-3.5 w-3.5 mr-1.5" />
-                            Reply
-                        </Button>
+                        {isConfigured && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-xs text-muted-foreground hover:text-primary"
+                                onClick={() => setIsReplying(!isReplying)}
+                            >
+                                <Reply className="h-3.5 w-3.5 mr-1.5" />
+                                Reply
+                            </Button>
+                        )}
 
                         {isReplying && (
                             <div className="mt-3">
@@ -119,6 +123,7 @@ const CommentItem = ({
                         comment={child}
                         depth={depth + 1}
                         onReplySuccess={onReplySuccess}
+                        isConfigured={isConfigured}
                     />
                 ))}
         </div>
@@ -217,7 +222,28 @@ export function RedditCommentsView({
     sortType,
     onSortTypeChange,
 }: RedditCommentsViewProps) {
+    const [isConfigured, setIsConfigured] = useState(false);
     const commentTree = useMemo(() => buildCommentTree(comments), [comments]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const checkConfig = async () => {
+            try {
+                const config = await invoke("get_reddit_config_command") as any;
+                const hasId = config.reddit_api_id && config.reddit_api_id !== "CHANGE_ME";
+                const hasSecret = config.reddit_api_secret && config.reddit_api_secret !== "CHANGE_ME";
+                const hasUser = config.reddit_username && config.reddit_username !== "";
+                const hasPass = config.reddit_password && config.reddit_password !== "";
+                setIsConfigured(Boolean(hasId && hasSecret && hasUser && hasPass));
+            } catch (e) {
+                console.error("Failed to check reddit config:", e);
+                setIsConfigured(false);
+            }
+        };
+
+        checkConfig();
+    }, [isOpen]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -272,6 +298,7 @@ export function RedditCommentsView({
                                     key={rootComment.id}
                                     comment={rootComment}
                                     onReplySuccess={() => onSortTypeChange(sortType)}
+                                    isConfigured={isConfigured}
                                 />
                             ))}
                             {comments.length === 0 && (
@@ -283,7 +310,7 @@ export function RedditCommentsView({
                     </div>
 
                     {/* Footer: Sticky */}
-                    {post && (
+                    {post && isConfigured && (
                         <div className="flex-shrink-0 border-t bg-background p-4 md:px-6 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
                             <div className="max-w-4xl mx-auto">
                                 <div className="flex items-center justify-between mb-2">
