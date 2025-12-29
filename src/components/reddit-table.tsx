@@ -236,12 +236,15 @@ export function RedditTable({
     null,
   );
   const [currentNote, setCurrentNote] = useState("");
-  const [lastVisitTimestamp, setLastVisitTimestamp] = useState<number>(() => {
-    return parseInt(
+  const [lastVisitTimestamp, setLastVisitTimestamp] = useState<number>(0);
+
+  useEffect(() => {
+    const savedTimestamp = parseInt(
       localStorage.getItem("ruddit-last-visit-timestamp") || "0",
       10,
     );
-  });
+    setLastVisitTimestamp(savedTimestamp);
+  }, []);
 
   const maxDateAdded = useMemo(() => {
     if (data.length === 0) return 0;
