@@ -320,3 +320,17 @@ pub async fn submit_reddit_comment_command(
 
     Ok(())
 }
+#[tauri::command]
+pub async fn ask_gemini_command(question: String) -> Result<String, String> {
+    let response = crate::ai::gemini::ask_gemini(&question)
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    // Extract the answer from the JSON response if possible, otherwise return the whole JSON string
+    if let Some(answer) = response.get("answer").and_then(|v| v.as_str()) {
+        Ok(answer.to_string())
+    } else {
+        // If "answer" field is missing, return the whole JSON
+        Ok(response.to_string())
+    }
+}

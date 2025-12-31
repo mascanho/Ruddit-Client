@@ -64,7 +64,8 @@ pub async fn ask_gemini(question: &str) -> Result<Value, GeminiError> {
         .api_keys
         .gemini_api_key;
 
-    let client = Gemini::new(api_key);
+    let client = Gemini::new(api_key)
+        .map_err(|e| GeminiError::ConfigError(format!("Failed to create Gemini client: {}", e)))?;
 
     let mut attempts = 0;
     let max_attempts = 2;
@@ -252,7 +253,8 @@ pub async fn gemini_generate_leads() -> Result<(), GeminiError> {
         .api_keys
         .gemini_api_key;
 
-    let client = Gemini::new(api_key);
+    let client = Gemini::new(api_key)
+        .map_err(|e| GeminiError::ConfigError(format!("Failed to create Gemini client: {}", e)))?;
 
     let mut attempts = 0;
     let max_attempts = 2;

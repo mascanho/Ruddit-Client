@@ -40,7 +40,7 @@ pub fn create_excel() -> Result<(), Box<dyn std::error::Error>> {
             result.formatted_date.clone(),
             result.title.clone(),
             result.url.clone(),
-            result.relevance.clone(),
+            result.relevance_score.to_string(),
             result.subreddit.clone(),
         ];
 

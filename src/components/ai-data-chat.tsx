@@ -28,7 +28,7 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
     {
       role: "assistant",
       content:
-        "Hello! I'm your AI assistant. I can help you analyze your Reddit data, find patterns, suggest content strategies, and answer questions about your tracked posts and messages. What would you like to know?",
+        "Hello! I'm your AI assistant powered by Gemini. I have access to your tracked Reddit posts and can answer questions, analyze trends, or help you draft responses. What would you like to know?",
       timestamp: new Date(),
     },
   ])
@@ -44,81 +44,14 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
   }, [messages])
 
   const generateResponse = async (userQuery: string): Promise<string> => {
-    // Simulate AI response based on data stats
-    const lowerQuery = userQuery.toLowerCase()
-
-    if (lowerQuery.includes("summary") || lowerQuery.includes("overview")) {
-      return `Based on your data:
-      
-📊 You have ${dataStats.totalPosts} Reddit posts tracked across ${dataStats.subreddits.length} subreddits with an average relevance score of ${dataStats.averageRelevance.toFixed(1)}%.
-
-📬 You've collected ${dataStats.totalMessages} messages from comments.
-
-🎯 Your most active subreddits are: ${dataStats.subreddits
-        .slice(0, 3)
-        .map((s) => `r/${s}`)
-        .join(", ")}
-
-💡 Consider focusing on high-relevance posts (80+%) for the best engagement opportunities.`
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const response: string = await invoke("ask_gemini_command", { question: userQuery });
+      return response;
+    } catch (error) {
+      console.error("Gemini Error:", error);
+      return "Sorry, I encountered an error while communicating with the AI. Please check your API key in settings.";
     }
-
-    if (lowerQuery.includes("trend") || lowerQuery.includes("pattern")) {
-      return `I've analyzed your tracked content and found these patterns:
-
-📈 Most of your high-relevance posts (80+%) come from r/${dataStats.subreddits[0]} and r/${dataStats.subreddits[1]}.
-
-⏰ Peak engagement times appear to be when technical discussions are posted.
-
-🔥 Hot topics in your data: ${dataStats.topKeywords.slice(0, 4).join(", ")}
-
-💡 Recommendation: Focus monitoring on posts that combine technical depth with practical applications.`
-    }
-
-    if (lowerQuery.includes("recommend") || lowerQuery.includes("suggest")) {
-      return `Here are my recommendations based on your data:
-
-✅ **Expand Monitoring**: Consider adding r/programming and r/coding to capture broader discussions.
-
-🎯 **Keywords to Track**: Based on current trends, add keywords like "deployment", "architecture", and "best practices".
-
-⚡ **Engagement Strategy**: Posts with 85+ relevance in r/${dataStats.subreddits[0]} typically generate the most valuable comments.
-
-📊 **Content Gaps**: You might be missing discussions about testing and CI/CD - consider adding these keywords.`
-    }
-
-    if (lowerQuery.includes("subreddit") || lowerQuery.includes("where")) {
-      return `Your tracked subreddits breakdown:
-
-${dataStats.subreddits.map((sub, i) => `${i + 1}. r/${sub} - ${Math.floor(Math.random() * 30 + 10)} posts`).join("\n")}
-
-The most relevant content comes from r/${dataStats.subreddits[0]}, which has the highest average relevance score. Consider increasing monitoring frequency there.`
-    }
-
-    if (lowerQuery.includes("engagement") || lowerQuery.includes("comment")) {
-      return `Comment engagement analysis:
-
-💬 You have ${dataStats.totalMessages} comments across your tracked posts.
-
-📊 Average ${Math.floor(dataStats.totalMessages / dataStats.totalPosts)} comments per post.
-
-🌟 Posts with "tutorial" or "guide" in the title generate 2-3x more comments.
-
-💡 Tip: Posts asking specific technical questions tend to get higher quality responses. Focus on capturing these discussions.`
-    }
-
-    // Default response
-    return `That's an interesting question about your Reddit data! 
-
-From what I can see, you're tracking ${dataStats.totalPosts} posts with an average relevance of ${dataStats.averageRelevance.toFixed(1)}%. Your monitoring covers ${dataStats.subreddits.length} subreddits.
-
-Could you be more specific about what you'd like to know? I can help with:
-- Data summaries and statistics
-- Trend analysis
-- Content recommendations
-- Subreddit performance
-- Engagement metrics
-
-Just ask!`
   }
 
   const handleSend = async () => {
@@ -185,15 +118,13 @@ Just ask!`
               )}
 
               <div
-                className={`max-w-[80%] rounded-lg p-3 ${
-                  message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
-                }`}
+                className={`max-w-[80%] rounded-lg p-3 ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                  }`}
               >
                 <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                 <p
-                  className={`text-xs mt-2 ${
-                    message.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"
-                  }`}
+                  className={`text-xs mt-2 ${message.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"
+                    }`}
                 >
                   {message.timestamp.toLocaleTimeString()}
                 </p>

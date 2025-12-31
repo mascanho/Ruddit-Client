@@ -2,9 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 pub mod actions;
+pub mod ai;
 pub mod commands;
 pub mod database;
 pub mod email;
+pub mod exports;
 pub mod models;
 pub mod settings;
 
@@ -46,7 +48,8 @@ async fn main() {
             commands::update_post_engaged_status,
             commands::get_reddit_config_command,
             commands::update_reddit_config_command,
-            commands::submit_reddit_comment_command
+            commands::submit_reddit_comment_command,
+            commands::ask_gemini_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

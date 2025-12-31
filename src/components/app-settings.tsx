@@ -31,6 +31,7 @@ import {
   X,
   Radar,
   UserCog,
+  Sparkles,
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useToast } from "@/hooks/use-toast";
@@ -337,6 +338,40 @@ export function AppSettingsDialog({
     });
   };
 
+  // API Keys Logic
+  const [apiKeys, setApiKeys] = useState({
+    reddit_api_id: "",
+    reddit_api_secret: "",
+    gemini_api_key: "",
+  });
+
+  useEffect(() => {
+    if (open) {
+      import("@tauri-apps/api/core").then(({ invoke }) => {
+        invoke("get_reddit_config_command").then((config: any) => {
+          setApiKeys(config);
+        });
+      });
+    }
+  }, [open]);
+
+  const saveApiKeys = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("update_reddit_config_command", { newApiKeys: apiKeys });
+      toast({
+        title: "Settings Saved",
+        description: "API keys have been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save API keys.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] min-h-[90vh] h-[90vh] overflow-hidden flex flex-col">
@@ -354,7 +389,7 @@ export function AppSettingsDialog({
           defaultValue="appearance"
           className="flex-1 overflow-hidden flex flex-col"
         >
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             {/* <TabsTrigger value="appearance" className="text-xs sm:text-sm"> */}
             {/*   <Palette className="h-4 w-4 mr-1.5" /> */}
             {/*   Appearance */}
@@ -374,6 +409,10 @@ export function AppSettingsDialog({
             <TabsTrigger value="monitoring" className="text-xs sm:text-sm">
               <Radar className="h-4 w-4 mr-1.5" />
               Monitor
+            </TabsTrigger>
+            <TabsTrigger value="llm" className="text-xs sm:text-sm">
+              <Sparkles className="h-4 w-4 mr-1.5" />
+              LLM
             </TabsTrigger>
             <TabsTrigger value="reddit" className="text-xs sm:text-sm">
               <UserCog className="h-4 w-4 mr-1.5" />
@@ -995,6 +1034,38 @@ export function AppSettingsDialog({
                       💡 <strong>Tip:</strong> Use the search feature on the
                       main page to discover new subreddits and keywords based on
                       your monitored items.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="llm" className="space-y-6 mt-0">
+              <Card className="p-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-base font-semibold">
+                      Gemini API Key
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Enter your Google Gemini API key to enable AI features.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        placeholder="AIzaSy..."
+                        value={apiKeys.gemini_api_key}
+                        onChange={(e) =>
+                          setApiKeys({
+                            ...apiKeys,
+                            gemini_api_key: e.target.value,
+                          })
+                        }
+                      />
+                      <Button onClick={saveApiKeys}>Save</Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Your API key is stored locally on your device.
                     </p>
                   </div>
                 </div>
