@@ -290,6 +290,13 @@ pub fn get_reddit_config_command() -> Result<api_keys::ApiKeys, String> {
 }
 
 #[tauri::command]
+pub async fn get_gemini_models_command(api_key: String) -> Result<Vec<String>, String> {
+    crate::ai::gemini::get_available_models(&api_key)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn update_reddit_config_command(new_api_keys: api_keys::ApiKeys) -> Result<(), String> {
     let mut config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
     config.api_keys = new_api_keys;

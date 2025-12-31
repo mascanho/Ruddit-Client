@@ -83,111 +83,135 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
   }
 
   return (
-    <Card className="p-6 flex flex-col h-[600px]">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          AI Data Assistant
-        </h3>
-        <p className="text-sm text-muted-foreground">Ask questions about your tracked Reddit data</p>
+    <Card className="flex flex-col h-[calc(100vh-12rem)] min-h-[500px] shadow-xl border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
+      <div className="p-4 border-b bg-muted/30 backdrop-blur-md sticky top-0 z-10">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <Sparkles className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
+              AI Data Assistant
+            </h3>
+            <p className="text-xs text-muted-foreground font-medium">Powered by Gemini • Analyzing your Reddit data</p>
+          </div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 whitespace-nowrap">
+            {dataStats.totalPosts} Posts
+          </Badge>
+          <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-purple-500/10 text-purple-500 border-purple-500/20 whitespace-nowrap">
+            {dataStats.totalMessages} Messages
+          </Badge>
+          <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-pink-500/10 text-pink-500 border-pink-500/20 whitespace-nowrap">
+            {dataStats.subreddits.length} Subreddits
+          </Badge>
+          <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-orange-500/10 text-orange-500 border-orange-500/20 whitespace-nowrap">
+            {dataStats.averageRelevance.toFixed(1)}% Relevance
+          </Badge>
+        </div>
       </div>
 
-      <div className="flex gap-2 mb-4 flex-wrap">
-        <Badge variant="outline" className="text-xs">
-          {dataStats.totalPosts} Posts
-        </Badge>
-        <Badge variant="outline" className="text-xs">
-          {dataStats.totalMessages} Messages
-        </Badge>
-        <Badge variant="outline" className="text-xs">
-          {dataStats.subreddits.length} Subreddits
-        </Badge>
-        <Badge variant="outline" className="text-xs">
-          {dataStats.averageRelevance.toFixed(1)}% Avg Relevance
-        </Badge>
-      </div>
-
-      <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollRef}>
-        <div className="space-y-4">
+      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        <div className="space-y-6 max-w-3xl mx-auto">
           {messages.map((message, index) => (
-            <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              key={index}
+              className={`flex gap-4 ${message.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+            >
               {message.role === "assistant" && (
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Bot className="h-4 w-4 text-primary" />
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md mt-1">
+                  <Bot className="h-4 w-4 text-white" />
                 </div>
               )}
 
               <div
-                className={`max-w-[80%] rounded-lg p-3 ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${message.role === "user"
+                    ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
+                    : "bg-muted/50 border border-border/50 rounded-tl-none"
                   }`}
               >
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                <p className={`text-sm whitespace-pre-wrap leading-relaxed ${message.role === "user" ? "text-white/95" : "text-foreground"}`}>
+                  {message.content}
+                </p>
                 <p
-                  className={`text-xs mt-2 ${message.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"
+                  className={`text-[10px] mt-2 font-medium ${message.role === "user" ? "text-white/60" : "text-muted-foreground"
                     }`}
                 >
-                  {message.timestamp.toLocaleTimeString()}
+                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
 
               {message.role === "user" && (
-                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <User className="h-4 w-4 text-primary-foreground" />
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 shadow-sm mt-1 border border-border">
+                  <User className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
             </div>
           ))}
 
           {isLoading && (
-            <div className="flex gap-3 justify-start">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Bot className="h-4 w-4 text-primary animate-pulse" />
+            <div className="flex gap-4 justify-start animate-in fade-in duration-300">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                <Bot className="h-4 w-4 text-white animate-pulse" />
               </div>
-              <div className="bg-muted rounded-lg p-3">
-                <div className="flex gap-1">
-                  <div className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce" />
-                  <div className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0.2s]" />
-                  <div className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0.4s]" />
-                </div>
+              <div className="bg-muted/50 border border-border/50 rounded-2xl rounded-tl-none p-4 flex items-center gap-2 h-[52px]">
+                <div className="h-2 w-2 rounded-full bg-indigo-500 animate-bounce" />
+                <div className="h-2 w-2 rounded-full bg-purple-500 animate-bounce [animation-delay:0.2s]" />
+                <div className="h-2 w-2 rounded-full bg-pink-500 animate-bounce [animation-delay:0.4s]" />
               </div>
             </div>
           )}
         </div>
       </ScrollArea>
 
-      <div className="flex gap-2">
-        <Input
-          placeholder="Ask about your data..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-          disabled={isLoading}
-        />
-        <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon">
-          <Send className="h-4 w-4" />
-        </Button>
-      </div>
+      <div className="p-4 border-t bg-muted/30 backdrop-blur-md">
+        <div className="max-w-3xl mx-auto space-y-3">
+          {messages.length === 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {[
+                "Summarize my data",
+                "What are the top trends?",
+                "Suggest new subreddits",
+                "Draft a post about..."
+              ].map((suggestion) => (
+                <Button
+                  key={suggestion}
+                  variant="outline"
+                  size="sm"
+                  className="bg-background/50 hover:bg-indigo-500/10 hover:text-indigo-600 hover:border-indigo-200 transition-all text-xs whitespace-nowrap rounded-full"
+                  onClick={() => setInput(suggestion)}
+                  disabled={isLoading}
+                >
+                  {suggestion}
+                </Button>
+              ))}
+            </div>
+          )}
 
-      <div className="mt-3 flex gap-2 flex-wrap">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setInput("Give me a summary of my data")}
-          disabled={isLoading}
-        >
-          Summary
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setInput("What trends do you see?")} disabled={isLoading}>
-          Trends
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setInput("What subreddits should I monitor?")}
-          disabled={isLoading}
-        >
-          Recommendations
-        </Button>
+          <div className="relative flex items-center gap-2">
+            <Input
+              placeholder="Ask anything about your Reddit data..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+              disabled={isLoading}
+              className="pr-12 py-6 rounded-full border-border/50 focus-visible:ring-indigo-500/30 shadow-sm bg-background/80 backdrop-blur-sm"
+            />
+            <Button
+              onClick={handleSend}
+              disabled={isLoading || !input.trim()}
+              size="icon"
+              className="absolute right-1.5 h-9 w-9 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md transition-all hover:scale-105"
+            >
+              <Send className="h-4 w-4 text-white" />
+            </Button>
+          </div>
+          <p className="text-[10px] text-center text-muted-foreground">
+            Gemini can make mistakes. Consider checking important information.
+          </p>
+        </div>
       </div>
     </Card>
   )

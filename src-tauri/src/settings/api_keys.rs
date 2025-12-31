@@ -3,37 +3,57 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+
 pub struct ApiKeys {
+    #[serde(default)]
+    #[serde(alias = "REDDIT_API_ID")]
     pub reddit_api_id: String,
+    #[serde(default)]
+    #[serde(alias = "REDDIT_API_SECRET")]
     pub reddit_api_secret: String,
+    #[serde(default)]
+    #[serde(alias = "GEMINI_API_KEY")]
     pub gemini_api_key: String,
+    #[serde(default)]
+    #[serde(alias = "GEMINI_MODEL")]
+    pub gemini_model: String,
+    #[serde(default)]
+    #[serde(alias = "SUBREDDIT")]
     pub subreddit: String,
+    #[serde(default)]
+    #[serde(alias = "RELEVANCE")]
     pub relevance: String,
 
     #[serde(default)]
+    #[serde(alias = "LEAD_KEYWORDS")]
     pub lead_keywords: Vec<String>,
 
     #[serde(default)]
+    #[serde(alias = "BRANDED_KEYWORDS")]
     pub branded_keywords: Vec<String>,
 
     #[serde(default)]
+    #[serde(alias = "SENTIMENT")]
     pub sentiment: Vec<String>,
 
     #[serde(default = "default_high_intent_patterns")]
+    #[serde(alias = "INTENT_HIGH")]
     pub intent_high: Vec<String>,
 
     #[serde(default = "default_medium_intent_patterns")]
+    #[serde(alias = "INTENT_MEDIUM")]
     pub intent_medium: Vec<String>,
 
     #[serde(default)]
-    #[serde(rename = "MATCH")]
+    #[serde(alias = "MATCH")]
     pub match_keyword: String,
 
     #[serde(default)]
+    #[serde(alias = "REDDIT_USERNAME")]
     pub reddit_username: String,
 
     #[serde(default)]
+    #[serde(alias = "REDDIT_PASSWORD")]
     pub reddit_password: String,
 }
 
@@ -57,6 +77,7 @@ impl Default for ApiKeys {
             reddit_api_id: "CHANGE_ME".to_string(),
             reddit_api_secret: "CHANGE_ME".to_string(),
             gemini_api_key: "CHANGE_ME".to_string(),
+            gemini_model: "gemini-pro".to_string(),
             subreddit: "all".to_string(),
             relevance: "hot".to_string(),
             lead_keywords: vec![],

@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
@@ -343,13 +344,42 @@ export function AppSettingsDialog({
     reddit_api_id: "",
     reddit_api_secret: "",
     gemini_api_key: "",
+    gemini_model: "gemini-pro",
   });
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+
+  const fetchModels = async (key: string) => {
+    if (!key || key === "CHANGE_ME") return;
+    setIsLoadingModels(true);
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const models = await invoke<string[]>("get_gemini_models_command", { apiKey: key });
+      setAvailableModels(models);
+      // If current model is not in list (and list is not empty), default to first one
+      // But only if the current model is the default "gemini-pro" and it's not in the list
+      // If user manually selected something else, keep it (unless invalid, but let's trust user for now)
+      if (models.length > 0 && !models.includes(apiKeys.gemini_model) && apiKeys.gemini_model === "gemini-pro") {
+        setApiKeys(prev => ({ ...prev, gemini_model: models[0] }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch models:", error);
+      sonnerToast.error("Failed to fetch models", {
+        description: "Could not retrieve available models for this API key.",
+      });
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
 
   useEffect(() => {
     if (open) {
       import("@tauri-apps/api/core").then(({ invoke }) => {
         invoke("get_reddit_config_command").then((config: any) => {
           setApiKeys(config);
+          if (config.gemini_api_key && config.gemini_api_key !== "CHANGE_ME") {
+            fetchModels(config.gemini_api_key);
+          }
         });
       });
     }
@@ -359,15 +389,12 @@ export function AppSettingsDialog({
     try {
       const { invoke } = await import("@tauri-apps/api/core");
       await invoke("update_reddit_config_command", { newApiKeys: apiKeys });
-      toast({
-        title: "Settings Saved",
-        description: "API keys have been updated successfully.",
-      });
+      // Toast handled in button click for immediate feedback, or here if we want to wait for async.
+      // Let's keep it simple and rely on the button click for the "optimistic" success or move it here.
+      // Actually, moving it here is better for real success.
     } catch (error) {
-      toast({
-        title: "Error",
+      sonnerToast.error("Error", {
         description: "Failed to save API keys.",
-        variant: "destructive",
       });
     }
   };
@@ -1044,31 +1071,88 @@ export function AppSettingsDialog({
               <Card className="p-4">
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-base font-semibold">
-                      Gemini API Key
-                    </Label>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Label className="text-base font-semibold">
+                        Gemini API Key
+                      </Label>
+                      {apiKeys.gemini_api_key && (
+                        <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">
+                          Key Saved
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground mb-3">
                       Enter your Google Gemini API key to enable AI features.
                     </p>
-                    <div className="flex gap-2">
-                      <Input
-                        type="password"
-                        placeholder="AIzaSy..."
-                        value={apiKeys.gemini_api_key}
-                        onChange={(e) =>
-                          setApiKeys({
-                            ...apiKeys,
-                            gemini_api_key: e.target.value,
-                          })
-                        }
-                      />
-                      <Button onClick={saveApiKeys}>Save</Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Your API key is stored locally on your device.
-                    </p>
                   </div>
+
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      placeholder="AIzaSy..."
+                      value={apiKeys.gemini_api_key}
+                      onChange={(e) =>
+                        setApiKeys({
+                          ...apiKeys,
+                          gemini_api_key: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-base font-semibold">Model</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => fetchModels(apiKeys.gemini_api_key)}
+                        disabled={!apiKeys.gemini_api_key || isLoadingModels}
+                      >
+                        {isLoadingModels ? "Refreshing..." : "Refresh Models"}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">Select the Gemini model to use.</p>
+                    <div className="flex gap-2 items-center">
+                      <Select
+                        value={apiKeys.gemini_model}
+                        onValueChange={(val) => setApiKeys({ ...apiKeys, gemini_model: val })}
+                        disabled={isLoadingModels}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select Model" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableModels.map(model => (
+                            <SelectItem key={model} value={model}>{model}</SelectItem>
+                          ))}
+                          {availableModels.length === 0 && (
+                            <SelectItem value="gemini-pro">gemini-pro (Default)</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-4 justify-end">
+                    <Button
+                      onClick={() => {
+                        saveApiKeys();
+                        fetchModels(apiKeys.gemini_api_key);
+                        sonnerToast.success("Settings Saved", {
+                          description: "API Key and Model preference saved.",
+                        });
+                      }}
+                    >
+                      Save Settings
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Your API key is stored locally on your device.
+                  </p>
                 </div>
+
               </Card>
             </TabsContent>
 
@@ -1085,7 +1169,7 @@ export function AppSettingsDialog({
           <Button onClick={() => onOpenChange(false)}>Done</Button>
         </div>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 }
 
