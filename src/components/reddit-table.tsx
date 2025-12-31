@@ -14,7 +14,10 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Message, SearchState } from "./smart-data-tables";
 import { RedditCommentsView } from "./reddit-comments-view";
 import { useAppSettings } from "./app-settings";
+import { Radar } from "lucide-react";
+import { KeywordHighlighter } from "./keyword-highlighter";
 import { invoke } from "@tauri-apps/api/core";
+import { save } from "@tauri-apps/plugin-dialog";
 import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
 import { toast } from "sonner";
 import moment from "moment";
@@ -97,11 +100,20 @@ export type RedditPost = {
   assignee: string;
   notes: string;
   num_comments?: number;
+  author?: string;
+  score?: number;
+  is_self?: boolean;
+  selftext?: string;
+  name?: string;
+  date_added: number;
   // Client-side fields
   status?: "new" | "investigating" | "replied" | "closed" | "ignored";
   intent?: string;
   category?: "brand" | "competitor" | "general";
 };
+
+// Icons specific to post types
+import { FileText, Link as LinkIcon } from "lucide-react";
 
 const teamMembers = [
   { id: "user1", name: "Alex" },
@@ -115,7 +127,6 @@ interface CommentTree extends Message {
 }
 
 type SortField = keyof RedditPost | null;
-
 
 type SortDirection = "asc" | "desc";
 
@@ -131,7 +142,40 @@ export function RedditTable({
   onSearchStateChange: (state: SearchState) => void;
 }) {
   const [data, setData] = useState<RedditPost[]>(initialData);
-  const { settings } = useAppSettings();
+  const { settings, updateSettings } = useAppSettings();
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [engagementFilter, setEngagementFilter] = useState("all");
+
+  const addSubredditToMonitoring = (subreddit: string) => {
+    const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
+    if (settings.monitoredSubreddits.includes(cleaned)) {
+      toast.info(`Already monitoring r/${cleaned}`, {
+        position: "bottom-center",
+      });
+      return;
+    }
+
+    updateSettings({
+      monitoredSubreddits: [...settings.monitoredSubreddits, cleaned],
+    });
+
+    toast.success(`Now monitoring r/${cleaned}`, {
+      position: "bottom-center",
+    });
+  };
+
+  const openUrl = useOpenUrl();
+  const keywordsToHighlight = useMemo(() => {
+    return [
+      ...(settings.monitoredKeywords || []),
+      ...(settings.brandKeywords || []),
+      ...(settings.competitorKeywords || []),
+    ].filter(Boolean);
+  }, [
+    settings.monitoredKeywords,
+    settings.brandKeywords,
+    settings.competitorKeywords,
+  ]);
 
   // Load CRM data from localStorage on mount and merge with data
   useEffect(() => {
@@ -192,8 +236,39 @@ export function RedditTable({
     null,
   );
   const [currentNote, setCurrentNote] = useState("");
+  const [lastVisitTimestamp, setLastVisitTimestamp] = useState<number>(0);
+
+  useEffect(() => {
+    const savedTimestamp = parseInt(
+      localStorage.getItem("ruddit-last-visit-timestamp") || "0",
+      10,
+    );
+    setLastVisitTimestamp(savedTimestamp);
+  }, []);
+
+  const maxDateAdded = useMemo(() => {
+    if (data.length === 0) return 0;
+    return Math.max(...data.map((p) => p.date_added));
+  }, [data]);
+
+  const latestPostTimestamp = useMemo(() => {
+    const newPosts = data.filter((p) => p.date_added > lastVisitTimestamp);
+    if (newPosts.length === 0) return 0;
+    return Math.max(...newPosts.map((p) => p.timestamp));
+  }, [data, lastVisitTimestamp]);
+
+  const handleTableInteraction = () => {
+    if (maxDateAdded > lastVisitTimestamp) {
+      setLastVisitTimestamp(maxDateAdded);
+      localStorage.setItem(
+        "ruddit-last-visit-timestamp",
+        maxDateAdded.toString(),
+      );
+    }
+  };
 
   const handleEditNote = (post: RedditPost) => {
+    handleTableInteraction();
     setEditingNotePost(post);
     setCurrentNote(post.notes || "");
   };
@@ -363,7 +438,21 @@ export function RedditTable({
           post.relevance_score < 80) ||
         (relevanceFilter === "low" && post.relevance_score < 60);
 
-      return matchesSearch && matchesSubreddit && matchesRelevance;
+      const matchesStatus =
+        statusFilter === "all" || (post.status || "new") === statusFilter;
+
+      const matchesEngagement =
+        engagementFilter === "all" ||
+        (engagementFilter === "engaged" && post.engaged === 1) ||
+        (engagementFilter === "not_engaged" && post.engaged !== 1);
+
+      return (
+        matchesSearch &&
+        matchesSubreddit &&
+        matchesRelevance &&
+        matchesStatus &&
+        matchesEngagement
+      );
     });
 
     if (sortField) {
@@ -391,6 +480,8 @@ export function RedditTable({
     searchQuery,
     subredditFilter,
     relevanceFilter,
+    statusFilter,
+    engagementFilter,
     sortField,
     sortDirection,
     externalPosts,
@@ -406,7 +497,7 @@ export function RedditTable({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, subredditFilter, relevanceFilter]);
+  }, [searchQuery, subredditFilter, relevanceFilter, statusFilter, engagementFilter]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -457,7 +548,7 @@ export function RedditTable({
       const newComments = (await invoke("get_post_comments_command", {
         url: commentsPost.url,
         title: commentsPost.title,
-        sortType: newSortType, // Use new parameter, camelCase for Tauri
+        sortType: newSortType, // Use new parameter, camelCase for Taure
         subreddit: commentsPost.subreddit, // Add subreddit here
       })) as Message[];
       setComments(newComments);
@@ -530,10 +621,54 @@ export function RedditTable({
     }
   };
 
-  const openUrl = useOpenUrl();
+  const handleExportToCsv = async () => {
+    if (filteredAndSortedData.length === 0) {
+      toast.info("No data to export.");
+      return;
+    }
 
-  const handleOpenInbrowser = (url: any) => {
-    openUrl(url);
+    const headers = Object.keys(
+      filteredAndSortedData[0],
+    ) as (keyof RedditPost)[];
+    const csvRows = [];
+
+    // Add headers
+    csvRows.push(headers.map((header) => `"${header}"`).join(","));
+
+    // Add data rows
+    for (const row of filteredAndSortedData) {
+      const values = headers.map((header) => {
+        const value = row[header];
+        const stringValue =
+          value === undefined || value === null ? "" : String(value);
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      });
+      csvRows.push(values.join(","));
+    }
+
+    const csvString = csvRows.join("\n");
+
+    try {
+      const filePath = await save({
+        filters: [
+          {
+            name: "CSV",
+            extensions: ["csv"],
+          },
+        ],
+        defaultPath: `reddit_posts_${new Date().toISOString().slice(0, 10)}.csv`,
+      });
+
+      if (filePath) {
+        await invoke("save_text_file", { path: filePath, contents: csvString });
+        toast.success(`Data exported to ${filePath} successfully!`);
+      } else {
+        toast.info("Export cancelled.");
+      }
+    } catch (error) {
+      console.error("Failed to export data:", error);
+      toast.error("Failed to export data.");
+    }
   };
 
   return (
@@ -574,6 +709,32 @@ export function RedditTable({
                 <SelectItem value="low">Low (&lt;60)</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="investigating">Investigating</SelectItem>
+                <SelectItem value="replied">Replied</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="ignored">Ignored</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={engagementFilter} onValueChange={setEngagementFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="All engagement" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Engagement</SelectItem>
+                <SelectItem value="engaged">Engaged</SelectItem>
+                <SelectItem value="not_engaged">Not Engaged</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={handleExportToCsv}>
+              Export to CSV
+            </Button>
             <Button
               variant="destructive"
               onClick={() => setShowClearTableDialog(true)}
@@ -684,12 +845,21 @@ export function RedditTable({
                 paginatedData.map((post, index) => (
                   <Fragment key={post.id}>
                     <TableRow
-                      className={`group text-xs p-0 h-2 ${settings.tableDensity === "compact"
-                        ? "h-2"
-                        : settings.tableDensity === "spacious"
+                      key={post.id}
+                      onClick={handleTableInteraction}
+                      className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-2 ${
+                        post.date_added > lastVisitTimestamp
+                          ? post.timestamp === latestPostTimestamp
+                            ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"
+                            : "bg-green-500/5 dark:bg-green-500/10 border-l-green-400"
+                          : "border-l-transparent"
+                      } ${
+                        settings.tableDensity === "compact"
                           ? "h-2"
-                          : "h-2"
-                        }`}
+                          : settings.tableDensity === "spacious"
+                            ? "h-2"
+                            : "h-2"
+                      }`}
                     >
                       <TableCell className="px-3 p-0">
                         <Button
@@ -699,8 +869,9 @@ export function RedditTable({
                           className="h-8 w-8"
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${expandedRows.has(post.id) ? "rotate-180" : ""
-                              }`}
+                            className={`h-4 w-4 transition-transform ${
+                              expandedRows.has(post.id) ? "rotate-180" : ""
+                            }`}
                           />
                         </Button>
                       </TableCell>
@@ -711,12 +882,26 @@ export function RedditTable({
                         {post?.formatted_date?.slice(0, 10).trim() || "N/A"}
                       </TableCell>
                       <TableCell className="min-w-[300px] px-3">
-                        <div
-                          onClick={() => handleOpenInbrowser(post.url)}
-                          className="line-clamp-2 font-medium cursor-pointer hover:underline"
-                        >
-                          {post.title?.slice(0, 100) || "No title"}
-                          {post.title?.length > 100 && "..."}
+                        <div className="flex items-center gap-2">
+                          <div className="mt-0.5 text-muted-foreground/50">
+                            {post.is_self ? (
+                              <FileText className="h-3.5 w-3.5" />
+                            ) : (
+                              <LinkIcon className="h-3.5 w-3.5" />
+                            )}
+                          </div>
+                          <div
+                            onClick={() => openUrl(post.url)}
+                            className="line-clamp-1 font-medium cursor-pointer hover:underline flex-1"
+                          >
+                            <KeywordHighlighter
+                              text={post.title || "No title"}
+                              brandKeywords={settings.brandKeywords}
+                              competitorKeywords={settings.competitorKeywords}
+                              generalKeywords={settings.monitoredKeywords}
+                              searchQuery={searchQuery}
+                            />
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           {post.category === "brand" && (
@@ -735,20 +920,52 @@ export function RedditTable({
                               Competitor
                             </Badge>
                           )}
-                          <div
-                            className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer hover:text-primary"
-                            onClick={() => handleGetComments(post, post.sort_type)}
-                            title="Get comments"
-                          >
-                            <MessageCircle className="h-3 w-3" />
-                            <span>{post.num_comments ?? 0}</span>
+                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                            <div
+                              className="flex items-center gap-1 cursor-pointer hover:text-primary"
+                              onClick={() =>
+                                handleGetComments(post, post.sort_type)
+                              }
+                            >
+                              <MessageCircle className="h-3 w-3" />
+                              <span>{post.num_comments ?? 0}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <ArrowUpDown className="h-3 w-3" />
+                              <span>{post.score ?? 0}</span>
+                            </div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="w-[150px] px-3">
-                        <Badge variant="outline" className="font-mono">
-                          r/{post.subreddit}
-                        </Badge>
+                        <div className="flex flex-col gap-0.5">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Badge
+                                variant="outline"
+                                className="font-mono w-fit text-[10px] py-0 h-4 cursor-pointer hover:bg-accent/50 selection:bg-transparent"
+                              >
+                                r/{post.subreddit}
+                              </Badge>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  addSubredditToMonitoring(post.subreddit)
+                                }
+                              >
+                                <Radar className="h-4 w-4 mr-2" />
+                                Add to Monitoring
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          {post.author && (
+                            <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <User className="h-2.5 w-2.5" />
+                              u/{post.author}
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
 
                       <TableCell className="w-[100px] px-3 text-center">
@@ -820,7 +1037,7 @@ export function RedditTable({
                             <SelectTrigger className="w-8 h-8 rounded-full p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden flex items-center justify-center">
                               <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
                                 {post.assignee &&
-                                  post.assignee !== "unassigned" ? (
+                                post.assignee !== "unassigned" ? (
                                   <>
                                     <AvatarImage
                                       src={`https://avatar.vercel.sh/${post.assignee}`}
@@ -929,28 +1146,65 @@ export function RedditTable({
                         <TableCell colSpan={11} className="p-0">
                           {" "}
                           {/* Updated colSpan */}
-                          <div className="p-4 bg-muted/50">
-                            <Card>
-                              <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle>Notes</CardTitle>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditNote(post)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              </CardHeader>
-                              <CardContent>
-                                {post.notes ? (
-                                  <p>{post.notes}</p>
-                                ) : (
-                                  <p className="text-muted-foreground">
-                                    No notes for this post yet.
-                                  </p>
-                                )}
-                              </CardContent>
-                            </Card>
+                          <div className="p-4 bg-muted/30 border-x border-b rounded-b-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <Card className="bg-background/50">
+                                <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
+                                  <CardTitle className="text-sm font-medium">
+                                    Post Content
+                                  </CardTitle>
+                                  {post.permalink && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => openUrl(post.permalink)}
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </CardHeader>
+                                <CardContent className="py-0 px-4 pb-4">
+                                  <ScrollArea className="h-[120px] w-full pr-4">
+                                    <div className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                      {post.selftext ||
+                                        (post.is_self
+                                          ? "No content."
+                                          : "This is an external link post.")}
+                                    </div>
+                                  </ScrollArea>
+                                </CardContent>
+                              </Card>
+
+                              <Card className="bg-background/50">
+                                <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
+                                  <CardTitle className="text-sm font-medium">
+                                    Internal Notes
+                                  </CardTitle>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => handleEditNote(post)}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                </CardHeader>
+                                <CardContent className="py-0 px-4 pb-4">
+                                  <ScrollArea className="h-[120px] w-full pr-4">
+                                    <div className="text-xs">
+                                      {post.notes ? (
+                                        <p>{post.notes}</p>
+                                      ) : (
+                                        <p className="text-muted-foreground italic">
+                                          No notes for this post yet.
+                                        </p>
+                                      )}
+                                    </div>
+                                  </ScrollArea>
+                                </CardContent>
+                              </Card>
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>

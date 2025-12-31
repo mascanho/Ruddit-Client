@@ -101,7 +101,8 @@ export function AutomationTab() {
                     thumbnail: post.thumbnail || "",
                     is_self: post.is_self || false,
                     num_comments: post.num_comments || 0,
-                    intent: post.intent || "Low"
+                    intent: post.intent || "Low",
+                    date_added: post.date_added || 0,
                 }
             });
 

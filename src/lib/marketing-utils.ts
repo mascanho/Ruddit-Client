@@ -40,20 +40,24 @@ export function calculateIntent(text: string): IntentLevel {
   return "low";
 }
 
+export function matchesKeyword(text: string, keyword: string): boolean {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+  return regex.test(text);
+}
+
 export function categorizePost(
   text: string,
   brandKeywords: string[] = [],
   competitorKeywords: string[] = [],
 ): KeywordCategory {
-  const lowerText = text.toLowerCase();
-
   // Check for brand match first
-  if (brandKeywords.some((k) => lowerText.includes(k.toLowerCase()))) {
+  if (brandKeywords.some((k) => matchesKeyword(text, k))) {
     return "brand";
   }
 
   // Check for competitor match
-  if (competitorKeywords.some((k) => lowerText.includes(k.toLowerCase()))) {
+  if (competitorKeywords.some((k) => matchesKeyword(text, k))) {
     return "competitor";
   }
 

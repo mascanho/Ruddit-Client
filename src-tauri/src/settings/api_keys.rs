@@ -3,32 +3,70 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+
 pub struct ApiKeys {
+    #[serde(default)]
+    #[serde(alias = "REDDIT_API_ID")]
     pub reddit_api_id: String,
+    #[serde(default)]
+    #[serde(alias = "REDDIT_API_SECRET")]
     pub reddit_api_secret: String,
+    #[serde(default)]
+    #[serde(alias = "GEMINI_API_KEY")]
     pub gemini_api_key: String,
+    #[serde(default)]
+    #[serde(alias = "GEMINI_MODEL")]
+    pub gemini_model: String,
+
+    #[serde(default)]
+    #[serde(alias = "AI_PROVIDER")]
+    pub ai_provider: String,
+
+    #[serde(default)]
+    #[serde(alias = "OPENAI_API_KEY")]
+    pub openai_api_key: String,
+
+    #[serde(default)]
+    #[serde(alias = "OPENAI_MODEL")]
+    pub openai_model: String,
+    #[serde(default)]
+    #[serde(alias = "SUBREDDIT")]
     pub subreddit: String,
+    #[serde(default)]
+    #[serde(alias = "RELEVANCE")]
     pub relevance: String,
 
     #[serde(default)]
+    #[serde(alias = "LEAD_KEYWORDS")]
     pub lead_keywords: Vec<String>,
 
     #[serde(default)]
+    #[serde(alias = "BRANDED_KEYWORDS")]
     pub branded_keywords: Vec<String>,
 
     #[serde(default)]
+    #[serde(alias = "SENTIMENT")]
     pub sentiment: Vec<String>,
 
     #[serde(default = "default_high_intent_patterns")]
+    #[serde(alias = "INTENT_HIGH")]
     pub intent_high: Vec<String>,
 
     #[serde(default = "default_medium_intent_patterns")]
+    #[serde(alias = "INTENT_MEDIUM")]
     pub intent_medium: Vec<String>,
 
     #[serde(default)]
-    #[serde(rename = "MATCH")]
+    #[serde(alias = "MATCH")]
     pub match_keyword: String,
+
+    #[serde(default)]
+    #[serde(alias = "REDDIT_USERNAME")]
+    pub reddit_username: String,
+
+    #[serde(default)]
+    #[serde(alias = "REDDIT_PASSWORD")]
+    pub reddit_password: String,
 }
 
 #[derive(Debug)]
@@ -51,6 +89,10 @@ impl Default for ApiKeys {
             reddit_api_id: "CHANGE_ME".to_string(),
             reddit_api_secret: "CHANGE_ME".to_string(),
             gemini_api_key: "CHANGE_ME".to_string(),
+            gemini_model: "gemini-pro".to_string(),
+            ai_provider: "gemini".to_string(),
+            openai_api_key: "CHANGE_ME".to_string(),
+            openai_model: "gpt-4o".to_string(),
             subreddit: "all".to_string(),
             relevance: "hot".to_string(),
             lead_keywords: vec![],
@@ -59,6 +101,8 @@ impl Default for ApiKeys {
             intent_high: default_high_intent_patterns(),
             intent_medium: default_medium_intent_patterns(),
             match_keyword: "".to_string(),
+            reddit_username: "".to_string(),
+            reddit_password: "".to_string(),
         }
     }
 }
@@ -173,6 +217,17 @@ impl ConfigDirs {
         let app_config: AppConfig = toml::from_str(&toml_content)?;
 
         Ok(app_config)
+    }
+
+    pub fn save_config(config: &AppConfig) -> Result<(), Box<dyn std::error::Error>> {
+        let base_dirs = BaseDirs::new().ok_or("Failed to get base directories")?;
+        let config_dir = base_dirs.config_dir();
+        let config_path = config_dir.join("ruddit/settings.toml");
+
+        let toml_content = toml::to_string_pretty(config)?;
+        fs::write(config_path, toml_content)?;
+
+        Ok(())
     }
 
     pub fn edit_config_file() -> Result<(), Box<dyn std::error::Error>> {

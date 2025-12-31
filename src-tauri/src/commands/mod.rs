@@ -23,7 +23,8 @@ impl From<reqwest::Error> for RedditError {
 pub async fn get_reddit_results(
     sortTypes: Vec<String>, // Changed parameter name
     query: String,
-) -> Result<Vec<PostDataWrapper>, String> { // Changed return type
+) -> Result<Vec<PostDataWrapper>, String> {
+    // Changed return type
     println!(
         "Querying Reddit for: '{}' with sortTypes: {:?}",
         query, sortTypes
@@ -57,13 +58,15 @@ pub async fn get_reddit_results(
     // Clear the current search results ONCE before populating with new filtered results
     database::adding::DB::clear_current_search_results().unwrap();
 
-    let mut unique_posts_map: std::collections::HashMap<i64, PostDataWrapper> = std::collections::HashMap::new();
+    let mut unique_posts_map: std::collections::HashMap<i64, PostDataWrapper> =
+        std::collections::HashMap::new();
 
     // Query Reddit for each sort type - ONE REQUEST PER SORT TYPE
-    for sort_type in sortTypes { // Use sortTypes here
+    for sort_type in sortTypes {
+        // Use sortTypes here
         println!("Querying with sort type: {}", sort_type);
 
-        let mut posts_for_this_sort: Vec<PostDataWrapper> = Vec::new();
+        let posts_for_this_sort: Vec<PostDataWrapper>;
 
         // if query contains "r/" then it's a subreddit search
         if query.starts_with("r/") {
@@ -99,7 +102,8 @@ pub async fn get_reddit_results(
                     // Append sort_type if not already present
                     // We check purely string containment for simplicity given "hot", "new", "top" don't overlap as substrings
                     if !existing_post.sort_type.contains(&sort_type) {
-                        existing_post.sort_type = format!("{},{}", existing_post.sort_type, sort_type);
+                        existing_post.sort_type =
+                            format!("{},{}", existing_post.sort_type, sort_type);
                     }
                 }
                 None => {
@@ -118,7 +122,7 @@ pub async fn get_reddit_results(
 
     if !all_fetched_posts.is_empty() {
         // Save to subreddit_search table so it persists for the view
-        match db.replace_current_results(&all_fetched_posts) { 
+        match db.replace_current_results(&all_fetched_posts) {
             Ok(_) => {
                 println!(
                     "Successfully added {} merged unique posts to subreddit_search database",
@@ -126,18 +130,12 @@ pub async fn get_reddit_results(
                 );
             }
             Err(e) => {
-                eprintln!(
-                    "Failed to save posts to database: {}",
-                    e
-                );
+                eprintln!("Failed to save posts to database: {}", e);
             }
         }
     }
-    
-    println!(
-        "Total posts added to database: {}",
-        all_fetched_posts.len()
-    );
+
+    println!("Total posts added to database: {}", all_fetched_posts.len());
     Ok(all_fetched_posts) // Return the fetched posts
 }
 
@@ -148,7 +146,8 @@ pub fn get_recent_posts(limit: i64) -> Result<Vec<PostDataWrapper>, String> {
 }
 
 #[tauri::command]
-pub fn get_posts_by_sort_type(sort_type: String) -> Result<Vec<PostDataWrapper>, String> { // Renamed
+pub fn get_posts_by_sort_type(sort_type: String) -> Result<Vec<PostDataWrapper>, String> {
+    // Renamed
     let reader = DBReader::new();
     reader
         .get_posts_by_sort_type(&sort_type) // Updated call
@@ -252,7 +251,8 @@ pub async fn open_db_folder_command() -> Result<(), String> {
 #[tauri::command]
 pub fn update_post_notes(id: i64, notes: String) -> Result<(), String> {
     let db = database::adding::DB::new().map_err(|e| e.to_string())?;
-    db.update_post_notes(id, &notes).map_err(|e| e.to_string())?;
+    db.update_post_notes(id, &notes)
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -263,16 +263,16 @@ pub async fn update_post_assignee(id: i64, assignee: String, title: String) -> R
         .map_err(|e| e.to_string())?;
 
     if !assignee.is_empty() {
-        // Send email in background or await it 
+        // Send email in background or await it
         // Since this is async command now, we can await it.
-        // We log errors but don't fail the command based on email failure 
+        // We log errors but don't fail the command based on email failure
         // to avoid reverting the UI for just a notification failure.
         match crate::email::sending::send_assignment_email(&assignee, id, &title).await {
             Ok(_) => println!("Email notification sent for post {}", id),
-            Err(e) => eprintln!("Failed to send email notif: {:?}", e)
+            Err(e) => eprintln!("Failed to send email notif: {:?}", e),
         }
     }
-    
+
     Ok(())
 }
 
@@ -282,4 +282,62 @@ pub fn update_post_engaged_status(id: i64, engaged: i64) -> Result<(), String> {
     db.update_post_engaged_status(id, engaged)
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+#[tauri::command]
+pub fn get_reddit_config_command() -> Result<api_keys::ApiKeys, String> {
+    let config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
+    Ok(config.api_keys)
+}
+
+#[tauri::command]
+pub async fn get_gemini_models_command(api_key: String) -> Result<Vec<String>, String> {
+    // This command name is kept for frontend compatibility, but it now supports generic providers
+    // We need to read the config to know the provider, but the frontend passes the API key directly for the *current* provider being configured.
+    // Ideally, the frontend should pass the provider too.
+    // For now, let's assume if this is called, we want models for the *currently selected* provider in settings, 
+    // OR we can update the command signature.
+    // Let's read the config to get the provider.
+    let config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
+    crate::ai::adapter::get_available_models(&config.api_keys.ai_provider, &api_key)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_reddit_config_command(new_api_keys: api_keys::ApiKeys) -> Result<(), String> {
+    let mut config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
+    config.api_keys = new_api_keys;
+    api_keys::ConfigDirs::save_config(&config).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn submit_reddit_comment_command(
+    parent_id: String,
+    text: String,
+) -> Result<(), String> {
+    let config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
+    let api_keys = config.api_keys;
+
+    let token = search::get_user_access_token(
+        &api_keys.reddit_api_id,
+        &api_keys.reddit_api_secret,
+        &api_keys.reddit_username,
+        &api_keys.reddit_password,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
+    search::post_comment(&token, &parent_id, &text)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+#[tauri::command]
+pub async fn ask_gemini_command(question: String) -> Result<String, String> {
+    // Uses the generic adapter which checks the configured provider
+    crate::ai::adapter::ask_ai(&question)
+        .await
+        .map_err(|e| e.to_string())
 }

@@ -1,7 +1,7 @@
 use anyhow::Result;
-use gemini_rust::Gemini;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::fmt;
 use std::io::Write;
 use std::sync::Arc;
@@ -25,7 +25,6 @@ pub enum GeminiError {
 pub struct GeminiResponse {
     answer: String,
     url: Option<String>,
-    // Add other fields you expect
 }
 
 // Implement Display for GeminiError
@@ -43,6 +42,46 @@ impl fmt::Display for GeminiError {
 // Implement Error trait for GeminiError
 impl std::error::Error for GeminiError {}
 
+#[derive(Debug, Serialize, Deserialize)]
+struct GeminiModel {
+    name: String,
+    #[serde(rename = "displayName")]
+    display_name: String,
+    #[serde(rename = "supportedGenerationMethods")]
+    supported_generation_methods: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ListModelsResponse {
+    models: Vec<GeminiModel>,
+}
+
+pub async fn get_available_models(api_key: &str) -> Result<Vec<String>, GeminiError> {
+    let client = Client::new();
+    let url = format!("https://generativelanguage.googleapis.com/v1beta/models?key={}", api_key);
+
+    let response = client.get(&url)
+        .send()
+        .await
+        .map_err(|e| GeminiError::GeminiApiError(format!("Failed to fetch models: {}", e)))?;
+
+    if !response.status().is_success() {
+        let error_text = response.text().await.unwrap_or_default();
+        return Err(GeminiError::GeminiApiError(format!("API Error: {}", error_text)));
+    }
+
+    let list_response: ListModelsResponse = response.json()
+        .await
+        .map_err(|e| GeminiError::JsonParsingError(format!("Failed to parse models list: {}", e)))?;
+
+    let models = list_response.models.into_iter()
+        .filter(|m| m.supported_generation_methods.contains(&"generateContent".to_string()))
+        .map(|m| m.name.replace("models/", ""))
+        .collect();
+
+    Ok(models)
+}
+
 pub async fn ask_gemini(question: &str) -> Result<Value, GeminiError> {
     // Initialize database connection
     let db = database::adding::DB::new()
@@ -59,12 +98,16 @@ pub async fn ask_gemini(question: &str) -> Result<Value, GeminiError> {
     })?;
 
     // Get API key from configuration
-    let api_key = settings::api_keys::ConfigDirs::read_config()
-        .map_err(|e| GeminiError::ConfigError(e.to_string()))?
-        .api_keys
-        .gemini_api_key;
+    let config = settings::api_keys::ConfigDirs::read_config()
+        .map_err(|e| GeminiError::ConfigError(e.to_string()))?;
+    let api_key = config.api_keys.gemini_api_key;
+    let model = config.api_keys.gemini_model;
 
-    let client = Gemini::new(api_key);
+    let client = Client::new();
+    let url = format!(
+        "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+        model, api_key
+    );
 
     let mut attempts = 0;
     let max_attempts = 2;
@@ -73,7 +116,7 @@ pub async fn ask_gemini(question: &str) -> Result<Value, GeminiError> {
     while attempts < max_attempts {
         attempts += 1;
 
-        // Create system prompt - more strict on subsequent attempts
+        // Create system prompt
         let system_prompt = format!(
             "Given the following data: {}, output the information in the best way possible to answer the questions. Be as thorough as possible and provide URLs when needed.",
             json_reddits
@@ -82,85 +125,94 @@ pub async fn ask_gemini(question: &str) -> Result<Value, GeminiError> {
         log::debug!("Attempt {} - System prompt: {}", attempts, system_prompt);
 
         // SPINNER SECTION
-        // Create a flag to uontrol the spinner thread
         let running = Arc::new(AtomicBool::new(true));
         let running_clone = running.clone();
 
-        // Start spinner in a separate thread
         let spinner_handle = thread::spawn(move || {
             let spinner_chars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
             let mut i = 0;
-
             while running_clone.load(Ordering::Relaxed) {
                 print!("\r{} Thinking... ", spinner_chars[i]);
                 std::io::stdout().flush().unwrap();
-
                 i = (i + 1) % spinner_chars.len();
                 thread::sleep(Duration::from_millis(100));
             }
-
-            // Clear the spinner line when done
             print!("\r{}", " ".repeat(20));
             print!("\r");
             std::io::stdout().flush().unwrap();
         });
 
         // Make API request
-        let response = match client
-            .generate_content()
-            .with_system_prompt(&system_prompt)
-            .with_user_message(question)
-            .execute()
-            .await
-        {
-            Ok(r) => r,
-            Err(e) => {
-                running.store(false, Ordering::Relaxed);
-                spinner_handle.join().unwrap();
-                last_error = Some(GeminiError::GeminiApiError(format!(
-                    "Failed to generate content: {}",
-                    e
-                )));
-                continue;
-            }
-        };
+        // We combine system prompt and question into one message for simplicity and compatibility
+        let combined_text = format!("{}\n\nUser Question: {}", system_prompt, question);
+        let request_body = json!({
+            "contents": [{
+                "parts": [{"text": combined_text}]
+            }]
+        });
+
+        let response = client.post(&url)
+            .json(&request_body)
+            .send()
+            .await;
 
         // Stop the spinner
         running.store(false, Ordering::Relaxed);
-        spinner_handle.join().unwrap();
+        let _ = spinner_handle.join();
 
-        let text_response = response.text();
-        log::debug!("Raw Gemini API response: {}", text_response);
+        match response {
+            Ok(resp) => {
+                if !resp.status().is_success() {
+                     let error_text = resp.text().await.unwrap_or_default();
+                     last_error = Some(GeminiError::GeminiApiError(format!("API Error: {}", error_text)));
+                     continue;
+                }
 
-        let trimmed_response = text_response.trim();
+                let response_json: Value = match resp.json().await {
+                    Ok(v) => v,
+                    Err(e) => {
+                        last_error = Some(GeminiError::JsonParsingError(format!("Failed to parse API response: {}", e)));
+                        continue;
+                    }
+                };
 
-        // Try to extract JSON from markdown code blocks if present
-        let json_str = if trimmed_response.starts_with("```json") {
-            trimmed_response
-                .trim_start_matches("```json")
-                .trim_end_matches("```")
-                .trim()
-        } else if trimmed_response.starts_with("```") {
-            trimmed_response
-                .trim_start_matches("```")
-                .trim_end_matches("```")
-                .trim()
-        } else {
-            trimmed_response
-        };
+                // Extract text from Gemini response structure
+                let text_response = response_json["candidates"][0]["content"]["parts"][0]["text"]
+                    .as_str()
+                    .unwrap_or("")
+                    .to_string();
 
-        log::debug!("Processed JSON string: {}", json_str);
+                log::debug!("Raw Gemini API response: {}", text_response);
+                let trimmed_response = text_response.trim();
 
-        // Try to parse the response
-        match serde_json::from_str(json_str) {
-            Ok(data) => {
-                return Ok(data);
+                // Try to extract JSON from markdown code blocks if present
+                let json_str = if trimmed_response.starts_with("```json") {
+                    trimmed_response
+                        .trim_start_matches("```json")
+                        .trim_end_matches("```")
+                        .trim()
+                } else if trimmed_response.starts_with("```") {
+                    trimmed_response
+                        .trim_start_matches("```")
+                        .trim_end_matches("```")
+                        .trim()
+                } else {
+                    trimmed_response
+                };
+
+                log::debug!("Processed JSON string: {}", json_str);
+
+                match serde_json::from_str(json_str) {
+                    Ok(data) => return Ok(data),
+                    Err(_) => {
+                        // If it's not JSON, treat it as a plain text answer
+                        // The prompt doesn't strictly enforce JSON, so this is expected for general questions
+                        return Ok(json!({ "answer": text_response }));
+                    }
+                }
             }
             Err(e) => {
-                last_error = Some(GeminiError::JsonParsingError(format!(
-                    "Failed to parse JSON from API response: {}. Response was: {}",
-                    e, text_response
-                )));
+                last_error = Some(GeminiError::GeminiApiError(format!("Failed to send request: {}", e)));
             }
         }
     }
@@ -170,7 +222,6 @@ pub async fn ask_gemini(question: &str) -> Result<Value, GeminiError> {
     )))
 }
 
-// PROMPT GEMINI TO SELECTIVELY GET THE DATA BASED ON CONDITIONS
 pub async fn gemini_generate_leads() -> Result<(), GeminiError> {
     let settings = settings::api_keys::ConfigDirs::read_config()
         .map_err(|e| GeminiError::ConfigError(e.to_string()))?;
@@ -182,25 +233,15 @@ pub async fn gemini_generate_leads() -> Result<(), GeminiError> {
         ));
     }
 
-    // Get each keyword inside the vector and compose a string to pass to the API
-    let keywords = question_vec
-        .iter()
-        .map(|q| q.to_string())
-        .collect::<Vec<String>>()
-        .join(" OR ");
-
+    let keywords = question_vec.join(" OR ");
     println!("Matching Keywords: {}", &keywords);
 
-    // Initialize database connection for both posts and comments
     let db = database::adding::DB::new()
         .map_err(|e| GeminiError::DatabaseError(format!("Failed to connect to DB: {}", e)))?;
 
-    // Get data from database
-    let posts = db
-        .get_db_results()
+    let posts = db.get_db_results()
         .map_err(|e| GeminiError::DatabaseError(format!("Failed to get posts: {}", e)))?;
 
-    // Get all comments for these posts
     let mut all_comments = Vec::new();
     for post in &posts {
         if let Ok(comments) = db.get_post_comments(&post.id.to_string()) {
@@ -208,7 +249,6 @@ pub async fn gemini_generate_leads() -> Result<(), GeminiError> {
         }
     }
 
-    // Get sentiment requirements
     let sentiments = settings.api_keys.sentiment.join(" OR ");
     let match_type = settings.api_keys.match_keyword.to_lowercase();
     let match_operator = if match_type == "and" { "AND" } else { "OR" };
@@ -232,27 +272,24 @@ pub async fn gemini_generate_leads() -> Result<(), GeminiError> {
         keywords, match_operator, sentiments
     );
 
-    // Initialize database connection
     let db = database::adding::DB::new()
         .map_err(|e| GeminiError::DatabaseError(format!("Failed to connect to DB: {}", e)))?;
 
-    // Get data from database
-    let reddits = db
-        .get_db_results()
+    let reddits = db.get_db_results()
         .map_err(|e| GeminiError::DatabaseError(format!("Failed to get DB results: {}", e)))?;
 
-    // Convert data to JSON string
     let json_reddits = serde_json::to_string(&reddits).map_err(|e| {
         GeminiError::DatabaseError(format!("Failed to serialize DB data to JSON: {}", e))
     })?;
 
-    // Get API key from configuration
-    let api_key = settings::api_keys::ConfigDirs::read_config()
-        .map_err(|e| GeminiError::ConfigError(e.to_string()))?
-        .api_keys
-        .gemini_api_key;
+    let api_key = settings.api_keys.gemini_api_key;
+    let model = settings.api_keys.gemini_model;
 
-    let client = Gemini::new(api_key);
+    let client = Client::new();
+    let url = format!(
+        "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+        model, api_key
+    );
 
     let mut attempts = 0;
     let max_attempts = 2;
@@ -260,8 +297,6 @@ pub async fn gemini_generate_leads() -> Result<(), GeminiError> {
 
     while attempts < max_attempts {
         attempts += 1;
-
-        // Create system prompt - more strict on subsequent attempts
 
         let system_prompt = if attempts > 1 {
             format!(
@@ -284,87 +319,95 @@ pub async fn gemini_generate_leads() -> Result<(), GeminiError> {
         log::debug!("Attempt {} - System prompt: {}", attempts, system_prompt);
 
         // SPINNER SECTION
-        // Create a flag to uontrol the spinner thread
         let running = Arc::new(AtomicBool::new(true));
         let running_clone = running.clone();
 
-        // Start spinner in a separate thread
         let spinner_handle = thread::spawn(move || {
             let spinner_chars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
             let mut i = 0;
-
             while running_clone.load(Ordering::Relaxed) {
                 print!("\r{} Thinking... ", spinner_chars[i]);
                 std::io::stdout().flush().unwrap();
-
                 i = (i + 1) % spinner_chars.len();
                 thread::sleep(Duration::from_millis(100));
             }
-
-            // Clear the spinner line when done
             print!("\r{}", " ".repeat(20));
             print!("\r");
             std::io::stdout().flush().unwrap();
         });
 
-        // Make API request
-        let response = match client
-            .generate_content()
-            .with_system_prompt(&system_prompt)
-            .with_user_message(&question)
-            .execute()
-            .await
-        {
-            Ok(r) => r,
-            Err(e) => {
-                running.store(false, Ordering::Relaxed);
-                spinner_handle.join().unwrap();
-                last_error = Some(GeminiError::GeminiApiError(format!(
-                    "Failed to generate content: {}",
-                    e
-                )));
-                continue;
-            }
-        };
+        let combined_text = format!("{}\n\n{}", system_prompt, question);
+        let request_body = json!({
+            "contents": [{
+                "parts": [{"text": combined_text}]
+            }]
+        });
+
+        let response = client.post(&url)
+            .json(&request_body)
+            .send()
+            .await;
 
         // Stop the spinner
         running.store(false, Ordering::Relaxed);
-        spinner_handle.join().unwrap();
+        let _ = spinner_handle.join();
 
-        let text_response = response.text();
-        log::debug!("Raw Gemini API response: {}", text_response);
+        match response {
+            Ok(resp) => {
+                if !resp.status().is_success() {
+                     let error_text = resp.text().await.unwrap_or_default();
+                     last_error = Some(GeminiError::GeminiApiError(format!("API Error: {}", error_text)));
+                     continue;
+                }
 
-        let trimmed_response = text_response.trim();
+                let response_json: Value = match resp.json().await {
+                    Ok(v) => v,
+                    Err(e) => {
+                        last_error = Some(GeminiError::JsonParsingError(format!("Failed to parse API response: {}", e)));
+                        continue;
+                    }
+                };
 
-        // Try to extract JSON from markdown code blocks if present
-        let json_str = if trimmed_response.starts_with("```json") {
-            trimmed_response
-                .trim_start_matches("```json")
-                .trim_end_matches("```")
-                .trim()
-        } else if trimmed_response.starts_with("```") {
-            trimmed_response
-                .trim_start_matches("```")
-                .trim_end_matches("```")
-                .trim()
-        } else {
-            trimmed_response
-        };
+                // Extract text from Gemini response structure
+                let text_response = response_json["candidates"][0]["content"]["parts"][0]["text"]
+                    .as_str()
+                    .unwrap_or("")
+                    .to_string();
 
-        log::debug!("Processed JSON string: {}", json_str);
+                log::debug!("Raw Gemini API response: {}", text_response);
+                let trimmed_response = text_response.trim();
 
-        excel::export_gemini_to_excel(json_str).expect("Failed to export gemini leads to excel");
+                // Try to extract JSON from markdown code blocks if present
+                let json_str = if trimmed_response.starts_with("```json") {
+                    trimmed_response
+                        .trim_start_matches("```json")
+                        .trim_end_matches("```")
+                        .trim()
+                } else if trimmed_response.starts_with("```") {
+                    trimmed_response
+                        .trim_start_matches("```")
+                        .trim_end_matches("```")
+                        .trim()
+                } else {
+                    trimmed_response
+                };
 
-        // Try to parse the response to validate it
-        match serde_json::from_str::<Value>(json_str) {
-            Ok(_) => {
-                return Ok(());
+                log::debug!("Processed JSON string: {}", json_str);
+
+                excel::export_gemini_to_excel(json_str).expect("Failed to export gemini leads to excel");
+
+                match serde_json::from_str::<Value>(json_str) {
+                    Ok(_) => return Ok(()),
+                    Err(e) => {
+                        last_error = Some(GeminiError::JsonParsingError(format!(
+                            "Failed to parse JSON from API response: {}. Response was: {}",
+                            e, text_response
+                        )));
+                    }
+                }
             }
             Err(e) => {
-                last_error = Some(GeminiError::JsonParsingError(format!(
-                    "Failed to parse JSON from API response: {}. Response was: {}",
-                    e, text_response
-                )));
+                last_error = Some(GeminiError::GeminiApiError(format!("Failed to send request: {}", e)));
             }
         }
     }

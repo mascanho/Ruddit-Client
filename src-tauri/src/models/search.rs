@@ -1,7 +1,7 @@
 use base64::{engine::general_purpose, Engine as _};
+use regex::Regex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use regex::Regex;
 
 use crate::{
     database::{
@@ -91,7 +91,6 @@ impl From<reqwest::Error> for RedditError {
         RedditError::Reqwest(e)
     }
 }
-
 
 pub struct AppState {
     pub data: Vec<PostDataWrapper>,
@@ -221,7 +220,9 @@ pub async fn get_subreddit_posts(
         .into_iter()
         .filter_map(|child| {
             if let RedditData::Post(post) = child.data {
-                let intent = config.api_keys.calculate_intent(&post.title, post.selftext.as_deref());
+                let intent = config
+                    .api_keys
+                    .calculate_intent(&post.title, post.selftext.as_deref());
                 Some(PostDataWrapper {
                     id: i64::from_str_radix(&post.id, 36).unwrap_or(0),
                     title: post.title.clone(),
@@ -244,6 +245,7 @@ pub async fn get_subreddit_posts(
                     is_self: post.is_self,
                     num_comments: post.num_comments,
                     intent,
+                    date_added: 0,
                 })
             } else {
                 None
@@ -268,15 +270,18 @@ pub async fn search_subreddit_posts(
 
     // Include the sort parameter in the URL
 
-    let url = format!(
-        "https://oauth.reddit.com/search?q=\"{}\"&sort={}&limit=100&t=all",
-        query, sort_type
-    );
+    let url = "https://oauth.reddit.com/search";
 
-    println!("Making request to: {}", url); // Debug log
+    println!("Making request to: {} with q='{}'", url, query); // Debug log
 
     let response = client
-        .get(&url)
+        .get(url)
+        .query(&[
+            ("q", query),
+            ("sort", sort_type),
+            ("limit", "100"),
+            ("t", "all"),
+        ])
         .header("Authorization", format!("Bearer {}", access_token))
         .header("User-Agent", "RustRedditApp/0.1 by Ruddit")
         .send()
@@ -297,7 +302,9 @@ pub async fn search_subreddit_posts(
         .into_iter()
         .filter_map(|child| {
             if let RedditData::Post(post) = &child.data {
-                let intent = config.api_keys.calculate_intent(&post.title, post.selftext.as_deref());
+                let intent = config
+                    .api_keys
+                    .calculate_intent(&post.title, post.selftext.as_deref());
                 Some(PostDataWrapper {
                     id: i64::from_str_radix(&post.id, 36).unwrap_or(0),
                     title: post.title.clone(),
@@ -320,6 +327,7 @@ pub async fn search_subreddit_posts(
                     is_self: post.is_self.clone(),
                     num_comments: post.num_comments.clone(),
                     intent,
+                    date_added: 0,
                 })
             } else {
                 None
@@ -472,21 +480,19 @@ pub async fn get_post_comments(
     let mut comments: Vec<CommentDataWrapper> = Vec::new();
     for child_json in comments_data.data.children {
         if let Ok(child) = serde_json::from_value::<CommentChild>(child_json) {
-            flatten_comments(
-                child.data,
-                &mut comments,
-                &post_id,
-                subreddit,
-                post_title,
-            );
+            flatten_comments(child.data, &mut comments, &post_id, subreddit, post_title);
         }
     }
 
-    println!("Successfully fetched and flattened {} comments", comments.len());
+    println!(
+        "Successfully fetched and flattened {} comments",
+        comments.len()
+    );
 
     // Save to database
     let mut db = database::adding::DB::new().map_err(|e| RedditError::ParseError(e.to_string()))?;
-    db.append_comments(&comments).map_err(|e| RedditError::ParseError(e.to_string()))?;
+    db.append_comments(&comments)
+        .map_err(|e| RedditError::ParseError(e.to_string()))?;
 
     Ok(comments)
 }
@@ -523,13 +529,7 @@ fn flatten_comments(
                 for child_json in children {
                     if let Ok(child) = serde_json::from_value::<CommentChild>(child_json.clone()) {
                         // Recursively flatten
-                        flatten_comments(
-                            child.data,
-                            comments,
-                            post_id,
-                            subreddit,
-                            post_title,
-                        );
+                        flatten_comments(child.data, comments, post_id, subreddit, post_title);
                     }
                 }
             }
@@ -561,4 +561,79 @@ fn extract_subreddit_from_url(url: &str) -> Option<String> {
         }
     }
     None
+}
+
+pub async fn get_user_access_token(
+    client_id: &str,
+    client_secret: &str,
+    username: &str,
+    password: &str,
+) -> Result<String, RedditError> {
+    let client_id = client_id.trim();
+    let client_secret = client_secret.trim();
+    let username = username.trim();
+    let password = password.trim();
+
+    let credentials = format!("{}:{}", client_id, client_secret);
+    let encoded = general_purpose::STANDARD.encode(credentials);
+
+    let client = Client::new();
+    let response = client
+        .post("https://www.reddit.com/api/v1/access_token")
+        .header("Authorization", format!("Basic {}", encoded))
+        .header("User-Agent", format!("macos:com.ruddit.client:v0.1.0 (by /u/{})", username))
+        .form(&[
+            ("grant_type", "password"),
+            ("username", username),
+            ("password", password),
+        ])
+        .send()
+        .await?;
+
+    let json: serde_json::Value = response.json().await?;
+    if let Some(err) = json["error"].as_str() {
+        if err == "unauthorized_client" {
+            return Err(RedditError::HttpError(401, "unauthorized_client: Check that your Reddit App Type is set to 'script' and your Client ID/Secret are correct.".to_string()));
+        }
+        return Err(RedditError::HttpError(401, err.to_string()));
+    }
+
+    json["access_token"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or(RedditError::TokenExtraction)
+}
+
+pub async fn post_comment(
+    access_token: &str,
+    parent_id: &str,
+    text: &str,
+) -> Result<(), RedditError> {
+    let client = Client::new();
+    let response = client
+        .post("https://oauth.reddit.com/api/comment")
+        .header("Authorization", format!("Bearer {}", access_token))
+        .header("User-Agent", "RudditApp/0.1 by Ruddit")
+        .form(&[("thing_id", parent_id), ("text", text), ("api_type", "json")])
+        .send()
+        .await?;
+
+    if !response.status().is_success() {
+        return Err(RedditError::HttpError(
+            response.status().as_u16(),
+            response.text().await.unwrap_or_default(),
+        ));
+    }
+
+    let json: serde_json::Value = response.json().await?;
+    if let Some(errors) = json["json"]["errors"].as_array() {
+        if !errors.is_empty() {
+            return Err(RedditError::HttpError(
+                400,
+                format!("{:?}", errors[0]),
+            ));
+        }
+    }
+
+    Ok(())
 }

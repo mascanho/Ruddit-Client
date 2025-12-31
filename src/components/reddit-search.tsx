@@ -18,7 +18,14 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ArrowUpDown,
+  Radar,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAppSettings } from "./app-settings";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -30,6 +37,7 @@ import { RedditCommentsView } from "./reddit-comments-view";
 import { toast } from "sonner";
 import moment from "moment";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { KeywordHighlighter } from "./keyword-highlighter";
 import {
   calculateIntent,
   categorizePost,
@@ -57,6 +65,7 @@ type SearchResult = {
   thumbnail?: string | null;
   intent?: string; // allow string from backend
   category?: "brand" | "competitor" | "general";
+  date_added?: number;
 };
 
 type SortType = "hot" | "top" | "new";
@@ -72,6 +81,7 @@ export function RedditSearch({
     () => localStorage.getItem("lastRedditSearchQuery") || "",
   );
   const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [selectedSorts, setSelectedSorts] = useState<SortType[]>(() => {
     const saved = localStorage.getItem("lastRedditSearchSorts");
     return saved ? JSON.parse(saved) : ["hot"];
@@ -82,7 +92,7 @@ export function RedditSearch({
   const [rowsPerPage, setRowsPerPage] = useState(() => {
     return parseInt(localStorage.getItem("lastRedditSearchRows") || "100", 10);
   });
-  const { settings } = useAppSettings();
+  const { settings, updateSettings } = useAppSettings();
   const { setSubreddits, subreddits } = useSubredditsStore();
   const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
 
@@ -91,11 +101,8 @@ export function RedditSearch({
   const [commentsPost, setCommentsPost] = useState<SearchResult | null>(null);
   const [sortTypeForComments, setSortTypeForComments] = useState("best");
 
-
   // Helper function to escape special characters for regex
-  const escapeRegExp = (string: string) => {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
-  };
+
 
   // Persist query and sorts
   useEffect(() => {
@@ -117,42 +124,24 @@ export function RedditSearch({
     localStorage.setItem("lastRedditSearchRows", rowsPerPage.toString());
   }, [rowsPerPage]);
 
-  // Helper function to highlight keywords in text
-  const highlightKeywords = (text: string, currentQuery: string) => {
-    if (!text || !currentQuery.trim()) return text;
 
-    const rawKeywords = currentQuery.split(/\s+/).filter((k) => k.length > 0);
 
-    if (rawKeywords.length === 0) return text;
+  const addSubredditToMonitoring = (subreddit: string) => {
+    const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
+    if (settings.monitoredSubreddits.includes(cleaned)) {
+      toast.info(`Already monitoring r/${cleaned}`, {
+        position: "bottom-center",
+      });
+      return;
+    }
 
-    // Create a single regex with all keywords joined by |
-    // Escape keywords for the regex pattern
-    const escapedKeywords = rawKeywords.map(escapeRegExp);
-    const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
+    updateSettings({
+      monitoredSubreddits: [...settings.monitoredSubreddits, cleaned],
+    });
 
-    // Split the text based on the regex. capturing groups are included in the result.
-    const parts = text.split(regex);
-
-    return (
-      <>
-        {parts.map((part, i) => {
-          // Check if this part matches any of the keywords (case insensitive)
-          // We check if the part (lowercased) matches any of the raw keywords (lowercased)
-          const isMatch = rawKeywords.some(
-            (k) => part.toLowerCase() === k.toLowerCase(),
-          );
-
-          if (isMatch) {
-            return (
-              <span key={i} className="bg-yellow-200 font-bold text-black">
-                {part}
-              </span>
-            );
-          }
-          return <span key={i}>{part}</span>;
-        })}
-      </>
-    );
+    toast.success(`Now monitoring r/${cleaned}`, {
+      position: "bottom-center",
+    });
   };
 
   async function handleFetchSubreddits() {
@@ -253,6 +242,7 @@ export function RedditSearch({
     if (!query.trim()) return;
 
     setIsSearching(true);
+    setHasSearched(true);
     setCurrentPage(1);
 
     try {
@@ -348,6 +338,7 @@ export function RedditSearch({
           is_self: result.is_self || false,
           num_comments: result.num_comments || 0,
           intent: result.intent || "Low", // Use result intent
+          date_added: result.date_added || 0,
         },
       });
 
@@ -380,6 +371,7 @@ export function RedditSearch({
           settings.brandKeywords,
           settings.competitorKeywords,
         ),
+        date_added: result.date_added || 0,
       };
 
       if (!isInserted) {
@@ -448,7 +440,6 @@ export function RedditSearch({
     }
   };
 
-
   const addAllToTable = async () => {
     let addedCount = 0;
     let duplicateCount = 0;
@@ -483,6 +474,7 @@ export function RedditSearch({
           settings.brandKeywords,
           settings.competitorKeywords,
         ),
+        date_added: result.date_added || 0,
       };
 
       // Client-side duplicate check
@@ -753,7 +745,7 @@ export function RedditSearch({
           </Button>
         </div>
 
-        {subreddits.length > 0 && (
+        {subreddits.length > 0 ? (
           <>
             <div className="flex items-center justify-between pt-4 border-t">
               <div className="flex items-center gap-2">
@@ -862,110 +854,137 @@ export function RedditSearch({
             </div>
 
             <div className="space-y-3 max-h-[570px] overflow-y-auto">
-              {paginatedResults.map((result) => (
-                <Card
-                  key={result.id}
-                  className="p-4 hover:bg-accent/50 transition-colors relative"
-                >
-                  {result?.is_self && (
-                    <div className="absolute bottom-4 right-4">
-                      <div className="px-3 text-xs py-1 rounded-xl border border-gray-300 text-gray-400">
-                        Post
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium mb-1 line-clamp-2 text-base">
-                        {highlightKeywords(result.title, query)}
-                      </h4>
-                      {result.snippet && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                          {result.snippet}
-                        </p>
-                      )}
-
-                      <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                        {result.intent && (
-                          <Badge
-                            className={getIntentColor(
-                              result.intent.toLowerCase(),
-                            )}
-                          >
-                            {result.intent.toUpperCase()} INTENT
-                          </Badge>
-                        )}
-
-                        <Badge variant="outline" className="font-mono text-xs">
-                          r/{result.subreddit}
-                        </Badge>
-
-                        {result.sort_type?.split(",").map((type) => (
-                          <Badge
-                            key={type}
-                            className={isColoredRelevance(type)}
-                          >
-                            {type}
-                          </Badge>
-                        ))}
-
-                        <div className="h-4 w-px bg-border mx-1" />
-
-                        <div className="flex items-center gap-4">
-                          <span title="Score">
-                            Score:{" "}
-                            <span className="font-medium text-foreground">
-                              {result.score}
-                            </span>
-                          </span>
-                          <span title="Comments">
-                            Comments:{" "}
-                            <span className="font-medium text-foreground">
-                              {result.num_comments}
-                            </span>
-                          </span>
-                          <span title="Author">
-                            By:{" "}
-                            <span className="font-medium text-foreground">
-                              {result.author}
-                            </span>
-                          </span>
-                          <span title="Date">
-                            {moment(result.formatted_date).fromNow()}
-                          </span>
+              {paginatedResults.length > 0 ? (
+                paginatedResults.map((result) => (
+                  <Card
+                    key={result.id}
+                    className="p-4 hover:bg-accent/50 transition-colors relative"
+                  >
+                    {result?.is_self && (
+                      <div className="absolute bottom-4 right-4">
+                        <div className="px-3 text-xs py-1 rounded-xl border border-gray-300 text-gray-400">
+                          Post
                         </div>
                       </div>
+                    )}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium mb-1 line-clamp-2 text-base">
+                          <KeywordHighlighter
+                            text={result.title}
+                            searchQuery={query}
+                            brandKeywords={settings.brandKeywords}
+                            competitorKeywords={settings.competitorKeywords}
+                            generalKeywords={settings.monitoredKeywords}
+                          />
+                        </h4>
+                        {result.snippet && (
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                            {result.snippet}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                          {result.intent && (
+                            <Badge
+                              className={getIntentColor(
+                                result.intent.toLowerCase(),
+                              )}
+                            >
+                              {result.intent.toUpperCase()} INTENT
+                            </Badge>
+                          )}
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Badge
+                                variant="outline"
+                                className="font-mono text-xs cursor-pointer hover:bg-accent/50 selection:bg-transparent"
+                              >
+                                r/{result.subreddit}
+                              </Badge>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem onClick={() => addSubredditToMonitoring(result.subreddit)}>
+                                <Radar className="h-4 w-4 mr-2" />
+                                Add to Monitoring
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+
+                          {result.sort_type?.split(",").map((type) => (
+                            <Badge
+                              key={type}
+                              className={isColoredRelevance(type)}
+                            >
+                              {type}
+                            </Badge>
+                          ))}
+
+                          <div className="h-4 w-px bg-border mx-1" />
+
+                          <div className="flex items-center gap-4">
+                            <span title="Score">
+                              Score:{" "}
+                              <span className="font-medium text-foreground">
+                                {result.score}
+                              </span>
+                            </span>
+                            <span title="Comments">
+                              Comments:{" "}
+                              <span className="font-medium text-foreground">
+                                {result.num_comments}
+                              </span>
+                            </span>
+                            <span title="Author">
+                              By:{" "}
+                              <span className="font-medium text-foreground">
+                                {result.author}
+                              </span>
+                            </span>
+                            <span title="Date">
+                              {moment(result.formatted_date).fromNow()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer hover:bg-blue-900 hover:text-white"
+                          onClick={() =>
+                            handleGetComments(result, sortTypeForComments)
+                          }
+                        >
+                          Comments
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer hover:bg-blue-900 hover:text-white"
+                          onClick={() => handleOpenInBrowser(result.url)}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer hover:bg-blue-900 hover:text-white"
+                          onClick={() => addToTable(result)}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="cursor-pointer hover:bg-blue-900 hover:text-white"
-                        onClick={() => handleGetComments(result, sortTypeForComments)}
-                      >
-                        Comments
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="cursor-pointer hover:bg-blue-900 hover:text-white"
-                        onClick={() => handleOpenInBrowser(result.url)}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="cursor-pointer hover:bg-blue-900 hover:text-white"
-                        onClick={() => addToTable(result)}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                ))
+              ) : (
+                <p className="text-center text-sm text-muted-foreground py-4">
+                  No results match current filters.
+                </p>
+              )}
             </div>
 
             {totalPages > 1 && (
@@ -1040,17 +1059,28 @@ export function RedditSearch({
               </div>
             )}
           </>
+        ) : (
+          !isSearching && hasSearched && query.trim() && (
+            <p className="text-center text-sm text-muted-foreground py-4">
+              No results found for "{query}".
+            </p>
+          )
         )}
       </div>
 
       <RedditCommentsView
         isOpen={commentsPost !== null}
         onOpenChange={(open) => !open && setCommentsPost(null)}
-        post={commentsPost ? {
-          title: commentsPost.title,
-          url: commentsPost.url,
-          subreddit: commentsPost.subreddit
-        } : null}
+        post={
+          commentsPost
+            ? {
+              id: commentsPost.name || commentsPost.id,
+              title: commentsPost.title,
+              url: commentsPost.url,
+              subreddit: commentsPost.subreddit,
+            }
+            : null
+        }
         comments={comments}
         sortType={sortTypeForComments}
         onSortTypeChange={handleSortTypeForCommentsChange}

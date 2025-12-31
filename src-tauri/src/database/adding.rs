@@ -27,6 +27,7 @@ pub struct PostDataWrapper {
     pub is_self: bool,
     pub num_comments: i64,
     pub intent: String,
+    pub date_added: i64,
 }
 
 // Comment data structure
@@ -101,10 +102,17 @@ impl DB {
                 thumbnail TEXT NOT NULL DEFAULT '',
                 is_self INTEGER NOT NULL DEFAULT 0,
                 num_comments INTEGER NOT NULL DEFAULT 0,
-                intent TEXT NOT NULL DEFAULT 'low'
+                intent TEXT NOT NULL DEFAULT 'low',
+                date_added INTEGER NOT NULL DEFAULT 0
             )",
             [],
         )?;
+
+        // Migration: Add date_added to reddit_posts if it doesn't exist
+        let _ = self.conn.execute(
+            "ALTER TABLE reddit_posts ADD COLUMN date_added INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
 
         self.create_comments_table()?;
         Ok(())
@@ -114,8 +122,8 @@ impl DB {
     pub fn save_single_reddit(&self, post: &PostDataWrapper) -> RusqliteResult<()> {
         println!("Attempting to save post: {:#?}", &post);
 
-        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         self.conn.execute(
             query,
@@ -139,7 +147,8 @@ impl DB {
                 post.thumbnail,
                 post.is_self,
                 post.num_comments,
-                post.intent
+                post.intent,
+                if post.date_added == 0 { Utc::now().timestamp() } else { post.date_added }
             ],
         )?;
 
@@ -176,11 +185,17 @@ impl DB {
                 thumbnail TEXT NOT NULL DEFAULT '',
                 is_self BOOLEAN NOT NULL DEFAULT FALSE,
                 num_comments INTEGER NOT NULL DEFAULT 0,
-                intent TEXT NOT NULL DEFAULT 'low'
-
+                intent TEXT NOT NULL DEFAULT 'low',
+                date_added INTEGER NOT NULL DEFAULT 0
             )",
             [],
         )?;
+
+        // Migration: Add date_added to subreddit_search if it doesn't exist
+        let _ = self.conn.execute(
+            "ALTER TABLE subreddit_search ADD COLUMN date_added INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
 
         // Create comments table
         self.create_comments_table()?;
@@ -218,7 +233,7 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT OR IGNORE INTO reddit_posts
-                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent)
+                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added)
                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
             )?;
 
@@ -243,6 +258,7 @@ impl DB {
                     result.is_self,
                     result.num_comments,
                     result.intent,
+                    if result.date_added == 0 { Utc::now().timestamp() } else { result.date_added }
                 ])?;
             }
         }
@@ -268,8 +284,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT INTO subreddit_search
-            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
+            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
             )?;
 
             for result in results {
@@ -292,7 +308,8 @@ impl DB {
                     result.thumbnail,
                     result.is_self,
                     result.num_comments,
-                    result.intent
+                    result.intent,
+                    if result.date_added == 0 { Utc::now().timestamp() } else { result.date_added }
                 ])?;
             }
         }
@@ -338,7 +355,7 @@ impl DB {
 
     pub fn get_db_results(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, thumbnail, is_self, num_comments, intent
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, thumbnail, is_self, num_comments, intent, date_added
              FROM reddit_posts
              ORDER BY timestamp DESC",
         )?;
@@ -366,6 +383,7 @@ impl DB {
                     is_self: row.get(16)?,
                     num_comments: row.get(17)?,
                     intent: row.get(18)?,
+                    date_added: row.get(19)?,
                 })
             })?
             .collect::<RusqliteResult<Vec<_>>>()?;

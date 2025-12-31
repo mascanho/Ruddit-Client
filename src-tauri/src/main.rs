@@ -2,15 +2,18 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 pub mod actions;
+pub mod ai;
 pub mod commands;
 pub mod database;
 pub mod email;
+pub mod exports;
 pub mod models;
 pub mod settings;
 
 #[tokio::main]
 async fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
@@ -42,7 +45,12 @@ async fn main() {
             commands::open_db_folder_command,
             commands::update_post_notes,
             commands::update_post_assignee,
-            commands::update_post_engaged_status
+            commands::update_post_engaged_status,
+            commands::get_reddit_config_command,
+            commands::update_reddit_config_command,
+            commands::submit_reddit_comment_command,
+            commands::ask_gemini_command,
+            commands::get_gemini_models_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
