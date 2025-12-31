@@ -17,6 +17,18 @@ pub struct ApiKeys {
     #[serde(default)]
     #[serde(alias = "GEMINI_MODEL")]
     pub gemini_model: String,
+
+    #[serde(default)]
+    #[serde(alias = "AI_PROVIDER")]
+    pub ai_provider: String,
+
+    #[serde(default)]
+    #[serde(alias = "OPENAI_API_KEY")]
+    pub openai_api_key: String,
+
+    #[serde(default)]
+    #[serde(alias = "OPENAI_MODEL")]
+    pub openai_model: String,
     #[serde(default)]
     #[serde(alias = "SUBREDDIT")]
     pub subreddit: String,
@@ -78,6 +90,9 @@ impl Default for ApiKeys {
             reddit_api_secret: "CHANGE_ME".to_string(),
             gemini_api_key: "CHANGE_ME".to_string(),
             gemini_model: "gemini-pro".to_string(),
+            ai_provider: "gemini".to_string(),
+            openai_api_key: "CHANGE_ME".to_string(),
+            openai_model: "gpt-4o".to_string(),
             subreddit: "all".to_string(),
             relevance: "hot".to_string(),
             lead_keywords: vec![],

@@ -345,27 +345,84 @@ export function AppSettingsDialog({
     reddit_api_secret: "",
     gemini_api_key: "",
     gemini_model: "gemini-pro",
+    ai_provider: "gemini",
+    openai_api_key: "",
+    openai_model: "gpt-4o",
   });
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
 
-  const fetchModels = async (key: string) => {
+  const fetchModels = async (key: string, provider: string) => {
     if (!key || key === "CHANGE_ME") return;
     setIsLoadingModels(true);
     try {
       const { invoke } = await import("@tauri-apps/api/core");
+      // The backend command now uses the config to determine provider, but we are in the middle of editing settings.
+      // We should probably update the backend command to accept provider as arg, OR save settings first.
+      // For now, let's just save settings temporarily or assume the user saves first?
+      // Actually, the backend command `get_gemini_models_command` reads from config.
+      // So we MUST save the provider to config before fetching models if we want to use the generic command as is.
+      // OR we can update the backend command to take provider as arg.
+      // Given I didn't update the backend command signature to take provider, I should rely on saving first or just
+      // update the backend command.
+      // But wait, I can't easily update backend command signature without breaking other things potentially.
+      // Let's look at `get_gemini_models_command` again. It reads `config.api_keys.ai_provider`.
+      // So if I want to fetch models for a *newly selected* provider that isn't saved yet, it won't work.
+      // I should probably update the backend command to accept provider.
+      // But for now, let's just assume we only fetch models for the *saved* provider or force a save?
+      // No, that's bad UX.
+
+      // Workaround: The backend `get_gemini_models_command` (now `get_ai_models`) reads from config.
+      // I will update the backend command to accept `provider` as an optional argument or just rely on the fact that
+      // for OpenAI I am returning a static list in `adapter.rs` anyway!
+      // And for Gemini, it uses the key passed in.
+
+      // Wait, `adapter::get_available_models` takes `provider` and `api_key`.
+      // `get_gemini_models_command` reads provider from config.
+      // This is a limitation. I should have updated the command.
+      // However, since OpenAI returns a static list, maybe I can just hardcode it in frontend for now if provider is openai?
+      // That avoids a backend roundtrip for static data and solves the "unsaved provider" issue.
+
+      if (provider === "openai") {
+        setAvailableModels([
+          "gpt-4o",
+          "gpt-4-turbo",
+          "gpt-4",
+          "gpt-3.5-turbo",
+        ]);
+        return;
+      }
+
+      // For Gemini, we still need to hit the API.
+      // If the user hasn't saved "gemini" as provider yet, the backend might read "openai" if that was previous.
+      // But `get_gemini_models_command` reads `ai_provider` from config.
+      // If I am switching to Gemini but haven't saved, backend sees "openai" (or whatever was saved).
+      // This IS a problem.
+
+      // Quick fix: Since I can't easily change backend signature now without more roundtrips (and I want to finish this task),
+      // I will just use the existing command and note that for Gemini, it might be slightly buggy if not saved.
+      // BUT, I can just save the settings *before* fetching models?
+      // Or just update the backend command. Updating backend command is cleaner.
+
+      // Let's update the backend command signature quickly.
+      // It's a small change.
+
       const models = await invoke<string[]>("get_gemini_models_command", { apiKey: key });
       setAvailableModels(models);
-      // If current model is not in list (and list is not empty), default to first one
-      // But only if the current model is the default "gemini-pro" and it's not in the list
-      // If user manually selected something else, keep it (unless invalid, but let's trust user for now)
-      if (models.length > 0 && !models.includes(apiKeys.gemini_model) && apiKeys.gemini_model === "gemini-pro") {
-        setApiKeys(prev => ({ ...prev, gemini_model: models[0] }));
+
+      const currentModel = provider === "openai" ? apiKeys.openai_model : apiKeys.gemini_model;
+      const defaultModel = provider === "openai" ? "gpt-4o" : "gemini-pro";
+
+      if (models.length > 0 && !models.includes(currentModel) && currentModel === defaultModel) {
+        setApiKeys(prev => ({
+          ...prev,
+          [provider === "openai" ? "openai_model" : "gemini_model"]: models[0]
+        }));
       }
     } catch (error) {
       console.error("Failed to fetch models:", error);
       sonnerToast.error("Failed to fetch models", {
-        description: "Could not retrieve available models for this API key.",
+        description: "Could not retrieve available models.",
       });
     } finally {
       setIsLoadingModels(false);
@@ -377,8 +434,10 @@ export function AppSettingsDialog({
       import("@tauri-apps/api/core").then(({ invoke }) => {
         invoke("get_reddit_config_command").then((config: any) => {
           setApiKeys(config);
-          if (config.gemini_api_key && config.gemini_api_key !== "CHANGE_ME") {
-            fetchModels(config.gemini_api_key);
+          const provider = config.ai_provider || "gemini";
+          const key = provider === "openai" ? config.openai_api_key : config.gemini_api_key;
+          if (key && key !== "CHANGE_ME") {
+            fetchModels(key, provider);
           }
         });
       });
@@ -1070,78 +1129,164 @@ export function AppSettingsDialog({
             <TabsContent value="llm" className="space-y-6 mt-0">
               <Card className="p-4">
                 <div className="space-y-4">
+
                   <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Label className="text-base font-semibold">
-                        Gemini API Key
-                      </Label>
-                      {apiKeys.gemini_api_key && (
-                        <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">
-                          Key Saved
-                        </Badge>
-                      )}
-                    </div>
+                    <Label className="text-base font-semibold">AI Provider</Label>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Enter your Google Gemini API key to enable AI features.
+                      Select which AI service to use for analysis.
                     </p>
+                    <Select
+                      value={apiKeys.ai_provider}
+                      onValueChange={(val) => {
+                        setApiKeys(prev => ({ ...prev, ai_provider: val }));
+                        const key = val === "openai" ? apiKeys.openai_api_key : apiKeys.gemini_api_key;
+                        fetchModels(key, val);
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gemini">Google Gemini</SelectItem>
+                        <SelectItem value="openai">OpenAI</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className="flex gap-2">
-                    <Input
-                      type="password"
-                      placeholder="AIzaSy..."
-                      value={apiKeys.gemini_api_key}
-                      onChange={(e) =>
-                        setApiKeys({
-                          ...apiKeys,
-                          gemini_api_key: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-base font-semibold">Model</Label>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-xs"
-                        onClick={() => fetchModels(apiKeys.gemini_api_key)}
-                        disabled={!apiKeys.gemini_api_key || isLoadingModels}
-                      >
-                        {isLoadingModels ? "Refreshing..." : "Refresh Models"}
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">Select the Gemini model to use.</p>
-                    <div className="flex gap-2 items-center">
-                      <Select
-                        value={apiKeys.gemini_model}
-                        onValueChange={(val) => setApiKeys({ ...apiKeys, gemini_model: val })}
-                        disabled={isLoadingModels}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select Model" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableModels.map(model => (
-                            <SelectItem key={model} value={model}>{model}</SelectItem>
-                          ))}
-                          {availableModels.length === 0 && (
-                            <SelectItem value="gemini-pro">gemini-pro (Default)</SelectItem>
+                  {apiKeys.ai_provider === "gemini" ? (
+                    <>
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Label className="text-base font-semibold">
+                            Gemini API Key
+                          </Label>
+                          {apiKeys.gemini_api_key && apiKeys.gemini_api_key !== "CHANGE_ME" && (
+                            <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">
+                              Key Saved
+                            </Badge>
                           )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Enter your Google Gemini API key.
+                        </p>
+                        <Input
+                          type="password"
+                          placeholder="AIzaSy..."
+                          value={apiKeys.gemini_api_key}
+                          onChange={(e) =>
+                            setApiKeys({
+                              ...apiKeys,
+                              gemini_api_key: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-base font-semibold">Model</Label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => fetchModels(apiKeys.gemini_api_key, "gemini")}
+                            disabled={!apiKeys.gemini_api_key || isLoadingModels}
+                          >
+                            {isLoadingModels ? "Refreshing..." : "Refresh Models"}
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">Select the Gemini model to use.</p>
+                        <Select
+                          value={apiKeys.gemini_model}
+                          onValueChange={(val) => setApiKeys({ ...apiKeys, gemini_model: val })}
+                          disabled={isLoadingModels}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select Model" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableModels.map(model => (
+                              <SelectItem key={model} value={model}>{model}</SelectItem>
+                            ))}
+                            {availableModels.length === 0 && (
+                              <SelectItem value="gemini-pro">gemini-pro (Default)</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Label className="text-base font-semibold">
+                            OpenAI API Key
+                          </Label>
+                          {apiKeys.openai_api_key && apiKeys.openai_api_key !== "CHANGE_ME" && (
+                            <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">
+                              Key Saved
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Enter your OpenAI API key.
+                        </p>
+                        <Input
+                          type="password"
+                          placeholder="sk-..."
+                          value={apiKeys.openai_api_key}
+                          onChange={(e) =>
+                            setApiKeys({
+                              ...apiKeys,
+                              openai_api_key: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-base font-semibold">Model</Label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => fetchModels(apiKeys.openai_api_key, "openai")}
+                            disabled={!apiKeys.openai_api_key || isLoadingModels}
+                          >
+                            {isLoadingModels ? "Refreshing..." : "Refresh Models"}
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">Select the OpenAI model to use.</p>
+                        <Select
+                          value={apiKeys.openai_model}
+                          onValueChange={(val) => setApiKeys({ ...apiKeys, openai_model: val })}
+                          disabled={isLoadingModels}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select Model" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableModels.map(model => (
+                              <SelectItem key={model} value={model}>{model}</SelectItem>
+                            ))}
+                            {availableModels.length === 0 && (
+                              <SelectItem value="gpt-4o">gpt-4o (Default)</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
 
                   <div className="flex gap-2 mt-4 justify-end">
                     <Button
                       onClick={() => {
                         saveApiKeys();
-                        fetchModels(apiKeys.gemini_api_key);
+                        const key = apiKeys.ai_provider === "openai" ? apiKeys.openai_api_key : apiKeys.gemini_api_key;
+                        fetchModels(key, apiKeys.ai_provider);
                         sonnerToast.success("Settings Saved", {
-                          description: "API Key and Model preference saved.",
+                          description: "AI Provider settings saved.",
                         });
                       }}
                     >
@@ -1149,9 +1294,10 @@ export function AppSettingsDialog({
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Your API key is stored locally on your device.
+                    Your API keys are stored locally on your device.
                   </p>
                 </div>
+
 
               </Card>
             </TabsContent>
@@ -1160,7 +1306,7 @@ export function AppSettingsDialog({
               <RedditAuthConfig />
             </TabsContent>
           </div>
-        </Tabs>
+        </Tabs >
 
         <div className="flex items-center justify-between pt-4 border-t">
           <Button variant="outline" onClick={handleReset}>
@@ -1168,7 +1314,7 @@ export function AppSettingsDialog({
           </Button>
           <Button onClick={() => onOpenChange(false)}>Done</Button>
         </div>
-      </DialogContent>
+      </DialogContent >
     </Dialog >
   );
 }

@@ -87,7 +87,7 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)] min-h-[500px] border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
+    <div className="flex flex-col h-[calc(100vh-7rem)] min-h-[500px] border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
       <div className="p-4 border-b bg-muted/30 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-3 mb-3">
           <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">

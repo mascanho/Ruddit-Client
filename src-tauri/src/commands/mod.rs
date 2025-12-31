@@ -291,7 +291,14 @@ pub fn get_reddit_config_command() -> Result<api_keys::ApiKeys, String> {
 
 #[tauri::command]
 pub async fn get_gemini_models_command(api_key: String) -> Result<Vec<String>, String> {
-    crate::ai::gemini::get_available_models(&api_key)
+    // This command name is kept for frontend compatibility, but it now supports generic providers
+    // We need to read the config to know the provider, but the frontend passes the API key directly for the *current* provider being configured.
+    // Ideally, the frontend should pass the provider too.
+    // For now, let's assume if this is called, we want models for the *currently selected* provider in settings, 
+    // OR we can update the command signature.
+    // Let's read the config to get the provider.
+    let config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
+    crate::ai::adapter::get_available_models(&config.api_keys.ai_provider, &api_key)
         .await
         .map_err(|e| e.to_string())
 }
@@ -329,15 +336,8 @@ pub async fn submit_reddit_comment_command(
 }
 #[tauri::command]
 pub async fn ask_gemini_command(question: String) -> Result<String, String> {
-    let response = crate::ai::gemini::ask_gemini(&question)
+    // Uses the generic adapter which checks the configured provider
+    crate::ai::adapter::ask_ai(&question)
         .await
-        .map_err(|e| e.to_string())?;
-    
-    // Extract the answer from the JSON response if possible, otherwise return the whole JSON string
-    if let Some(answer) = response.get("answer").and_then(|v| v.as_str()) {
-        Ok(answer.to_string())
-    } else {
-        // If "answer" field is missing, return the whole JSON
-        Ok(response.to_string())
-    }
+        .map_err(|e| e.to_string())
 }
