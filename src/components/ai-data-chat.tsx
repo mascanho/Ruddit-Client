@@ -36,14 +36,16 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    scrollToBottom();
+  }, [messages, isLoading]);
 
   const generateResponse = async (userQuery: string): Promise<string> => {
     try {
@@ -88,21 +90,7 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
 
   return (
     <div className="flex flex-col h-[calc(100vh-7rem)] min-h-[500px] border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
-      <div className="p-4 border-b bg-muted/30 backdrop-blur-md sticky top-0 z-10">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
-              AI Data Assistant
-            </h3>
-            <p className="text-xs text-muted-foreground font-medium">
-              Powered by Gemini • Analyzing your Reddit data
-            </p>
-          </div>
-        </div>
-
+      <div className="p-1 border-b bg-muted/30 backdrop-blur-md sticky top-0 z-10">
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           <Badge
             variant="secondary"
@@ -131,10 +119,7 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
         </div>
       </div>
 
-      <ScrollArea
-        className="flex-1 p-4 h-20 overflow-auto max-h-[calc(100vh-200px)]"
-        ref={scrollRef}
-      >
+      <ScrollArea className="flex-1 p-4 h-20 overflow-auto max-h-[calc(100vh-200px)]">
         <div className="space-y-6 max-w-3xl mx-auto">
           {messages.map((message, index) => (
             <div
@@ -148,7 +133,7 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
               )}
 
               <div
-                className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
+                className={`max-w-[100%] rounded-2xl p-4 shadow-sm ${
                   message.role === "user"
                     ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
                     : "bg-muted/50 border border-border/50 rounded-tl-none"
@@ -277,6 +262,7 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
               </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
