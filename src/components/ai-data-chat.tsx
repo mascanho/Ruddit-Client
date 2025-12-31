@@ -8,6 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Sparkles, Send, Bot, User } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 type Message = {
   role: "user" | "assistant"
@@ -83,7 +85,7 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
   }
 
   return (
-    <Card className="flex flex-col h-[calc(100vh-12rem)] min-h-[500px] shadow-xl border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
+    <Card className="flex flex-col h-[calc(100vh-16rem)] min-h-[500px] shadow-xl border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
       <div className="p-4 border-b bg-muted/30 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-3 mb-3">
           <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
@@ -128,13 +130,43 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
 
               <div
                 className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${message.role === "user"
-                    ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
-                    : "bg-muted/50 border border-border/50 rounded-tl-none"
+                  ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
+                  : "bg-muted/50 border border-border/50 rounded-tl-none"
                   }`}
               >
-                <p className={`text-sm whitespace-pre-wrap leading-relaxed ${message.role === "user" ? "text-white/95" : "text-foreground"}`}>
-                  {message.content}
-                </p>
+                <div className={`text-sm leading-relaxed ${message.role === "user" ? "text-white/95" : "text-foreground"}`}>
+                  {message.role === "assistant" ? (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                        ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2" {...props} />,
+                        ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2" {...props} />,
+                        li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                        a: ({ node, ...props }) => <a className="text-primary underline hover:text-primary/80" target="_blank" rel="noopener noreferrer" {...props} />,
+                        code: ({ node, inline, className, children, ...props }: any) => {
+                          return inline ? (
+                            <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
+                          ) : (
+                            <div className="bg-muted/50 p-2 rounded-md my-2 overflow-x-auto">
+                              <code className="text-xs font-mono block" {...props}>{children}</code>
+                            </div>
+                          )
+                        },
+                        h1: ({ node, ...props }) => <h1 className="text-lg font-bold mb-2" {...props} />,
+                        h2: ({ node, ...props }) => <h2 className="text-base font-bold mb-2" {...props} />,
+                        h3: ({ node, ...props }) => <h3 className="text-sm font-bold mb-1" {...props} />,
+                        table: ({ node, ...props }) => <div className="overflow-x-auto my-2"><table className="w-full border-collapse text-xs" {...props} /></div>,
+                        th: ({ node, ...props }) => <th className="border border-border px-2 py-1 bg-muted font-semibold text-left" {...props} />,
+                        td: ({ node, ...props }) => <td className="border border-border px-2 py-1" {...props} />,
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  )}
+                </div>
                 <p
                   className={`text-[10px] mt-2 font-medium ${message.role === "user" ? "text-white/60" : "text-muted-foreground"
                     }`}
