@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useAppSettings } from "./app-settings";
 import { useAutomationStore, useAddSingleSubReddit, PostDataWrapper } from "@/store/store";
 import { invoke } from "@tauri-apps/api/core";
-import { calculateIntent, categorizePost } from "@/lib/marketing-utils";
+import { calculateIntent, categorizePost, matchesKeyword } from "@/lib/marketing-utils";
 
 export function AutomationRunner() {
     const { settings } = useAppSettings();
@@ -81,10 +81,10 @@ export function AutomationRunner() {
                 const isBrand = post.category === "brand" || post.category === "competitor";
 
                 // Rigorous check against CURRENT settings
-                const text = (post.title + " " + (post.selftext || "")).toLowerCase();
-                const matchesGeneral = currentSettings.monitoredKeywords.some(k => text.includes(k.toLowerCase()));
-                const matchesBrand = currentSettings.brandKeywords.some(k => text.includes(k.toLowerCase()));
-                const matchesCompetitor = currentSettings.competitorKeywords.some(k => text.includes(k.toLowerCase()));
+                const text = (post.title + " " + (post.selftext || ""));
+                const matchesGeneral = currentSettings.monitoredKeywords.some(k => matchesKeyword(text, k));
+                const matchesBrand = currentSettings.brandKeywords.some(k => matchesKeyword(text, k));
+                const matchesCompetitor = currentSettings.competitorKeywords.some(k => matchesKeyword(text, k));
 
                 if (!matchesGeneral && !matchesBrand && !matchesCompetitor) return false;
 

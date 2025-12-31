@@ -270,15 +270,18 @@ pub async fn search_subreddit_posts(
 
     // Include the sort parameter in the URL
 
-    let url = format!(
-        "https://oauth.reddit.com/search?q=\"{}\"&sort={}&limit=100&t=all",
-        query, sort_type
-    );
+    let url = "https://oauth.reddit.com/search";
 
-    println!("Making request to: {}", url); // Debug log
+    println!("Making request to: {} with q='{}'", url, query); // Debug log
 
     let response = client
-        .get(&url)
+        .get(url)
+        .query(&[
+            ("q", query),
+            ("sort", sort_type),
+            ("limit", "100"),
+            ("t", "all"),
+        ])
         .header("Authorization", format!("Bearer {}", access_token))
         .header("User-Agent", "RustRedditApp/0.1 by Ruddit")
         .send()
