@@ -1,29 +1,29 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { Sparkles, Send, Bot, User } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
+import { useState, useRef, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, Send, Bot, User } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type Message = {
-  role: "user" | "assistant"
-  content: string
-  timestamp: Date
-}
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+};
 
 type DataStats = {
-  totalPosts: number
-  totalMessages: number
-  subreddits: string[]
-  topKeywords: string[]
-  averageRelevance: number
-}
+  totalPosts: number;
+  totalMessages: number;
+  subreddits: string[];
+  topKeywords: string[];
+  averageRelevance: number;
+};
 
 export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
   const [messages, setMessages] = useState<Message[]>([
@@ -33,59 +33,61 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
         "Hello! I'm your AI assistant powered by Gemini. I have access to your tracked Reddit posts and can answer questions, analyze trends, or help you draft responses. What would you like to know?",
       timestamp: new Date(),
     },
-  ])
-  const [input, setInput] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const { toast } = useToast()
+  ]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages])
+  }, [messages]);
 
   const generateResponse = async (userQuery: string): Promise<string> => {
     try {
       const { invoke } = await import("@tauri-apps/api/core");
-      const response: string = await invoke("ask_gemini_command", { question: userQuery });
+      const response: string = await invoke("ask_gemini_command", {
+        question: userQuery,
+      });
       return response;
     } catch (error) {
       console.error("Gemini Error:", error);
       return "Sorry, I encountered an error while communicating with the AI. Please check your API key in settings.";
     }
-  }
+  };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return
+    if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
       role: "user",
       content: input.trim(),
       timestamp: new Date(),
-    }
+    };
 
-    setMessages((prev) => [...prev, userMessage])
-    setInput("")
-    setIsLoading(true)
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
 
     // Simulate AI processing
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    const response = await generateResponse(userMessage.content)
+    const response = await generateResponse(userMessage.content);
 
     const assistantMessage: Message = {
       role: "assistant",
       content: response,
       timestamp: new Date(),
-    }
+    };
 
-    setMessages((prev) => [...prev, assistantMessage])
-    setIsLoading(false)
-  }
+    setMessages((prev) => [...prev, assistantMessage]);
+    setIsLoading(false);
+  };
 
   return (
-    <Card className="flex flex-col h-[calc(100vh-16rem)] min-h-[500px] shadow-xl border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
+    <div className="flex flex-col h-[calc(100vh-10rem)] min-h-[500px] border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
       <div className="p-4 border-b bg-muted/30 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-3 mb-3">
           <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
@@ -95,27 +97,44 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
             <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
               AI Data Assistant
             </h3>
-            <p className="text-xs text-muted-foreground font-medium">Powered by Gemini • Analyzing your Reddit data</p>
+            <p className="text-xs text-muted-foreground font-medium">
+              Powered by Gemini • Analyzing your Reddit data
+            </p>
           </div>
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 whitespace-nowrap">
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-2 py-0.5 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 whitespace-nowrap"
+          >
             {dataStats.totalPosts} Posts
           </Badge>
-          <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-purple-500/10 text-purple-500 border-purple-500/20 whitespace-nowrap">
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-2 py-0.5 bg-purple-500/10 text-purple-500 border-purple-500/20 whitespace-nowrap"
+          >
             {dataStats.totalMessages} Messages
           </Badge>
-          <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-pink-500/10 text-pink-500 border-pink-500/20 whitespace-nowrap">
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-2 py-0.5 bg-pink-500/10 text-pink-500 border-pink-500/20 whitespace-nowrap"
+          >
             {dataStats.subreddits.length} Subreddits
           </Badge>
-          <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-orange-500/10 text-orange-500 border-orange-500/20 whitespace-nowrap">
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-2 py-0.5 bg-orange-500/10 text-orange-500 border-orange-500/20 whitespace-nowrap"
+          >
             {dataStats.averageRelevance.toFixed(1)}% Relevance
           </Badge>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      <ScrollArea
+        className="flex-1 p-4 h-20 overflow-auto max-h-[calc(100vh-200px)]"
+        ref={scrollRef}
+      >
         <div className="space-y-6 max-w-3xl mx-auto">
           {messages.map((message, index) => (
             <div
@@ -129,36 +148,93 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
               )}
 
               <div
-                className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${message.role === "user"
-                  ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
-                  : "bg-muted/50 border border-border/50 rounded-tl-none"
-                  }`}
+                className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
+                  message.role === "user"
+                    ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
+                    : "bg-muted/50 border border-border/50 rounded-tl-none"
+                }`}
               >
-                <div className={`text-sm leading-relaxed ${message.role === "user" ? "text-white/95" : "text-foreground"}`}>
+                <div
+                  className={`text-sm leading-relaxed ${message.role === "user" ? "text-white/95" : "text-foreground"}`}
+                >
                   {message.role === "assistant" ? (
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                        ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2" {...props} />,
-                        ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2" {...props} />,
-                        li: ({ node, ...props }) => <li className="mb-1" {...props} />,
-                        a: ({ node, ...props }) => <a className="text-primary underline hover:text-primary/80" target="_blank" rel="noopener noreferrer" {...props} />,
-                        code: ({ node, inline, className, children, ...props }: any) => {
+                        p: ({ node, ...props }) => (
+                          <p className="mb-2 last:mb-0" {...props} />
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul className="list-disc pl-4 mb-2" {...props} />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol className="list-decimal pl-4 mb-2" {...props} />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li className="mb-1" {...props} />
+                        ),
+                        a: ({ node, ...props }) => (
+                          <a
+                            className="text-primary underline hover:text-primary/80"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            {...props}
+                          />
+                        ),
+                        code: ({
+                          node,
+                          inline,
+                          className,
+                          children,
+                          ...props
+                        }: any) => {
                           return inline ? (
-                            <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
+                            <code
+                              className="bg-muted px-1 py-0.5 rounded text-xs font-mono"
+                              {...props}
+                            >
+                              {children}
+                            </code>
                           ) : (
                             <div className="bg-muted/50 p-2 rounded-md my-2 overflow-x-auto">
-                              <code className="text-xs font-mono block" {...props}>{children}</code>
+                              <code
+                                className="text-xs font-mono block"
+                                {...props}
+                              >
+                                {children}
+                              </code>
                             </div>
-                          )
+                          );
                         },
-                        h1: ({ node, ...props }) => <h1 className="text-lg font-bold mb-2" {...props} />,
-                        h2: ({ node, ...props }) => <h2 className="text-base font-bold mb-2" {...props} />,
-                        h3: ({ node, ...props }) => <h3 className="text-sm font-bold mb-1" {...props} />,
-                        table: ({ node, ...props }) => <div className="overflow-x-auto my-2"><table className="w-full border-collapse text-xs" {...props} /></div>,
-                        th: ({ node, ...props }) => <th className="border border-border px-2 py-1 bg-muted font-semibold text-left" {...props} />,
-                        td: ({ node, ...props }) => <td className="border border-border px-2 py-1" {...props} />,
+                        h1: ({ node, ...props }) => (
+                          <h1 className="text-lg font-bold mb-2" {...props} />
+                        ),
+                        h2: ({ node, ...props }) => (
+                          <h2 className="text-base font-bold mb-2" {...props} />
+                        ),
+                        h3: ({ node, ...props }) => (
+                          <h3 className="text-sm font-bold mb-1" {...props} />
+                        ),
+                        table: ({ node, ...props }) => (
+                          <div className="overflow-x-auto my-2">
+                            <table
+                              className="w-full border-collapse text-xs"
+                              {...props}
+                            />
+                          </div>
+                        ),
+                        th: ({ node, ...props }) => (
+                          <th
+                            className="border border-border px-2 py-1 bg-muted font-semibold text-left"
+                            {...props}
+                          />
+                        ),
+                        td: ({ node, ...props }) => (
+                          <td
+                            className="border border-border px-2 py-1"
+                            {...props}
+                          />
+                        ),
                       }}
                     >
                       {message.content}
@@ -168,10 +244,16 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
                   )}
                 </div>
                 <p
-                  className={`text-[10px] mt-2 font-medium ${message.role === "user" ? "text-white/60" : "text-muted-foreground"
-                    }`}
+                  className={`text-[10px] mt-2 font-medium ${
+                    message.role === "user"
+                      ? "text-white/60"
+                      : "text-muted-foreground"
+                  }`}
                 >
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {message.timestamp.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </p>
               </div>
 
@@ -206,7 +288,7 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
                 "Summarize my data",
                 "What are the top trends?",
                 "Suggest new subreddits",
-                "Draft a post about..."
+                "Draft a post about...",
               ].map((suggestion) => (
                 <Button
                   key={suggestion}
@@ -227,7 +309,9 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
               placeholder="Ask anything about your Reddit data..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+              onKeyDown={(e) =>
+                e.key === "Enter" && !e.shiftKey && handleSend()
+              }
               disabled={isLoading}
               className="pr-12 py-6 rounded-full border-border/50 focus-visible:ring-indigo-500/30 shadow-sm bg-background/80 backdrop-blur-sm"
             />
@@ -245,6 +329,6 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
           </p>
         </div>
       </div>
-    </Card>
-  )
+    </div>
+  );
 }
