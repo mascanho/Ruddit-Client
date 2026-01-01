@@ -42,7 +42,7 @@ const CustomButton = ({
 
 const KeywordBadge = ({ children, className = "" }) => (
   <span
-    className={`text-[10px] py-0.5 px-1.5 rounded-full font-medium whitespace-nowrap ${className}`}
+    className={`inline-block text-[10px] py-0.5 px-1.5 rounded-full font-medium whitespace-nowrap ${className}`}
   >
     {children}
   </span>
@@ -208,31 +208,70 @@ export function AutomationTab() {
                   No keywords in settings.
                 </span>
               ) : (
-                <div className="flex flex-wrap gap-1">
-                  {settings.brandKeywords.map((k) => (
-                    <KeywordBadge
-                      key={k}
-                      className="bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                    >
-                      {k}
-                    </KeywordBadge>
-                  ))}
-                  {settings.competitorKeywords.map((k) => (
-                    <KeywordBadge
-                      key={k}
-                      className="bg-orange-500/10 text-orange-400 border border-orange-500/20"
-                    >
-                      {k}
-                    </KeywordBadge>
-                  ))}
-                  {settings.monitoredKeywords.map((k) => (
-                    <KeywordBadge
-                      key={k}
-                      className="bg-gray-500/10 text-muted-foreground border border-gray-500/20"
-                    >
-                      {k}
-                    </KeywordBadge>
-                  ))}
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <h4 className="text-xs font-bold text-muted-foreground mb-1 border-b border-border">
+                      Brand
+                    </h4>
+                    <div className="flex flex-col gap-1 mt-1">
+                      {settings.brandKeywords.length > 0 ? (
+                        settings.brandKeywords.map((k) => (
+                          <KeywordBadge
+                            key={k}
+                            className="bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                          >
+                            {k}
+                          </KeywordBadge>
+                        ))
+                      ) : (
+                        <span className="text-[10px] italic text-muted-foreground/50">
+                          None
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-muted-foreground mb-1 border-b border-border">
+                      Competitor
+                    </h4>
+                    <div className="flex flex-col gap-1 mt-1">
+                      {settings.competitorKeywords.length > 0 ? (
+                        settings.competitorKeywords.map((k) => (
+                          <KeywordBadge
+                            key={k}
+                            className="bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                          >
+                            {k}
+                          </KeywordBadge>
+                        ))
+                      ) : (
+                        <span className="text-[10px] italic text-muted-foreground/50">
+                          None
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-muted-foreground mb-1 border-b border-border">
+                      General
+                    </h4>
+                    <div className="flex flex-col gap-1 mt-1">
+                      {settings.monitoredKeywords.length > 0 ? (
+                        settings.monitoredKeywords.map((k) => (
+                          <KeywordBadge
+                            key={k}
+                            className="bg-gray-500/10 text-muted-foreground border border-gray-500/20"
+                          >
+                            {k}
+                          </KeywordBadge>
+                        ))
+                      ) : (
+                        <span className="text-[10px] italic text-muted-foreground/50">
+                          None
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -310,7 +349,7 @@ export function AutomationTab() {
             </div>
           ) : (
             <div className="overflow-y-scroll h-[calc(100vh-47vh)] custom-scroll border rounded-md">
-              <table className="w-full text-sm text-left">
+              <table className="w-full text-xs text-left">
                 <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
                   <tr className="border-b">
                     {["Intent", "Title", "Subreddit", "Date", ""].map((h) => (
@@ -326,7 +365,7 @@ export function AutomationTab() {
                 <tbody>
                   {foundPosts.map((post) => (
                     <tr key={post.id} className="border-b hover:bg-muted/50">
-                      <td className="p-1.5 w-28">
+                      <td className="px-1 w-28">
                         <div className="flex flex-col gap-0.5">
                           <span
                             className={`w-fit text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}
