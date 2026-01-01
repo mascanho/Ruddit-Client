@@ -229,7 +229,19 @@ export function AutomationTab() {
                   {foundPosts.map((post) => (
                     <tr key={post.id} className="border-b hover:bg-muted/50">
                       <td className="px-1 w-28"><div className="flex flex-col gap-0.5"><span className={`w-fit text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}>{post.intent}</span>{post.category && post.category !== "general" && (<span className="w-fit text-[9px] py-0 px-1 rounded-full bg-secondary text-secondary-foreground">{post.category}</span>)}</div></td>
-                      <td className="p-1.5 font-medium max-w-xs"><a href="#" onClick={(e) => { e.preventDefault(); post.url && openUrl(post.url); }} className="hover:underline block truncate" title={post.title}>{post.title}</a></td>
+                                            <td className="p-1.5 font-medium max-w-xs">
+                                              <a
+                                                href="#"
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  post.url && openUrl(post.url);
+                                                }}
+                                                className="hover:underline block truncate"
+                                                title={post.selftext ? `${post.title}: ${post.selftext}` : post.title}
+                                              >
+                                                {post.title}
+                                              </a>
+                                            </td>
                       <td className="p-1.5 text-muted-foreground text-xs w-36">r/{post.subreddit}</td>
                       <td className="p-1.5 text-muted-foreground text-xs w-24">{post.formatted_date}</td>
                       <td className="p-1.5 text-right w-12"><CustomButton onClick={() => handleAddToTracking(post)} title="Add to Tracking" className="h-6 w-6 p-0 justify-center hover:bg-primary hover:text-primary-foreground text-muted-foreground"><Plus className="h-4 w-4" /></CustomButton></td>
