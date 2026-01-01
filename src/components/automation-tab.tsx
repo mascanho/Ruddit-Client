@@ -30,11 +30,9 @@ import {
 import {
     Play,
     StopCircle,
-    Clock,
     Activity,
     AlertCircle,
     CheckCircle2,
-    ExternalLink,
     Plus,
     Trash2,
     Bot,
@@ -42,7 +40,7 @@ import {
 import { useAppSettings } from "./app-settings";
 import { useAutomationStore, useAddSingleSubReddit, PostDataWrapper } from "@/store/store";
 import { invoke } from "@tauri-apps/api/core";
-import { calculateIntent, categorizePost, getIntentColor } from "@/lib/marketing-utils";
+import { getIntentColor } from "@/lib/marketing-utils";
 import { toast } from "sonner";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
@@ -56,16 +54,12 @@ export function AutomationTab() {
         foundPosts,
         setIsRunning,
         setIntervalMinutes,
-        setLastRun,
-        addLog,
-        addFoundPosts,
         clearLogs,
         clearFoundPosts,
     } = useAutomationStore();
 
     const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
     // Automation logic is handled by AutomationRunner.tsx
-    // This component now only displays control and logs.
 
     // Auto-scroll logs
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -78,7 +72,6 @@ export function AutomationTab() {
 
     const handleAddToTracking = async (post: PostDataWrapper) => {
         try {
-            // Double check duplication against main table
             const isDuplicate = subRedditsSaved.some(p => p.id === post.id);
             if (isDuplicate) {
                 toast.info("Already tracking this post");
@@ -90,7 +83,6 @@ export function AutomationTab() {
                     ...post,
                     timestamp: post.timestamp || Date.now(),
                     formatted_date: post.formatted_date || new Date().toISOString().split("T")[0],
-                    // Ensure defaults
                     engaged: 0,
                     assignee: "",
                     notes: "",
@@ -108,7 +100,6 @@ export function AutomationTab() {
 
             if (isInserted) {
                 addSingleSubreddit(post);
-                // Attempt to fetch comments in background
                 if (post.url && post.title && post.sort_type && post.subreddit) {
                     invoke("get_post_comments_command", {
                         url: post.url,
@@ -127,146 +118,155 @@ export function AutomationTab() {
         }
     };
 
+    const noKeywords = settings.brandKeywords.length + settings.competitorKeywords.length + settings.monitoredKeywords.length === 0;
+
     return (
-        <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-                {/* Controls Card */}
-                <Card className="col-span-1">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                            <Activity className="h-5 w-5 text-primary" />
-                            Automation Control
-                        </CardTitle>
-                        <CardDescription>Configure background monitoring</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <Badge variant={isRunning ? "default" : "secondary"} className={isRunning ? "bg-green-600" : ""}>
+        <div className="p-4 space-y-4">
+            {/* Control Panel Card */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <CardTitle className="text-xl flex items-center gap-2">
+                                <Bot className="h-6 w-6 text-primary" />
+                                Automation Agent
+                            </CardTitle>
+                            <CardDescription>Configure, run, and monitor background keyword searches.</CardDescription>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Badge variant={isRunning ? "default" : "outline"} className={isRunning ? "bg-green-100 text-green-800 border-green-300" : ""}>
+                                <div className={`h-2 w-2 rounded-full mr-2 ${isRunning ? 'bg-green-500' : 'bg-gray-400'}`}></div>
                                 {isRunning ? "RUNNING" : "STOPPED"}
                             </Badge>
-                            {lastRun && (
-                                <span className="text-xs text-muted-foreground">
-                                    Last run: {new Date(lastRun).toLocaleTimeString()}
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Check Interval (minutes)</label>
-                            <Select
-                                value={intervalMinutes.toString()}
-                                onValueChange={(v) => setIntervalMinutes(parseInt(v))}
-                                disabled={isRunning}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select interval" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="5">Every 5 minutes</SelectItem>
-                                    <SelectItem value="15">Every 15 minutes</SelectItem>
-                                    <SelectItem value="30">Every 30 minutes</SelectItem>
-                                    <SelectItem value="60">Every hour</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="flex gap-2">
                             <Button
-                                className="w-full"
+                                className="w-[110px]"
                                 variant={isRunning ? "destructive" : "default"}
                                 onClick={() => setIsRunning(!isRunning)}
                             >
-                                {isRunning ? (
-                                    <>
-                                        <StopCircle className="mr-2 h-4 w-4" /> Stop
-                                    </>
-                                ) : (
-                                    <>
-                                        <Play className="mr-2 h-4 w-4" /> Start
-                                    </>
-                                )}
+                                {isRunning ? <><StopCircle className="mr-2 h-4 w-4" /> Stop</> : <><Play className="mr-2 h-4 w-4" /> Start</>}
                             </Button>
                         </div>
-
-                        <div className="pt-2">
-                            <p className="text-xs text-muted-foreground mb-1">Active Keywords:</p>
-                            <div className="flex flex-wrap gap-1">
-                                {settings.brandKeywords.map(k => <Badge key={k} variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">{k}</Badge>)}
-                                {settings.competitorKeywords.map(k => <Badge key={k} variant="outline" className="text-[10px] bg-orange-50 text-orange-700 border-orange-200">{k}</Badge>)}
-                                {settings.monitoredKeywords.map(k => <Badge key={k} variant="outline" className="text-[10px]">{k}</Badge>)}
-                                {(settings.brandKeywords.length + settings.competitorKeywords.length + settings.monitoredKeywords.length === 0) &&
-                                    <span className="text-xs text-muted-foreground italic">No keywords configured in Settings.</span>
-                                }
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Config */}
+                        <div className="space-y-3 rounded-lg border p-3">
+                            <div className="flex items-center justify-between text-sm">
+                                <label className="font-medium text-muted-foreground">Check Interval</label>
+                                <Select
+                                    value={intervalMinutes.toString()}
+                                    onValueChange={(v) => setIntervalMinutes(parseInt(v))}
+                                    disabled={isRunning}
+                                >
+                                    <SelectTrigger className="w-[140px] h-8 text-xs">
+                                        <SelectValue placeholder="Select interval" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="5">5 minutes</SelectItem>
+                                        <SelectItem value="15">15 minutes</SelectItem>
+                                        <SelectItem value="30">30 minutes</SelectItem>
+                                        <SelectItem value="60">1 hour</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <Separator />
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium text-muted-foreground">Last Run</span>
+                                <span className="font-semibold">
+                                    {lastRun ? new Date(lastRun).toLocaleTimeString() : 'N/A'}
+                                </span>
                             </div>
                         </div>
 
-                    </CardContent>
-                </Card>
-
-                {/* Logs Card */}
-                <Card className="col-span-2 flex flex-col max-h-[350px]">
-                    <CardHeader className="pb-2">
-                        <div className="flex justify-between items-center">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <Bot className="h-5 w-5 text-primary" />
-                                Activity Log
-                            </CardTitle>
-                            <Button variant="ghost" size="sm" onClick={clearLogs} className="h-6 text-xs">Clear</Button>
+                        {/* Keywords */}
+                        <div className="lg:col-span-2 rounded-lg border p-3">
+                            <p className="text-sm font-medium mb-2">Active Keywords</p>
+                            <ScrollArea className="h-16">
+                                <div className="flex flex-wrap gap-1">
+                                    {noKeywords ? (
+                                        <span className="text-xs text-muted-foreground italic p-1">No keywords configured in Settings.</span>
+                                    ) : (
+                                        <>
+                                            {settings.brandKeywords.map(k => <Badge key={k} variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">{k}</Badge>)}
+                                            {settings.competitorKeywords.map(k => <Badge key={k} variant="outline" className="text-[10px] bg-orange-50 text-orange-700 border-orange-200">{k}</Badge>)}
+                                            {settings.monitoredKeywords.map(k => <Badge key={k} variant="outline" className="text-[10px]">{k}</Badge>)}
+                                        </>
+                                    )}
+                                </div>
+                            </ScrollArea>
                         </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 min-h-0 overflow-hidden pt-0">
-                        <ScrollArea className="h-[250px] w-full rounded-md border p-4" ref={scrollRef}>
+                    </div>
+                
+                    {/* Activity Log */}
+                    <div>
+                        <div className="flex justify-between items-center mb-1">
+                            <h3 className="text-sm font-semibold flex items-center gap-2">
+                                <Activity className="h-4 w-4" />
+                                Activity Log
+                            </h3>
+                            <Button variant="ghost" size="sm" onClick={clearLogs} className="h-7 text-xs" disabled={logs.length === 0}>Clear</Button>
+                        </div>
+                        <ScrollArea className="h-[180px] w-full rounded-md border bg-gray-50/50 dark:bg-black/20 p-3" ref={scrollRef}>
                             <div className="space-y-1">
-                                {logs.length === 0 && <span className="text-sm text-muted-foreground italic">No logs yet. start automation to see activity.</span>}
-                                {logs.map((log) => (
-                                    <div key={log.id} className="text-xs flex gap-2">
-                                        <span className="text-muted-foreground min-w-[60px]">{new Date(log.timestamp).toLocaleTimeString()}</span>
-                                        <span className={
-                                            log.type === 'error' ? 'text-red-500 font-medium' :
-                                                log.type === 'success' ? 'text-green-600 font-medium' :
-                                                    log.type === 'warning' ? 'text-yellow-600' :
-                                                        'text-foreground'
-                                        }>
-                                            {log.message}
-                                        </span>
-                                    </div>
-                                ))}
+                                {logs.length === 0 ? (
+                                    <div className="text-center text-sm text-muted-foreground py-10">No logs yet. Start automation to see activity.</div>
+                                ) : (
+                                    logs.map((log) => (
+                                        <div key={log.id} className="text-xs flex gap-2 font-mono items-start">
+                                            <span className="text-muted-foreground mt-px">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                                            <div className="flex-shrink-0 mt-0.5">
+                                                {log.type === 'error' && <AlertCircle className="h-3 w-3 text-red-500" />}
+                                                {log.type === 'success' && <CheckCircle2 className="h-3 w-3 text-green-500" />}
+                                            </div>
+                                            <span className={`flex-1 ${
+                                                log.type === 'error' ? 'text-red-500' :
+                                                log.type === 'success' ? 'text-green-600' :
+                                                log.type === 'warning' ? 'text-yellow-600' : ''
+                                            }`}>
+                                                {log.message}
+                                            </span>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </ScrollArea>
-                    </CardContent>
-                </Card>
-            </div>
+                    </div>
+
+                </CardContent>
+            </Card>
 
             {/* Results Table */}
-            <Card className="flex flex-col flex-1 min-h-0">
+            <Card>
                 <CardHeader>
                     <div className="flex justify-between items-center">
                         <div>
-                            <CardTitle>Automated Findings</CardTitle>
-                            <CardDescription>Relevant posts found by the background agent</CardDescription>
+                            <CardTitle>Automated Findings ({foundPosts.length})</CardTitle>
+                            <CardDescription>Relevant posts found by the background agent. Add them to your main tracking table.</CardDescription>
                         </div>
                         <Button variant="outline" size="sm" onClick={clearFoundPosts} disabled={foundPosts.length === 0}>
                             <Trash2 className="h-4 w-4 mr-2" /> Clear Results
                         </Button>
                     </div>
                 </CardHeader>
-                <CardContent className="flex-1 min-h-0">
-                    <ScrollArea className="h-[calc(100vh-500px)] min-h-[300px]">
+                <CardContent>
+                    <ScrollArea className="h-[400px]">
                         {foundPosts.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
+                            <div className="text-center py-8 text-muted-foreground flex flex-col items-center justify-center h-[200px]">
                                 <Bot className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                                <p>No findings yet. Start the automation to search for relevant threads.</p>
+                                <p className="font-semibold">No findings yet</p>
+                                <p className="text-sm">Start the automation agent to search for relevant threads.</p>
                             </div>
                         ) : (
                             <div className="border rounded-md">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Intent</TableHead>
+                                            <TableHead className="w-[120px]">Intent</TableHead>
                                             <TableHead>Title</TableHead>
-                                            <TableHead>Subreddit</TableHead>
-                                            <TableHead>Date</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
+                                            <TableHead className="w-[180px]">Subreddit</TableHead>
+                                            <TableHead className="w-[120px]">Date</TableHead>
+                                            <TableHead className="text-right w-[80px]">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -287,7 +287,7 @@ export function AutomationTab() {
                                                 <TableCell className="font-medium max-w-[400px]">
                                                     <a
                                                         href="#"
-                                                        onClick={(e) => { e.preventDefault(); openUrl(post.url); }}
+                                                        onClick={(e) => { e.preventDefault(); post.url && openUrl(post.url); }}
                                                         className="hover:underline block truncate"
                                                         title={post.title}
                                                     >
@@ -297,7 +297,7 @@ export function AutomationTab() {
                                                 <TableCell className="text-muted-foreground text-sm">r/{post.subreddit}</TableCell>
                                                 <TableCell className="text-muted-foreground text-sm">{post.formatted_date}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleAddToTracking(post)} title="Add to Tracking">
+                                                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleAddToTracking(post)} title="Add to Tracking">
                                                         <Plus className="h-4 w-4" />
                                                     </Button>
                                                 </TableCell>
