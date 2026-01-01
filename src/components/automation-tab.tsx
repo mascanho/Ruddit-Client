@@ -10,7 +10,14 @@ import {
   Plus,
   Trash2,
   Bot,
+  Radar,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAppSettings } from "./app-settings";
 import {
   useAutomationStore,
@@ -49,7 +56,7 @@ const KeywordBadge = ({ children, className = "" }) => (
 );
 
 export function AutomationTab() {
-  const { settings } = useAppSettings();
+  const { settings, updateSettings } = useAppSettings();
   const {
     isRunning,
     intervalMinutes,
@@ -71,6 +78,20 @@ export function AutomationTab() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [logs]);
+
+  const addSubredditToMonitoring = (subreddit: string) => {
+    const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
+    if (settings.monitoredSubreddits.includes(cleaned)) {
+      toast.info(`Already monitoring r/${cleaned}`);
+      return;
+    }
+
+    updateSettings({
+      monitoredSubreddits: [...settings.monitoredSubreddits, cleaned],
+    });
+
+    toast.success(`Now monitoring r/${cleaned}`);
+  };
 
   const handleAddToTracking = async (post: PostDataWrapper) => {
     try {
@@ -271,7 +292,23 @@ export function AutomationTab() {
                                                 {post.title}
                                               </a>
                                             </td>
-                      <td className="p-1.5 text-muted-foreground text-xs w-36">r/{post.subreddit}</td>
+                      <td className="p-1.5 text-muted-foreground text-xs w-36">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <span
+                                  className="inline-block cursor-pointer hover:underline" // Styled as badge-like
+                                >
+                                    r/{post.subreddit}
+                                </span>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                                <DropdownMenuItem onClick={() => addSubredditToMonitoring(post.subreddit)}>
+                                    <Radar className="h-4 w-4 mr-2" />
+                                    Add to Monitoring
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
                       <td className="p-1.5 text-muted-foreground text-xs w-32 whitespace-nowrap">{formatElapsedTime(post.timestamp)}</td>
                       <td className="p-1.5 text-right w-12"><CustomButton onClick={() => handleAddToTracking(post)} title="Add to Tracking" className="h-6 w-6 p-0 justify-center hover:bg-primary hover:text-primary-foreground text-muted-foreground"><Plus className="h-4 w-4" /></CustomButton></td>
                     </tr>
