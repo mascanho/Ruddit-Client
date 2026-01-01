@@ -893,6 +893,7 @@ export function RedditTable({
                           <div
                             onClick={() => openUrl(post.url)}
                             className="line-clamp-1 font-medium cursor-pointer hover:underline flex-1"
+                            title={post.selftext ? `${post.title}: ${post.selftext}` : post.title}
                           >
                             <KeywordHighlighter
                               text={post.title || "No title"}

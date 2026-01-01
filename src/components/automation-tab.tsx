@@ -132,6 +132,35 @@ export function AutomationTab() {
 
   const visibleKeywords = keywordsExpanded ? Infinity : 5;
 
+  const formatElapsedTime = (timestamp: number | undefined): string => {
+    if (timestamp === undefined || timestamp === null) return 'N/A';
+
+    // Heuristic: if timestamp is less than ~2100-01-01 in seconds, assume it's in seconds
+    // Otherwise, assume it's already in milliseconds
+    const timeInMilliseconds = timestamp < 4_100_000_000 ? timestamp * 1000 : timestamp;
+
+    const postDate = new Date(timeInMilliseconds);
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
+
+    if (diffSeconds < 60) return `${diffSeconds} second${diffSeconds === 1 ? '' : 's'} ago`;
+
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`;
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 30) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`; // Roughly a month
+
+    const diffMonths = Math.floor(diffDays / 30); // Approximate months
+    if (diffMonths < 12) return `${diffMonths} month${diffMonths === 1 ? '' : 's'} ago`;
+
+    const diffYears = Math.floor(diffMonths / 12);
+    return `${diffYears} year${diffYears === 1 ? '' : 's'} ago`;
+  };
+
   return (
     <div className="p-2 space-y-2 bg-background text-foreground h-full flex flex-col">
       <style jsx global>{`
@@ -224,7 +253,7 @@ export function AutomationTab() {
           ) : (
             <div className="overflow-y-scroll h-[calc(100vh-50vh)] custom-scroll border rounded-md">
               <table className="w-full text-xs text-left">
-                <thead className="sticky top-0 bg-card/95 backdrop-blur-sm"><tr className="border-b">{["Intent", "Title", "Subreddit", "Date", ""].map(h => <th key={h} className="p-1.5 text-xs font-medium text-muted-foreground">{h}</th>)}</tr></thead>
+                <thead className="sticky top-0 bg-card/95 backdrop-blur-sm"><tr className="border-b">{["Intent", "Title", "Subreddit", "Date", ""].map(h => <th key={h} className={`p-1.5 text-xs font-medium text-muted-foreground ${h === "Date" ? "w-32" : ""}`}>{h}</th>)}</tr></thead>
                 <tbody>
                   {foundPosts.map((post) => (
                     <tr key={post.id} className="border-b hover:bg-muted/50">
@@ -243,7 +272,7 @@ export function AutomationTab() {
                                               </a>
                                             </td>
                       <td className="p-1.5 text-muted-foreground text-xs w-36">r/{post.subreddit}</td>
-                      <td className="p-1.5 text-muted-foreground text-xs w-24">{post.formatted_date}</td>
+                      <td className="p-1.5 text-muted-foreground text-xs w-32 whitespace-nowrap">{formatElapsedTime(post.timestamp)}</td>
                       <td className="p-1.5 text-right w-12"><CustomButton onClick={() => handleAddToTracking(post)} title="Add to Tracking" className="h-6 w-6 p-0 justify-center hover:bg-primary hover:text-primary-foreground text-muted-foreground"><Plus className="h-4 w-4" /></CustomButton></td>
                     </tr>
                   ))}
