@@ -139,21 +139,30 @@ export function SmartDataTables() {
   };
 
   const dataStats = useMemo(() => {
-    const subreddits = Array.from(new Set(redditPosts.map((p) => p.subreddit)));
+    const uniqueSubreddits = Array.from(new Set(subRedditsSaved.map((p) => p.subreddit)));
     const avgRelevance =
-      redditPosts.length > 0
-        ? redditPosts.reduce((sum, p) => sum + p.relevance, 0) /
-        redditPosts.length
+      subRedditsSaved.length > 0
+        ? subRedditsSaved.reduce((sum, p) => sum + p.relevance_score, 0) /
+        subRedditsSaved.length
         : 0;
 
+    const highIntentPosts = subRedditsSaved.filter(p => p.intent?.toLowerCase() === 'high').length;
+    const postsWithNotes = subRedditsSaved.filter(p => p.notes && p.notes.trim() !== '').length;
+    const engagedPosts = subRedditsSaved.filter(p => p.engaged === 1).length;
+    const totalPosts = subRedditsSaved.length;
+    const totalMessages = messages.length;
+
     return {
-      totalPosts: redditPosts.length,
-      totalMessages: messages.length,
-      subreddits,
+      totalPosts,
+      totalMessages,
+      uniqueSubredditsCount: uniqueSubreddits.length,
+      highIntentPostsCount: highIntentPosts,
+      postsWithNotesCount: postsWithNotes,
+      engagedPostsCount: engagedPosts,
       topKeywords: settings.monitoredKeywords || [],
       averageRelevance: avgRelevance,
     };
-  }, [redditPosts, messages, settings]);
+  }, [subRedditsSaved, messages, settings]);
 
   // HANDLE DELETING THE COMMENTS FROM THE TABLE
   async function handleClearComments() {

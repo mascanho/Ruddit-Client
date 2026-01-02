@@ -15,7 +15,10 @@ import { useAIChatStore, Message } from "@/store/ai-chat-store";
 type DataStats = {
   totalPosts: number;
   totalMessages: number;
-  subreddits: string[];
+  uniqueSubredditsCount: number;
+  highIntentPostsCount: number;
+  postsWithNotesCount: number;
+  engagedPostsCount: number;
   topKeywords: string[];
   averageRelevance: number;
 };
@@ -92,13 +95,31 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
             variant="secondary"
             className="text-[10px] px-2 py-0.5 bg-pink-500/10 text-pink-500 border-pink-500/20 whitespace-nowrap"
           >
-            {dataStats.subreddits.length} Subreddits
+            {dataStats.uniqueSubredditsCount} Subreddits
           </Badge>
           <Badge
             variant="secondary"
             className="text-[10px] px-2 py-0.5 bg-orange-500/10 text-orange-500 border-orange-500/20 whitespace-nowrap"
           >
             {dataStats.averageRelevance.toFixed(1)}% Relevance
+          </Badge>
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-2 py-0.5 bg-green-500/10 text-green-500 border-green-500/20 whitespace-nowrap"
+          >
+            {dataStats.highIntentPostsCount} High Intent
+          </Badge>
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-500 border-yellow-500/20 whitespace-nowrap"
+          >
+            {dataStats.postsWithNotesCount} With Notes
+          </Badge>
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-500 border-blue-500/20 whitespace-nowrap"
+          >
+            {dataStats.engagedPostsCount} Engaged
           </Badge>
         </div>
       </div>
