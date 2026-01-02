@@ -11,6 +11,7 @@ import {
   Trash2,
   Bot,
   Radar,
+  User,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -92,7 +93,7 @@ const HighlightedText = ({
   });
 
   const escapedKeywords = allKeywords.map((kw) =>
-    kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+    kw.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&"),
   );
   const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
   const parts = text.split(regex);
@@ -535,7 +536,7 @@ export function AutomationTab() {
                               </a>
                             </TooltipTrigger>
                             <TooltipContent
-                              className="max-w-lg p-3 bg-white border border-border shadow-lg"
+                              className="max-w-md p-3 bg-white border shadow"
                               side="bottom"
                               align="start"
                             >
@@ -547,7 +548,7 @@ export function AutomationTab() {
                               </div>
                               {post.selftext && (
                                 <div className="mt-2 border-t border-border pt-2">
-                                  <p className="text-sm text-foreground/80 whitespace-pre-wrap max-h-96 overflow-y-auto custom-scroll">
+                                  <p className="text-sm text-foreground/80 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scroll">
                                     <HighlightedText
                                       text={post.selftext}
                                       categories={
@@ -557,6 +558,16 @@ export function AutomationTab() {
                                   </p>
                                 </div>
                               )}
+                              <div className="mt-2 border-t border-border pt-2 flex justify-between items-center text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  <span>u/{post.author || "unknown"}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Radar className="h-3 w-3" />
+                                  <span>r/{post.subreddit}</span>
+                                </div>
+                              </div>
                             </TooltipContent>
                           </Tooltip>
                         </td>
