@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import type { Message, SearchState } from "./smart-data-tables";
 import { RedditCommentsView } from "./reddit-comments-view";
-import { useAppSettings } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 import { Radar } from "lucide-react";
 import { KeywordHighlighter } from "./keyword-highlighter";
 import { invoke } from "@tauri-apps/api/core";

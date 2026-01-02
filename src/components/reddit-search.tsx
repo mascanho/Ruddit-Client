@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAppSettings } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 import { invoke } from "@tauri-apps/api/core";
 import {
   useAddSingleSubReddit,

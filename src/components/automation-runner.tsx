@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAppSettings } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 import { useAutomationStore, useAddSingleSubReddit, PostDataWrapper } from "@/store/store";
 import { invoke } from "@tauri-apps/api/core";
 import { calculateIntent, categorizePost, matchesKeyword } from "@/lib/marketing-utils";

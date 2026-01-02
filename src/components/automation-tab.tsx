@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAppSettings } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 import {
   useAutomationStore,
   useAddSingleSubReddit,

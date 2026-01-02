@@ -51,7 +51,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Message, SearchState } from "./smart-data-tables";
-import { useAppSettings } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 
 type SortField = keyof Message | null;
 type SortDirection = "asc" | "desc";

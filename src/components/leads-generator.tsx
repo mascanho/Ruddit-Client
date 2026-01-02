@@ -21,7 +21,7 @@ import {
 } from "lucide-react"
 import type { RedditPost, Message } from "./smart-data-tables"
 import { Progress } from "@/components/ui/progress"
-import { useAppSettings } from "./app-settings"
+import { useAppSettings } from "@/store/settings-store";
 
 type Lead = {
   id: string

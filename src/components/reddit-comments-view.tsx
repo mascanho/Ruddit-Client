@@ -40,7 +40,7 @@ import moment from "moment";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import type { Message } from "./smart-data-tables";
-import { useAppSettings } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 import { KeywordHighlighter } from "./keyword-highlighter";
 import { useOpenUrl } from "@/hooks/useOpenUrl";
 import type { RedditPost } from "./reddit-table";

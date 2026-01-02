@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { RedditTable } from "./reddit-table";
 import { MessagesTable } from "./messages-table";
-import { AppSettingsDialog, useAppSettings } from "./app-settings";
+import { AppSettingsDialog } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 import { RedditSearch } from "./reddit-search";
 import { AIDataChat } from "./ai-data-chat";
 import { LeadsGenerator } from "./leads-generator";
