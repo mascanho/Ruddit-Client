@@ -103,7 +103,7 @@ export type RedditPost = {
   author?: string;
   score?: number;
   is_self?: boolean;
-  selftext?: string;
+  selftext?: string | null;
   name?: string;
   date_added: number;
   // Client-side fields
@@ -196,7 +196,7 @@ export function RedditTable({
     // we can intercept the setting of data there.
   }, []);
 
-  const updateCrmData = (postId: string, updates: Partial<RedditPost>) => {
+  const updateCrmData = (postId: number, updates: Partial<RedditPost>) => {
     // Update local state
     setData((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, ...updates } : p)),
@@ -317,7 +317,7 @@ export function RedditTable({
 
     try {
       await invoke("update_post_notes", {
-        id: parseInt(editingNotePost.id, 10),
+        id: editingNotePost.id.toString(),
         notes: currentNote,
       });
       toast.success("Note saved successfully");

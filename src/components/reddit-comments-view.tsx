@@ -179,11 +179,7 @@ const CommentItem = ({
             {isReplying && (
               <div className="mt-3">
                 <ReplySection
-                  parentId={
-                    comment.id.startsWith("t1_")
-                      ? comment.id
-                      : `t1_${comment.id}`
-                  }
+                  parentId={`t1_${comment.id}`}
                   onSuccess={() => {
                     setIsReplying(false);
                     onReplySuccess();
@@ -443,9 +439,7 @@ export function RedditCommentsView({
                   </h4>
                 </div>
                 <ReplySection
-                  parentId={
-                    post.id.startsWith("t3_") ? post.id : `t3_${post.id}`
-                  }
+                  parentId={`t3_${post.id}`}
                   onSuccess={() => {
                     onSortTypeChange(sortType); // Trigger refresh
                   }}

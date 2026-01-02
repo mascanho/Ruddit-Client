@@ -52,6 +52,7 @@ interface SingleSubredditTable {
   subRedditsSaved: PostDataWrapper[]; // Changed to match backend format
   setSingleSubreddit: (subreddits: PostDataWrapper[]) => void;
   addSingleSubreddit: (subreddit: PostDataWrapper) => void; // Changed parameter type
+  removeSingleSubreddit: (postId: number) => void;
   clearSavedSubredditsTable: () => void; // Add this method to clear the table
 }
 

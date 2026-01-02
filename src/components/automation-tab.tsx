@@ -72,11 +72,19 @@ const CustomButton = ({
 interface KeywordBadgeProps {
   children: React.ReactNode;
   className?: string;
+  onClick?: (keyword: string) => void; // Added onClick prop
+  keyword?: string; // Added keyword prop to pass to onClick
 }
 
-const KeywordBadge = ({ children, className = "" }: KeywordBadgeProps) => (
+const KeywordBadge = ({
+  children,
+  className = "",
+  onClick,
+  keyword,
+}: KeywordBadgeProps) => (
   <span
-    className={`inline-block text-[10px] py-0.5 px-1.5 rounded-full font-medium whitespace-nowrap ${className}`}
+    onClick={() => onClick && keyword && onClick(keyword)}
+    className={`inline-block text-[10px] py-0.5 px-1.5 rounded-full font-medium whitespace-nowrap ${className} ${onClick ? "cursor-pointer" : ""}`}
   >
     {children}
   </span>
@@ -227,6 +235,10 @@ export function AutomationTab() {
       key: "timestamp",
       direction: currentConfig.direction === "asc" ? "desc" : "asc",
     }));
+  };
+
+  const handleKeywordClick = (keyword: string) => {
+    setSearchQuery(keyword);
   };
 
   useEffect(() => {
@@ -497,6 +509,8 @@ export function AutomationTab() {
                                   <KeywordBadge
                                     key={k}
                                     className={category.className}
+                                    onClick={handleKeywordClick}
+                                    keyword={k}
                                   >
                                     {k}
                                   </KeywordBadge>
