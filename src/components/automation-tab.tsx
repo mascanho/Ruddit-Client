@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import Fuse from "fuse.js";
 import {
   Play,
   StopCircle,
@@ -14,6 +15,7 @@ import {
   User,
   ArrowUp,
   ArrowDown,
+  Search,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -95,7 +97,7 @@ const HighlightedText = ({
   });
 
   const escapedKeywords = allKeywords.map((kw) =>
-    kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+    kw.replace(/[.*+?^${}()|[\\]/g, "\\$&"),
   );
   const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
   const parts = text.split(regex);
@@ -140,6 +142,7 @@ export function AutomationTab() {
   const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [keywordsExpanded, setKeywordsExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<{
     key: "timestamp";
     direction: "asc" | "desc";
@@ -165,9 +168,19 @@ export function AutomationTab() {
     { keywords: settings.monitoredKeywords || [], className: "bg-gray-500/30" },
   ];
 
-  const sortedPosts = useMemo(() => {
-    const posts = [...foundPosts];
-    posts.sort((a, b) => {
+  const filteredAndSortedPosts = useMemo(() => {
+    let postsToProcess = [...foundPosts];
+
+    if (searchQuery.trim() !== "") {
+      const fuse = new Fuse(postsToProcess, {
+        keys: ["title", "subreddit", "author", "selftext", "intent"],
+        threshold: 0.4,
+        includeScore: true,
+      });
+      postsToProcess = fuse.search(searchQuery).map((result) => result.item);
+    }
+
+    postsToProcess.sort((a, b) => {
       const aVal = a.timestamp || 0;
       const bVal = b.timestamp || 0;
       if (aVal < bVal) {
@@ -178,8 +191,9 @@ export function AutomationTab() {
       }
       return 0;
     });
-    return posts;
-  }, [foundPosts, sortConfig]);
+
+    return postsToProcess;
+  }, [foundPosts, sortConfig, searchQuery]);
 
   const handleDateSort = () => {
     setSortConfig((currentConfig) => ({
@@ -492,23 +506,36 @@ export function AutomationTab() {
         {/* === Results Table === */}
         <div className="bg-card rounded-lg border border-border shadow-sm flex-1 flex flex-col min-h-0">
           <div className="p-2 border-b border-border flex justify-between items-center">
-            <div>
+            <div className="flex-1">
               <h2 className="text-base font-semibold">
-                Automated Findings ({foundPosts.length})
+                Automated Findings ({filteredAndSortedPosts.length} /{" "}
+                {foundPosts.length})
               </h2>
               <p className="text-xs text-muted-foreground">
                 Relevant posts found by the agent. Add them to your main
                 tracking table.
               </p>
             </div>
-            <CustomButton
-              onClick={clearFoundPosts}
-              disabled={foundPosts.length === 0}
-              className="h-7 text-xs px-2 bg-secondary hover:bg-muted text-secondary-foreground"
-            >
-              <Trash2 className="h-3 w-3 mr-1" />
-              Clear Results
-            </CustomButton>
+            <div className="flex items-center gap-2">
+              <div className="relative w-48">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Fuzzy search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-background border border-input rounded-md text-xs h-7 pl-8 w-full focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+              <CustomButton
+                onClick={clearFoundPosts}
+                disabled={foundPosts.length === 0}
+                className="h-7 text-xs px-2 bg-secondary hover:bg-red-700 hover:text-white hover:bg-muted text-secondary-foreground cursor-pointer"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Clear Results
+              </CustomButton>
+            </div>
           </div>
           <div className="p-2 flex-1 min-h-0">
             {foundPosts.length === 0 ? (
@@ -549,7 +576,7 @@ export function AutomationTab() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedPosts.map((post) => (
+                    {filteredAndSortedPosts.map((post) => (
                       <tr key={post.id} className="border-b hover:bg-muted/50">
                         <td className="px-1 w-28">
                           <div className="flex flex-col gap-0.5">
