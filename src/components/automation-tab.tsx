@@ -16,7 +16,10 @@ import {
   ArrowUp,
   ArrowDown,
   Search,
+  MessageCircle, // Added MessageCircle icon
 } from "lucide-react";
+import { RedditCommentsView } from "./reddit-comments-view"; // Added RedditCommentsView
+import type { Message } from "./smart-data-tables"; // Added Message type
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -151,6 +154,10 @@ export function AutomationTab() {
     direction: "desc",
   });
 
+  const [commentsPost, setCommentsPost] = useState<PostDataWrapper | null>(null);
+  const [comments, setComments] = useState<Message[]>([]);
+  const [sortTypeForComments, setSortTypeForComments] = useState("best");
+
   const trackedPostIds = useMemo(
     () => new Set(subRedditsSaved.map((p) => p.id)),
     [subRedditsSaved],
@@ -270,6 +277,31 @@ export function AutomationTab() {
       }
     } catch (e: any) {
       toast.error(`Error: ${e.message || e}`);
+    }
+  };
+
+  const handleGetComments = async (post: PostDataWrapper, sort_type: string) => {
+    const fetchedComments = (await invoke("get_post_comments_command", {
+      url: post.url,
+      title: post.title,
+      sortType: sort_type,
+      subreddit: post.subreddit,
+    })) as Message[];
+
+    setComments(fetchedComments);
+    setCommentsPost(post);
+  };
+
+  const handleSortTypeForCommentsChange = async (newSortType: string) => {
+    setSortTypeForComments(newSortType);
+    if (commentsPost) {
+      const newComments = (await invoke("get_post_comments_command", {
+        url: commentsPost.url,
+        title: commentsPost.title,
+        sortType: newSortType,
+        subreddit: commentsPost.subreddit,
+      })) as Message[];
+      setComments(newComments);
     }
   };
 
@@ -677,13 +709,22 @@ export function AutomationTab() {
                           {formatElapsedTime(post.timestamp)}
                         </td>
                         <td className="p-1.5 text-right w-12">
-                          <CustomButton
-                            onClick={() => handleAddToTracking(post)}
-                            title="Add to Tracking"
-                            className="h-6 w-6 p-0 justify-center hover:bg-primary hover:text-primary-foreground text-muted-foreground"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </CustomButton>
+                          <div className="flex items-center justify-end gap-1">
+                            <CustomButton
+                              onClick={() => handleGetComments(post, post.sort_type)}
+                              title="View Comments"
+                              className="h-6 w-6 p-0 justify-center hover:bg-blue-500 hover:text-white text-muted-foreground"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </CustomButton>
+                            <CustomButton
+                              onClick={() => handleAddToTracking(post)}
+                              title="Add to Tracking"
+                              className="h-6 w-6 p-0 justify-center hover:bg-primary hover:text-primary-foreground text-muted-foreground"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </CustomButton>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -694,6 +735,14 @@ export function AutomationTab() {
           </div>
         </div>
       </div>
+      <RedditCommentsView
+        isOpen={commentsPost !== null}
+        onOpenChange={(open) => !open && setCommentsPost(null)}
+        post={commentsPost}
+        comments={comments}
+        sortType={sortTypeForComments}
+        onSortTypeChange={handleSortTypeForCommentsChange}
+      />
     </TooltipProvider>
   );
 }
