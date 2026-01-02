@@ -103,7 +103,6 @@ export function RedditSearch({
 
   // Helper function to escape special characters for regex
 
-
   // Persist query and sorts
   useEffect(() => {
     localStorage.setItem("lastRedditSearchQuery", query);
@@ -123,8 +122,6 @@ export function RedditSearch({
   useEffect(() => {
     localStorage.setItem("lastRedditSearchRows", rowsPerPage.toString());
   }, [rowsPerPage]);
-
-
 
   const addSubredditToMonitoring = (subreddit: string) => {
     const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
@@ -158,7 +155,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
+            (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -198,7 +195,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
+            (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -264,7 +261,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
+            (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -655,7 +652,7 @@ export function RedditSearch({
   function isColoredRelevance(sortType: string) {
     // Renamed parameter
     switch (
-    sortType // Use new parameter
+      sortType // Use new parameter
     ) {
       case "hot":
         return "bg-red-500";
@@ -905,9 +902,14 @@ export function RedditSearch({
                               </Badge>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">
-                              <DropdownMenuItem onClick={() => addSubredditToMonitoring(result.subreddit)}>
+                              <DropdownMenuItem
+                                className="text-xs"
+                                onClick={() =>
+                                  addSubredditToMonitoring(result.subreddit)
+                                }
+                              >
                                 <Radar className="h-4 w-4 mr-2" />
-                                Add to Monitoring
+                                Monitor r/{result.subreddit}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1060,7 +1062,9 @@ export function RedditSearch({
             )}
           </>
         ) : (
-          !isSearching && hasSearched && query.trim() && (
+          !isSearching &&
+          hasSearched &&
+          query.trim() && (
             <p className="text-center text-sm text-muted-foreground py-4">
               No results found for "{query}".
             </p>
@@ -1074,11 +1078,11 @@ export function RedditSearch({
         post={
           commentsPost
             ? {
-              id: commentsPost.name || commentsPost.id,
-              title: commentsPost.title,
-              url: commentsPost.url,
-              subreddit: commentsPost.subreddit,
-            }
+                id: commentsPost.name || commentsPost.id,
+                title: commentsPost.title,
+                url: commentsPost.url,
+                subreddit: commentsPost.subreddit,
+              }
             : null
         }
         comments={comments}

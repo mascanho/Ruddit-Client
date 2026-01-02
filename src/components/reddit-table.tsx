@@ -146,7 +146,11 @@ export function RedditTable({
   const [statusFilter, setStatusFilter] = useState("all");
   const [engagementFilter, setEngagementFilter] = useState("all");
 
-  const { addSingleSubreddit, removeSingleSubreddit, clearSavedSubredditsTable } = useAddSingleSubReddit();
+  const {
+    addSingleSubreddit,
+    removeSingleSubreddit,
+    clearSavedSubredditsTable,
+  } = useAddSingleSubReddit();
 
   const addSubredditToMonitoring = (subreddit: string) => {
     const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
@@ -367,6 +371,9 @@ export function RedditTable({
       ),
     );
 
+    // Update CRM data in localStorage
+    updateCrmData(postId, { engaged: newEngagedStatus });
+
     try {
       await invoke("update_post_engaged_status", {
         id: parseInt(postId, 10),
@@ -385,6 +392,8 @@ export function RedditTable({
           p.id === postId ? { ...p, engaged: originalEngagedStatus } : p,
         ),
       );
+      // Revert localStorage on error as well
+      updateCrmData(postId, { engaged: originalEngagedStatus });
     }
   };
 
@@ -404,6 +413,7 @@ export function RedditTable({
           status: storedCrm[p.id]?.status || p.status || "new",
           intent: storedCrm[p.id]?.intent || p.intent || "low", // default to low if unknown? or calculate?
           category: storedCrm[p.id]?.category || p.category || "general",
+          engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
         }));
 
         // Also update existing posts with CRM data if needed (e.g. on reload)
@@ -412,6 +422,7 @@ export function RedditTable({
           status: storedCrm[p.id]?.status || p.status || "new",
           intent: storedCrm[p.id]?.intent || p.intent,
           category: storedCrm[p.id]?.category || p.category,
+          engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
         }));
 
         return [...updatedPrev, ...mergedNewPosts];
@@ -499,7 +510,13 @@ export function RedditTable({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, subredditFilter, relevanceFilter, statusFilter, engagementFilter]);
+  }, [
+    searchQuery,
+    subredditFilter,
+    relevanceFilter,
+    statusFilter,
+    engagementFilter,
+  ]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -718,7 +735,10 @@ export function RedditTable({
                 <SelectItem value="ignored">Ignored</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={engagementFilter} onValueChange={setEngagementFilter}>
+            <Select
+              value={engagementFilter}
+              onValueChange={setEngagementFilter}
+            >
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="All engagement" />
               </SelectTrigger>
@@ -889,7 +909,11 @@ export function RedditTable({
                           <div
                             onClick={() => openUrl(post.url)}
                             className="line-clamp-1 font-medium cursor-pointer hover:underline flex-1"
-                            title={post.selftext ? `${post.title}: ${post.selftext}` : post.title}
+                            title={
+                              post.selftext
+                                ? `${post.title}: ${post.selftext}`
+                                : post.title
+                            }
                           >
                             <KeywordHighlighter
                               text={post.title || "No title"}
@@ -947,12 +971,13 @@ export function RedditTable({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">
                               <DropdownMenuItem
+                                className="text-xs"
                                 onClick={() =>
                                   addSubredditToMonitoring(post.subreddit)
                                 }
                               >
-                                <Radar className="h-4 w-4 mr-2" />
-                                Add to Monitoring
+                                <Radar className="h-4 w-4" />
+                                Monitor r/{post.subreddit}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

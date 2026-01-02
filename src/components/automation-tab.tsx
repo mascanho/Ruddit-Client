@@ -696,12 +696,13 @@ export function AutomationTab() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">
                               <DropdownMenuItem
+                                className="text-xs"
                                 onClick={() =>
                                   addSubredditToMonitoring(post.subreddit)
                                 }
                               >
-                                <Radar className="h-4 w-4 mr-2" />
-                                Add to Monitoring
+                                <Radar className="h-4 w-4" />
+                                Monitor r/{post.subreddit}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
