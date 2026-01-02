@@ -350,7 +350,7 @@ export function RedditTable({
     });
   };
 
-  const handleAssign = async (postId: string, personName: string) => {
+  const handleAssign = async (postId: number, personName: string) => {
     const postToUpdate = data.find((p) => p.id === postId);
     if (!postToUpdate) return;
 
@@ -366,7 +366,7 @@ export function RedditTable({
 
     try {
       await invoke("update_post_assignee", {
-        id: parseInt(postId, 10),
+        id: postId.toString(),
         assignee: assigneeToSave,
         title: postToUpdate.title,
       });
@@ -390,7 +390,7 @@ export function RedditTable({
     }
   };
 
-  const handleEngagedToggle = async (postId: string, isEngaged: boolean) => {
+  const handleEngagedToggle = async (postId: number, isEngaged: boolean) => {
     const postToUpdate = data.find((p) => p.id === postId);
     if (!postToUpdate) return;
 
