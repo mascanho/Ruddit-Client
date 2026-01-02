@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Fragment } from "react";
+import { useState, useEffect, useMemo, Fragment, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -142,6 +142,10 @@ export function RedditTable({
   onSearchStateChange: (state: SearchState) => void;
 }) {
   const [data, setData] = useState<RedditPost[]>(initialData);
+  const [highlightedPostIds, setHighlightedPostIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const prevExternalPostsRef = useRef<RedditPost[]>([]);
   const { settings, updateSettings } = useAppSettings();
   const [statusFilter, setStatusFilter] = useState("all");
   const [engagementFilter, setEngagementFilter] = useState("all");
@@ -398,36 +402,68 @@ export function RedditTable({
   };
 
   useEffect(() => {
-    if (externalPosts.length > 0) {
-      const storedCrm = JSON.parse(
-        localStorage.getItem("ruddit-crm-data") || "{}",
-      );
+    const storedCrm = JSON.parse(
+      localStorage.getItem("ruddit-crm-data") || "{}",
+    );
 
-      setData((prev) => {
-        const existingIds = new Set(prev.map((p) => p.id));
-        const newPosts = externalPosts.filter((p) => !existingIds.has(p.id));
+    const newPostsToHighlight: RedditPost[] = [];
+    const updatedData: RedditPost[] = [];
 
-        // Merge with CRM data
-        const mergedNewPosts = newPosts.map((p) => ({
-          ...p,
-          status: storedCrm[p.id]?.status || p.status || "new",
-          intent: storedCrm[p.id]?.intent || p.intent || "low", // default to low if unknown? or calculate?
-          category: storedCrm[p.id]?.category || p.category || "general",
-          engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
-        }));
+    // Create a map of previous external posts for efficient lookup
+    const prevExternalPostsMap = new Map(prevExternalPostsRef.current.map((p) => [p.id, p]));
+    const currentExternalPostIdsSet = new Set(externalPosts.map(p => p.id)); // Get current IDs once
 
-        // Also update existing posts with CRM data if needed (e.g. on reload)
-        const updatedPrev = prev.map((p) => ({
-          ...p,
-          status: storedCrm[p.id]?.status || p.status || "new",
-          intent: storedCrm[p.id]?.intent || p.intent,
-          category: storedCrm[p.id]?.category || p.category,
-          engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
-        }));
+    externalPosts.forEach((externalPost) => {
+      const mergedPost = {
+        ...externalPost,
+        status: storedCrm[externalPost.id]?.status || externalPost.status || "new",
+        intent: storedCrm[externalPost.id]?.intent || externalPost.intent || "low",
+        category: storedCrm[externalPost.id]?.category || externalPost.category || "general",
+        engaged: storedCrm[externalPost.id]?.engaged ?? externalPost.engaged ?? 0,
+      };
+      updatedData.push(mergedPost);
 
-        return [...updatedPrev, ...mergedNewPosts];
+      // If this post's ID is not found in the previous external posts map, it's new
+      if (!prevExternalPostsMap.has(externalPost.id)) {
+        newPostsToHighlight.push(mergedPost);
+      }
+    });
+
+    setData(updatedData);
+
+    setHighlightedPostIds((prevHighlighted) => {
+      const updatedHighlights = new Set(prevHighlighted);
+
+      // 1. Add new highlights
+      newPostsToHighlight.forEach((p) => {
+        updatedHighlights.add(p.id);
+        // Set timeout to remove this specific highlight
+        setTimeout(() => {
+          setHighlightedPostIds((current) => {
+            const finalUpdated = new Set(current);
+            finalUpdated.delete(p.id);
+            return finalUpdated;
+          });
+        }, 3000);
       });
+
+      // 2. Remove highlights for posts that are no longer in externalPosts
+      prevHighlighted.forEach(id => {
+        if (!currentExternalPostIdsSet.has(id)) {
+          updatedHighlights.delete(id);
+        }
+      });
+
+      return updatedHighlights;
+    });
+
+    // Clear all highlights if externalPosts becomes empty
+    if (externalPosts.length === 0) {
+      setHighlightedPostIds(new Set());
     }
+
+    prevExternalPostsRef.current = externalPosts;
+
   }, [externalPosts, toast]);
 
   const subreddits = useMemo(() => {
@@ -468,7 +504,11 @@ export function RedditTable({
       );
     });
 
-    if (sortField) {
+    // Always sort by date_added descending as the primary sort
+    filtered.sort((a, b) => b.date_added - a.date_added);
+
+    // Apply secondary sort if a sortField is selected and it's not date_added
+    if (sortField && sortField !== "date_added") {
       filtered.sort((a, b) => {
         const aValue = a[sortField];
         const bValue = b[sortField];
@@ -767,7 +807,7 @@ export function RedditTable({
       <Card className="p-0 m-0 h-[770px] flex flex-col">
         {/* Single Table Container with Fixed Header */}
         <div className="flex-1 overflow-auto relative">
-          <Table>
+          <Table className="table-fixed">
             {/* Fixed Header */}
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
@@ -784,7 +824,7 @@ export function RedditTable({
                     #
                   </Button>
                 </TableHead>
-                <TableHead className="w-[30px] p-3">
+                <TableHead className="w-[110px] p-3">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -795,7 +835,7 @@ export function RedditTable({
                     <ArrowUpDown className="ml-2 h-3 w-3" />
                   </Button>
                 </TableHead>
-                <TableHead className="min-w-[300px] p-3">
+                <TableHead className="w-[400px] max-w-[400px] p-3">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -806,7 +846,7 @@ export function RedditTable({
                     <ArrowUpDown className="ml-2 h-3 w-3" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[150px] p-3">
+                <TableHead className="w-[120px] p-3">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -818,7 +858,7 @@ export function RedditTable({
                   </Button>
                 </TableHead>
 
-                <TableHead className="w-[100px] p-3 font-medium text-center">
+                <TableHead className="w-[70px] p-3 font-medium text-center">
                   Intent
                 </TableHead>
 
@@ -832,7 +872,7 @@ export function RedditTable({
                     Engaged
                   </Button>
                 </TableHead>
-                <TableHead className="w-[120px] p-3 text-center font-medium">
+                <TableHead className="w-[100px] p-3 text-center font-medium">
                   Status
                 </TableHead>
                 <TableHead className="w-[100px] p-3 text-center">
@@ -864,6 +904,10 @@ export function RedditTable({
                       key={post.id}
                       onClick={handleTableInteraction}
                       className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-2 ${
+                        highlightedPostIds.has(post.id)
+                          ? "bg-yellow-100 dark:bg-yellow-900/50"
+                          : ""
+                      } ${
                         post.date_added > lastVisitTimestamp
                           ? post.timestamp === latestPostTimestamp
                             ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"
@@ -897,7 +941,7 @@ export function RedditTable({
                       <TableCell className="font-mono text-xs w-[110px] px-3">
                         {post?.formatted_date?.slice(0, 10).trim() || "N/A"}
                       </TableCell>
-                      <TableCell className="min-w-[300px] px-3">
+                      <TableCell className="w-[400px] max-w-[400px] px-3">
                         <div className="flex items-center gap-2">
                           <div className="mt-0.5 text-muted-foreground/50">
                             {post.is_self ? (
@@ -908,7 +952,7 @@ export function RedditTable({
                           </div>
                           <div
                             onClick={() => openUrl(post.url)}
-                            className="line-clamp-1 font-medium cursor-pointer hover:underline flex-1"
+                            className="line-clamp-1 font-medium cursor-pointer hover:underline flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
                             title={
                               post.selftext
                                 ? `${post.title}: ${post.selftext}`
@@ -958,7 +1002,7 @@ export function RedditTable({
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="w-[150px] px-3">
+                      <TableCell className="w-[120px] px-3">
                         <div className="flex flex-col gap-0.5">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -990,7 +1034,7 @@ export function RedditTable({
                         </div>
                       </TableCell>
 
-                      <TableCell className="w-[100px] px-3 text-center">
+                      <TableCell className="w-[70px] px-3 text-center">
                         {post.intent && (
                           <Badge
                             className={`${getIntentColor(post.intent.toLowerCase())} text-[10px] h-5 px-1.5 font-medium border-0`}
@@ -1017,7 +1061,7 @@ export function RedditTable({
                         </Button>
                       </TableCell>
 
-                      <TableCell className="w-[120px] px-3">
+                      <TableCell className="w-[100px] px-3">
                         <div className="flex justify-center">
                           <Select
                             value={post.status || "new"}

@@ -44,13 +44,21 @@ import { toast } from "sonner";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 // Custom-styled native HTML components
+interface CustomButtonProps {
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  children: React.ReactNode;
+  className?: string;
+  disabled?: boolean;
+  title?: string;
+}
+
 const CustomButton = ({
   onClick,
   children,
   className = "",
   disabled = false,
   title = "",
-}) => (
+}: CustomButtonProps) => (
   <button
     onClick={onClick}
     disabled={disabled}
