@@ -341,9 +341,9 @@ export function RedditCommentsView({
       <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden outline-none">
         <div className="flex flex-col h-full overflow-hidden">
           {/* Header: Fixed */}
-          <div className="flex-shrink-0 p-4 md:p-6 border-b bg-muted/5">
+          <div className="flex-shrink-0 p-2 md:p-3 border-b bg-muted/5">
             <DialogHeader className="mb-0">
-              <DialogTitle className="flex items-center gap-2 pr-8 text-lg font-bold">
+              <DialogTitle className="flex items-center gap-1 pr-4 text-lg font-bold">
                 <MessageCircle className="h-5 w-5 text-primary" />
                 <span
                   className="truncate cursor-pointer hover:underline"
@@ -354,8 +354,8 @@ export function RedditCommentsView({
               </DialogTitle>
               {post && (
                 <DialogDescription asChild>
-                  <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <section className="flex items-center gap-3 flex-wrap">
+                  <div className="mt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <section className="flex items-center gap-1 flex-wrap">
                       <Badge
                         variant="outline"
                         className="font-mono text-[10px] py-0 h-5"
@@ -387,7 +387,7 @@ export function RedditCommentsView({
                         {moment(post.timestamp * 1000).fromNow()}
                       </span>
                     </section>
-                    <section className="flex items-center gap-2">
+                    <section className="flex items-center gap-1">
                       <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
                         Sort:
                       </span>
