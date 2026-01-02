@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Play,
   StopCircle,
@@ -12,6 +12,8 @@ import {
   Bot,
   Radar,
   User,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -93,7 +95,7 @@ const HighlightedText = ({
   });
 
   const escapedKeywords = allKeywords.map((kw) =>
-    kw.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&"),
+    kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
   );
   const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
   const parts = text.split(regex);
@@ -138,6 +140,13 @@ export function AutomationTab() {
   const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [keywordsExpanded, setKeywordsExpanded] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{
+    key: "timestamp";
+    direction: "asc" | "desc";
+  }>({
+    key: "timestamp",
+    direction: "desc",
+  });
 
   const keywordCategoriesForHighlighting: KeywordCategory[] = [
     { keywords: settings.brandKeywords || [], className: "bg-blue-500/30" },
@@ -155,6 +164,29 @@ export function AutomationTab() {
     },
     { keywords: settings.monitoredKeywords || [], className: "bg-gray-500/30" },
   ];
+
+  const sortedPosts = useMemo(() => {
+    const posts = [...foundPosts];
+    posts.sort((a, b) => {
+      const aVal = a.timestamp || 0;
+      const bVal = b.timestamp || 0;
+      if (aVal < bVal) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+      if (aVal > bVal) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+    return posts;
+  }, [foundPosts, sortConfig]);
+
+  const handleDateSort = () => {
+    setSortConfig((currentConfig) => ({
+      key: "timestamp",
+      direction: currentConfig.direction === "asc" ? "desc" : "asc",
+    }));
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -258,8 +290,6 @@ export function AutomationTab() {
   const formatElapsedTime = (timestamp: number | undefined): string => {
     if (timestamp === undefined || timestamp === null) return "N/A";
 
-    // Heuristic: if timestamp is less than ~2100-01-01 in seconds, assume it's in seconds
-    // Otherwise, assume it's already in milliseconds
     const timeInMilliseconds =
       timestamp < 4_100_000_000 ? timestamp * 1000 : timestamp;
 
@@ -279,9 +309,9 @@ export function AutomationTab() {
       return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
 
     const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 30) return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`; // Roughly a month
+    if (diffDays < 30) return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
 
-    const diffMonths = Math.floor(diffDays / 30); // Approximate months
+    const diffMonths = Math.floor(diffDays / 30);
     if (diffMonths < 12)
       return `${diffMonths} month${diffMonths === 1 ? "" : "s"} ago`;
 
@@ -494,18 +524,32 @@ export function AutomationTab() {
                 <table className="w-full text-xs text-left">
                   <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
                     <tr className="border-b">
-                      {["Intent", "Title", "Subreddit", "Date", ""].map((h) => (
+                      {["Intent", "Title", "Subreddit"].map((h) => (
                         <th
                           key={h}
-                          className={`p-1.5 text-xs font-medium text-muted-foreground ${h === "Date" ? "w-32" : ""}`}
+                          className={`p-1.5 text-xs font-medium text-muted-foreground ${h === "Subreddit" ? "w-36" : h === "Intent" ? "w-28" : ""}`}
                         >
                           {h}
                         </th>
                       ))}
+                      <th
+                        className="p-1.5 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground w-32"
+                        onClick={handleDateSort}
+                      >
+                        <div className="flex items-center gap-1">
+                          Date
+                          {sortConfig.direction === "asc" ? (
+                            <ArrowUp className="h-3 w-3" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3" />
+                          )}
+                        </div>
+                      </th>
+                      <th className="w-12"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {foundPosts.map((post) => (
+                    {sortedPosts.map((post) => (
                       <tr key={post.id} className="border-b hover:bg-muted/50">
                         <td className="px-1 w-28">
                           <div className="flex flex-col gap-0.5">
@@ -536,17 +580,11 @@ export function AutomationTab() {
                               </a>
                             </TooltipTrigger>
                             <TooltipContent
-                              className="max-w-md p-3 bg-white border shadow"
+                              className="max-w-md p-3 bg-stone-50 border shadow"
                               side="bottom"
                               align="start"
                             >
-                              <div
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  post.url && openUrl(post.url);
-                                }}
-                                className="text-sm font-semibold text-black hover:underline cursor-pointer"
-                              >
+                              <div className="text-sm font-semibold text-black ">
                                 <HighlightedText
                                   text={post.title}
                                   categories={keywordCategoriesForHighlighting}
@@ -554,7 +592,7 @@ export function AutomationTab() {
                               </div>
                               {post.selftext && (
                                 <div className="mt-2 border-t border-border pt-2">
-                                  <p className="text-sm text-foreground/80 whitespace-pre-wrap max-h-96 overflow-y-auto custom-scroll">
+                                  <p className="text-sm text-foreground/80 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scroll">
                                     <HighlightedText
                                       text={post.selftext}
                                       categories={
