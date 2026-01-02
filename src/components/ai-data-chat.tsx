@@ -10,12 +10,7 @@ import { Sparkles, Send, Bot, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-};
+import { useAIChatStore, Message } from "@/store/ai-chat-store";
 
 type DataStats = {
   totalPosts: number;
@@ -26,16 +21,8 @@ type DataStats = {
 };
 
 export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Hello! I'm your AI assistant powered by Gemini. I have access to your tracked Reddit posts and can answer questions, analyze trends, or help you draft responses. What would you like to know?",
-      timestamp: new Date(),
-    },
-  ]);
+  const { messages, isLoading, addMessage, setIsLoading } = useAIChatStore();
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -69,12 +56,9 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    addMessage(userMessage);
     setInput("");
     setIsLoading(true);
-
-    // Simulate AI processing
-    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const response = await generateResponse(userMessage.content);
 
@@ -84,7 +68,7 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, assistantMessage]);
+    addMessage(assistantMessage);
     setIsLoading(false);
   };
 
