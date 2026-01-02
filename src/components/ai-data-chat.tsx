@@ -89,7 +89,7 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-7rem)] min-h-[500px] border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
+    <div className="flex flex-col h-[calc(100vh-8rem)] min-h-[500px] border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
       <div className="p-1 border-b bg-muted/30 backdrop-blur-md sticky top-0 z-10">
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           <Badge
