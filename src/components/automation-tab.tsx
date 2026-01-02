@@ -540,7 +540,13 @@ export function AutomationTab() {
                               side="bottom"
                               align="start"
                             >
-                              <div className="text-sm font-semibold text-black">
+                              <div
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  post.url && openUrl(post.url);
+                                }}
+                                className="text-sm font-semibold text-black hover:underline cursor-pointer"
+                              >
                                 <HighlightedText
                                   text={post.title}
                                   categories={keywordCategoriesForHighlighting}
@@ -548,7 +554,7 @@ export function AutomationTab() {
                               </div>
                               {post.selftext && (
                                 <div className="mt-2 border-t border-border pt-2">
-                                  <p className="text-sm text-foreground/80 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scroll">
+                                  <p className="text-sm text-foreground/80 whitespace-pre-wrap max-h-96 overflow-y-auto custom-scroll">
                                     <HighlightedText
                                       text={post.selftext}
                                       categories={
