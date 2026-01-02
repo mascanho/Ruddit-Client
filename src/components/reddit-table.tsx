@@ -146,6 +146,8 @@ export function RedditTable({
   const [statusFilter, setStatusFilter] = useState("all");
   const [engagementFilter, setEngagementFilter] = useState("all");
 
+  const { addSingleSubreddit, removeSingleSubreddit, clearSavedSubredditsTable } = useAddSingleSubReddit();
+
   const addSubredditToMonitoring = (subreddit: string) => {
     const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
     if (settings.monitoredSubreddits.includes(cleaned)) {
@@ -511,15 +513,15 @@ export function RedditTable({
   const handleDelete = async (id: string) => {
     if (!settings.confirmDelete) {
       setData(data.filter((post) => post.id !== id));
+      removeSingleSubreddit(parseInt(id, 10)); // Update store
       return;
     }
 
     await invoke("remove_single_reddit_command", { post: id });
     toast.info("Post deleted successfully");
-
-    // Wait a few seconds before reloading
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    window.location.reload();
+    setData((prevData) => prevData.filter((post) => post.id !== id));
+    removeSingleSubreddit(parseInt(id, 10)); // Update store
+    // No need to reload the window, UI updates via state change
   };
 
   const handleGetComments = async (post: RedditPost, sort_type: string) => {
@@ -603,19 +605,13 @@ export function RedditTable({
   const handleClearTable = async () => {
     try {
       await invoke("clear_saved_reddits");
-      toast("Table is being deleted", {
-        description: "All your entries will be lost.",
+      toast("Table is being cleared", {
+        description: "All your entries will be removed from the UI.",
         position: "top-center",
-        action: {
-          label: "Warning",
-          onClick: () => console.log("Undo"),
-        },
       });
-
-      // delay 1 second
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      window.location.reload();
+      setData([]); // Clear local state
+      clearSavedSubredditsTable(); // Update store
+      // No need to reload the window, UI updates via state change
     } catch (err) {
       console.log(err);
     }

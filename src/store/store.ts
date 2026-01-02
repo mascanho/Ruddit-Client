@@ -76,6 +76,11 @@ const useAddSingleSubReddit = create<SingleSubredditTable>((set, get) => ({
       set({ subRedditsSaved: [...current, subreddit] });
     }
   },
+  removeSingleSubreddit: (postId: number) => {
+    set((state) => ({
+      subRedditsSaved: state.subRedditsSaved.filter((p) => p.id !== postId),
+    }));
+  },
   clearSavedSubredditsTable: () => set({ subRedditsSaved: [] }),
 }));
 
