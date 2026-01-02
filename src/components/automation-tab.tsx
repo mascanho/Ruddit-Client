@@ -61,21 +61,37 @@ const KeywordBadge = ({ children, className = "" }) => (
   </span>
 );
 
+type KeywordCategory = {
+  keywords: string[];
+  className: string;
+};
+
 // Keyword highlighter component
 const HighlightedText = ({
   text,
-  keywords,
+  categories,
 }: {
   text: string;
-  keywords: string[];
+  categories: KeywordCategory[];
 }) => {
   if (!text) return null;
-  if (!keywords || keywords.length === 0) return <>{text}</>;
 
-  const validKeywords = keywords.filter((kw) => kw && kw.trim() !== "");
-  if (validKeywords.length === 0) return <>{text}</>;
+  const allKeywords = categories
+    .flatMap((c) => c.keywords)
+    .filter((kw) => kw && kw.trim() !== "");
 
-  const escapedKeywords = validKeywords.map((kw) =>
+  if (allKeywords.length === 0) return <>{text}</>;
+
+  const keywordStyleMap = new Map<string, string>();
+  categories.forEach((category) => {
+    (category.keywords || []).forEach((kw) => {
+      if (kw && kw.trim() !== "") {
+        keywordStyleMap.set(kw.toLowerCase(), category.className);
+      }
+    });
+  });
+
+  const escapedKeywords = allKeywords.map((kw) =>
     kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
   );
   const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
@@ -84,14 +100,15 @@ const HighlightedText = ({
   return (
     <>
       {parts.map((part, i) => {
-        const isKeyword = validKeywords.some(
-          (kw) => kw.toLowerCase() === part.toLowerCase(),
-        );
-        if (isKeyword) {
+        if (!part) return null;
+        const lowerPart = part.toLowerCase();
+        if (keywordStyleMap.has(lowerPart)) {
           return (
             <mark
               key={i}
-              className="bg-yellow-300 text-black px-0.5 rounded-sm"
+              className={`${keywordStyleMap.get(
+                lowerPart,
+              )} text-current px-0.5 rounded-sm`}
             >
               {part}
             </mark>
@@ -121,11 +138,21 @@ export function AutomationTab() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [keywordsExpanded, setKeywordsExpanded] = useState(false);
 
-  const allKeywords = [
-    ...(settings.brandKeywords || []),
-    ...(settings.competitorKeywords || []),
-    ...(settings.monitoredKeywords || []),
-    ...(settings.monitoredSubreddits || []),
+  const keywordCategoriesForHighlighting: KeywordCategory[] = [
+    { keywords: settings.brandKeywords || [], className: "bg-blue-500/30" },
+    {
+      keywords: settings.competitorKeywords || [],
+      className: "bg-orange-500/30",
+    },
+    {
+      keywords: settings.monitoredUsernames || [],
+      className: "bg-green-500/30",
+    },
+    {
+      keywords: settings.monitoredSubreddits || [],
+      className: "bg-purple-500/30",
+    },
+    { keywords: settings.monitoredKeywords || [], className: "bg-gray-500/30" },
   ];
 
   useEffect(() => {
@@ -195,10 +222,10 @@ export function AutomationTab() {
   };
 
   const noKeywords =
-    settings.brandKeywords.length +
-      settings.competitorKeywords.length +
-      settings.monitoredKeywords.length +
-      settings.monitoredSubreddits.length ===
+    (settings.brandKeywords?.length || 0) +
+      (settings.competitorKeywords?.length || 0) +
+      (settings.monitoredKeywords?.length || 0) +
+      (settings.monitoredSubreddits?.length || 0) ===
     0;
 
   const keywordCategories = [
@@ -304,9 +331,7 @@ export function AutomationTab() {
                 </label>
                 <select
                   value={intervalMinutes.toString()}
-                  onChange={(e) =>
-                    setIntervalMinutes(parseInt(e.target.value))
-                  }
+                  onChange={(e) => setIntervalMinutes(parseInt(e.target.value))}
                   disabled={isRunning}
                   className="bg-background border border-input rounded-md text-xs h-6 pl-1 pr-6 appearance-none focus:outline-none focus:ring-1 focus:ring-ring"
                 >
@@ -468,16 +493,14 @@ export function AutomationTab() {
                 <table className="w-full text-xs text-left">
                   <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
                     <tr className="border-b">
-                      {[ "Intent", "Title", "Subreddit", "Date", ""].map(
-                        (h) => (
-                          <th
-                            key={h}
-                            className={`p-1.5 text-xs font-medium text-muted-foreground ${h === "Date" ? "w-32" : ""}`}
-                          >
-                            {h}
-                          </th>
-                        ),
-                      )}
+                      {["Intent", "Title", "Subreddit", "Date", ""].map((h) => (
+                        <th
+                          key={h}
+                          className={`p-1.5 text-xs font-medium text-muted-foreground ${h === "Date" ? "w-32" : ""}`}
+                        >
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -512,23 +535,27 @@ export function AutomationTab() {
                               </a>
                             </TooltipTrigger>
                             <TooltipContent
-                              className="max-w-md"
+                              className="max-w-lg p-3 bg-white border border-border shadow-lg"
                               side="bottom"
                               align="start"
                             >
-                              <div className="text-sm font-semibold mb-1">
+                              <div className="text-sm font-semibold text-black">
                                 <HighlightedText
                                   text={post.title}
-                                  keywords={allKeywords}
+                                  categories={keywordCategoriesForHighlighting}
                                 />
                               </div>
                               {post.selftext && (
-                                <p className="text-xs text-muted-foreground">
-                                  <HighlightedText
-                                    text={post.selftext}
-                                    keywords={allKeywords}
-                                  />
-                                </p>
+                                <div className="mt-2 border-t border-border pt-2">
+                                  <p className="text-sm text-foreground/80 whitespace-pre-wrap max-h-96 overflow-y-auto custom-scroll">
+                                    <HighlightedText
+                                      text={post.selftext}
+                                      categories={
+                                        keywordCategoriesForHighlighting
+                                      }
+                                    />
+                                  </p>
+                                </div>
                               )}
                             </TooltipContent>
                           </Tooltip>
