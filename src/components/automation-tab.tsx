@@ -151,8 +151,8 @@ export function AutomationTab() {
     direction: "desc",
   });
 
-  const trackedSubreddits = useMemo(
-    () => new Set(subRedditsSaved.map((p) => p.subreddit.toLowerCase())),
+  const trackedPostIds = useMemo(
+    () => new Set(subRedditsSaved.map((p) => p.id)),
     [subRedditsSaved],
   );
 
@@ -609,8 +609,8 @@ export function AutomationTab() {
                                 className="hover:underline block truncate"
                               >
                                 {post.title}
-                                {trackedSubreddits.has(
-                                  post.subreddit.toLowerCase(),
+                                {trackedPostIds.has(
+                                  post.id,
                                 ) && (
                                   <KeywordBadge className="bg-blue-500/10 text-blue-400 border border-blue-500/20 ml-2">
                                     Tracking
