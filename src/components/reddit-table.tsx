@@ -87,7 +87,7 @@ const initialData: RedditPost[] = []; // Declare initialData here
 
 // Define RedditPost type to match Rust's PostDataWrapper
 export type RedditPost = {
-  id: string;
+  id: number;
   timestamp: number;
   formatted_date: string;
   title: string;
@@ -142,10 +142,6 @@ export function RedditTable({
   onSearchStateChange: (state: SearchState) => void;
 }) {
   const [data, setData] = useState<RedditPost[]>(initialData);
-  const [highlightedPostIds, setHighlightedPostIds] = useState<Set<string>>(
-    new Set(),
-  );
-  const prevExternalPostsRef = useRef<RedditPost[]>([]);
   const { settings, updateSettings } = useAppSettings();
   const [statusFilter, setStatusFilter] = useState("all");
   const [engagementFilter, setEngagementFilter] = useState("all");
@@ -214,6 +210,39 @@ export function RedditTable({
     storedCrm[postId] = { ...postData, ...updates };
     localStorage.setItem("ruddit-crm-data", JSON.stringify(storedCrm));
   };
+
+  useEffect(() => {
+    if (externalPosts.length > 0) {
+      const storedCrm = JSON.parse(
+        localStorage.getItem("ruddit-crm-data") || "{}",
+      );
+
+      setData((prev) => {
+        const existingIds = new Set(prev.map((p) => p.id));
+        const newPosts = externalPosts.filter((p) => !existingIds.has(p.id));
+
+        // Merge with CRM data
+        const mergedNewPosts = newPosts.map((p) => ({
+          ...p,
+          status: storedCrm[p.id]?.status || p.status || "new",
+          intent: storedCrm[p.id]?.intent || p.intent || "low", // default to low if unknown? or calculate?
+          category: storedCrm[p.id]?.category || p.category || "general",
+          engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
+        }));
+
+        // Also update existing posts with CRM data if needed (e.g. on reload)
+        const updatedPrev = prev.map((p) => ({
+          ...p,
+          status: storedCrm[p.id]?.status || p.status || "new",
+          intent: storedCrm[p.id]?.intent || p.intent,
+          category: storedCrm[p.id]?.category || p.category,
+          engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
+        }));
+
+        return [...updatedPrev, ...mergedNewPosts];
+      });
+    }
+  }, [externalPosts, toast]);
 
   const searchQuery = searchState.redditSearch;
   const setSearchQuery = (value: string) =>
@@ -401,70 +430,7 @@ export function RedditTable({
     }
   };
 
-  useEffect(() => {
-    const storedCrm = JSON.parse(
-      localStorage.getItem("ruddit-crm-data") || "{}",
-    );
-
-    const newPostsToHighlight: RedditPost[] = [];
-    const updatedData: RedditPost[] = [];
-
-    // Create a map of previous external posts for efficient lookup
-    const prevExternalPostsMap = new Map(prevExternalPostsRef.current.map((p) => [p.id, p]));
-    const currentExternalPostIdsSet = new Set(externalPosts.map(p => p.id)); // Get current IDs once
-
-    externalPosts.forEach((externalPost) => {
-      const mergedPost = {
-        ...externalPost,
-        status: storedCrm[externalPost.id]?.status || externalPost.status || "new",
-        intent: storedCrm[externalPost.id]?.intent || externalPost.intent || "low",
-        category: storedCrm[externalPost.id]?.category || externalPost.category || "general",
-        engaged: storedCrm[externalPost.id]?.engaged ?? externalPost.engaged ?? 0,
-      };
-      updatedData.push(mergedPost);
-
-      // If this post's ID is not found in the previous external posts map, it's new
-      if (!prevExternalPostsMap.has(externalPost.id)) {
-        newPostsToHighlight.push(mergedPost);
-      }
-    });
-
-    setData(updatedData);
-
-    setHighlightedPostIds((prevHighlighted) => {
-      const updatedHighlights = new Set(prevHighlighted);
-
-      // 1. Add new highlights
-      newPostsToHighlight.forEach((p) => {
-        updatedHighlights.add(p.id);
-        // Set timeout to remove this specific highlight
-        setTimeout(() => {
-          setHighlightedPostIds((current) => {
-            const finalUpdated = new Set(current);
-            finalUpdated.delete(p.id);
-            return finalUpdated;
-          });
-        }, 3000);
-      });
-
-      // 2. Remove highlights for posts that are no longer in externalPosts
-      prevHighlighted.forEach(id => {
-        if (!currentExternalPostIdsSet.has(id)) {
-          updatedHighlights.delete(id);
-        }
-      });
-
-      return updatedHighlights;
-    });
-
-    // Clear all highlights if externalPosts becomes empty
-    if (externalPosts.length === 0) {
-      setHighlightedPostIds(new Set());
-    }
-
-    prevExternalPostsRef.current = externalPosts;
-
-  }, [externalPosts, toast]);
+  
 
   const subreddits = useMemo(() => {
     return Array.from(new Set(data.map((post) => post.subreddit)));
@@ -904,10 +870,6 @@ export function RedditTable({
                       key={post.id}
                       onClick={handleTableInteraction}
                       className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-2 ${
-                        highlightedPostIds.has(post.id)
-                          ? "bg-yellow-100 dark:bg-yellow-900/50"
-                          : ""
-                      } ${
                         post.date_added > lastVisitTimestamp
                           ? post.timestamp === latestPostTimestamp
                             ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"

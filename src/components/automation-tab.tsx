@@ -69,7 +69,12 @@ const CustomButton = ({
   </button>
 );
 
-const KeywordBadge = ({ children, className = "" }) => (
+interface KeywordBadgeProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+const KeywordBadge = ({ children, className = "" }: KeywordBadgeProps) => (
   <span
     className={`inline-block text-[10px] py-0.5 px-1.5 rounded-full font-medium whitespace-nowrap ${className}`}
   >
