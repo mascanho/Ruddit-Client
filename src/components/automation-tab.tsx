@@ -151,6 +151,11 @@ export function AutomationTab() {
     direction: "desc",
   });
 
+  const trackedSubreddits = useMemo(
+    () => new Set(subRedditsSaved.map((p) => p.subreddit.toLowerCase())),
+    [subRedditsSaved],
+  );
+
   const keywordCategoriesForHighlighting: KeywordCategory[] = [
     { keywords: settings.brandKeywords || [], className: "bg-blue-500/30" },
     {
@@ -554,7 +559,7 @@ export function AutomationTab() {
                       {["Intent", "Title", "Subreddit"].map((h) => (
                         <th
                           key={h}
-                          className={`p-1.5 text-xs font-medium text-muted-foreground ${h === "Subreddit" ? "w-36" : h === "Intent" ? "w-28" : ""}`}
+                          className={`p-1.5 text-xs font-medium text-muted-foreground ${h === "Subreddit" ? "w-36" : h === "Intent" ? "w-20" : ""}`}
                         >
                           {h}
                         </th>
@@ -578,7 +583,7 @@ export function AutomationTab() {
                   <tbody>
                     {filteredAndSortedPosts.map((post) => (
                       <tr key={post.id} className="border-b hover:bg-muted/50">
-                        <td className="px-1 w-28">
+                        <td className="px-1 w-20">
                           <div className="flex flex-col gap-0.5">
                             <span
                               className={`w-fit text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}
@@ -604,6 +609,13 @@ export function AutomationTab() {
                                 className="hover:underline block truncate"
                               >
                                 {post.title}
+                                {trackedSubreddits.has(
+                                  post.subreddit.toLowerCase(),
+                                ) && (
+                                  <KeywordBadge className="bg-blue-500/10 text-blue-400 border border-blue-500/20 ml-2">
+                                    Tracking
+                                  </KeywordBadge>
+                                )}
                               </a>
                             </TooltipTrigger>
                             <TooltipContent

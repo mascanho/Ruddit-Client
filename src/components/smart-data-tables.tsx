@@ -77,7 +77,7 @@ export function SmartDataTables() {
     messagesSearch: "",
   });
 
-  const { subRedditsSaved } = useAddSingleSubReddit();
+  const { subRedditsSaved, setSingleSubreddit } = useAddSingleSubReddit();
 
   // GET ALL THE COMMENTS FROM DB AND SHOW IN THE FRONT END TABLE
 
@@ -96,20 +96,20 @@ export function SmartDataTables() {
   }, [allSavedPosts]);
 
   // GET ALL THE SAVED POSTS FROM DB AND SHOW IN THE FRONT END TABLE
-
-  async function getAllRedditsSaved() {
-    try {
-      const data: any = await invoke("get_all_posts");
-      console.log(data, "ALL SAVED POSTS");
-      setAllSavedPosts(data);
-    } catch (err) {
-      console.log(err);
-    }
-  }
+  useEffect(() => {
+    invoke("get_all_posts")
+      .then((data) => {
+        console.log(data, "ALL SAVED POSTS");
+        setSingleSubreddit(data as any[]);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, []);
 
   useEffect(() => {
-    getAllRedditsSaved();
-  }, [redditPosts, subRedditsSaved]);
+    setAllSavedPosts(subRedditsSaved);
+  }, [subRedditsSaved]);
 
   const handleAddComments = (comments: Message[]) => {
     setMessages((prev) => [...prev, ...comments]);
