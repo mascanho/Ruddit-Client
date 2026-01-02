@@ -154,7 +154,9 @@ export function AutomationTab() {
     direction: "desc",
   });
 
-  const [commentsPost, setCommentsPost] = useState<PostDataWrapper | null>(null);
+  const [commentsPost, setCommentsPost] = useState<PostDataWrapper | null>(
+    null,
+  );
   const [comments, setComments] = useState<Message[]>([]);
   const [sortTypeForComments, setSortTypeForComments] = useState("best");
 
@@ -280,7 +282,10 @@ export function AutomationTab() {
     }
   };
 
-  const handleGetComments = async (post: PostDataWrapper, sort_type: string) => {
+  const handleGetComments = async (
+    post: PostDataWrapper,
+    sort_type: string,
+  ) => {
     const fetchedComments = (await invoke("get_post_comments_command", {
       url: post.url,
       title: post.title,
@@ -394,9 +399,7 @@ export function AutomationTab() {
           <div className="p-2 border-b border-border flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Bot className="h-5 w-5 text-primary" />
-              <h2 className="text-base font-semibold">
-                Super Automation Agent
-              </h2>
+              <h2 className="text-base font-semibold">Automation Agent</h2>
               <span
                 className={`flex items-center gap-1.5 text-xs font-bold py-0.5 px-2 rounded-full ${isRunning ? "bg-green-500/10 text-green-500" : "bg-gray-500/10 text-muted-foreground"}`}
               >
@@ -641,9 +644,7 @@ export function AutomationTab() {
                                 className="hover:underline block truncate"
                               >
                                 {post.title}
-                                {trackedPostIds.has(
-                                  post.id,
-                                ) && (
+                                {trackedPostIds.has(post.id) && (
                                   <KeywordBadge className="bg-blue-500/10 text-blue-400 border border-blue-500/20 ml-2">
                                     Tracking
                                   </KeywordBadge>
@@ -711,7 +712,9 @@ export function AutomationTab() {
                         <td className="p-1.5 text-right w-12">
                           <div className="flex items-center justify-end gap-1">
                             <CustomButton
-                              onClick={() => handleGetComments(post, post.sort_type)}
+                              onClick={() =>
+                                handleGetComments(post, post.sort_type)
+                              }
                               title="View Comments"
                               className="h-6 w-6 p-0 justify-center hover:bg-blue-500 hover:text-white text-muted-foreground"
                             >
