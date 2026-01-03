@@ -615,13 +615,13 @@ export function AutomationTab() {
               </div>
             ) : (
               <div className="overflow-y-scroll h-[calc(100vh-50vh)] custom-scroll border rounded-md">
-                <table className="w-full text-xs text-left">
+                <table className="w-full text-xs text-left table-fixed">
                   <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
                     <tr className="border-b">
                       {["Intent", "Title", "Subreddit"].map((h) => (
                         <th
                           key={h}
-                          className={`p-1.5 text-xs font-medium text-muted-foreground ${h === "Subreddit" ? "w-36" : h === "Intent" ? "w-20" : ""}`}
+                          className={`p-1.5 text-xs font-medium text-muted-foreground ${h === "Subreddit" ? "w-36" : h === "Intent" ? "w-20" : h === "Title" ? "w-[60%]" : ""}`}
                         >
                           {h}
                         </th>
@@ -659,7 +659,7 @@ export function AutomationTab() {
                             )}
                           </div>
                         </td>
-                        <td className="p-1.5 font-medium max-w-xs">
+                        <td className="p-1.5 font-medium w-full overflow-hidden">
                           <Tooltip delayDuration={300}>
                             <TooltipTrigger asChild>
                               <a
