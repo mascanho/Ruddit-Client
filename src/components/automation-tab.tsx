@@ -668,7 +668,7 @@ export function AutomationTab() {
                                   e.preventDefault();
                                   post.url && openUrl(post.url);
                                 }}
-                                className="hover:underline block truncate"
+                                className="hover:underline inline-block truncate"
                               >
                                 {post.title}
                                 {trackedPostIds.has(post.id) && (
