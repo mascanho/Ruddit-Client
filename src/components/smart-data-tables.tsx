@@ -224,7 +224,7 @@ export function SmartDataTables() {
           </div>
           <div>
             <h1 className="text-lg font-black tracking-tighter uppercase leading-none text-foreground/90">
-              Farol
+              Atalaia
             </h1>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 leading-none mt-1">
               Intelligence Engine

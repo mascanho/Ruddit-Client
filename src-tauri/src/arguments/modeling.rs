@@ -3,9 +3,9 @@ use clap::Parser;
 //TODO: implement token input with clap
 
 #[derive(Debug, Parser)]
-#[command(name = "Farol")]
+#[command(name = "Atalaia")]
 #[command(version = "0.1")]
-#[command(about = "Farol - A lead finder for Reddit built with Rust", long_about = None)]
+#[command(about = "Atalaia - A lead finder for Reddit built with Rust", long_about = None)]
 #[command(version, about, long_about = None)]
 pub struct Args {
     /// Open database folder

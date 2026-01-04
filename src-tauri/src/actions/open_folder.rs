@@ -2,7 +2,7 @@ use std::process::Command;
 
 pub async fn open_db_folder() -> Result<(), Box<dyn std::error::Error>> {
     let base_dirs = directories::BaseDirs::new().ok_or("Failed to get base directories")?;
-    let db_path = base_dirs.config_dir().join("farol");
+    let db_path = base_dirs.config_dir().join("atalaia");
 
     // Ensure the directory exists
     if !db_path.exists() {

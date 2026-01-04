@@ -1,9 +1,9 @@
 <div align="center">
-  <img src="https://github.com/mascanho/farol/blob/master/src/public/farol.png" alt="Farol Logo" width="200" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin: 20px 0;">
-  <h1>Farol</h1>
+  <img src="https://github.com/mascanho/atalaia/blob/master/src/public/atalaia.png" alt="Atalaia Logo" width="200" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin: 20px 0;">
+  <h1>Atalaia</h1>
 </div>
 
-**Farol** is a command-line (CLI) application for interacting with Reddit and leveraging Google's Gemini AI, built with Rust.
+**Atalaia** is a command-line (CLI) application for interacting with Reddit and leveraging Google's Gemini AI, built with Rust.
 
 ## ✨ Features
 
@@ -17,28 +17,28 @@
 
 ## 🚀 Installation
 
-To install Farol, you need to have Rust and Cargo installed. If you don't, follow the instructions on the [official Rust website](https://www.rust-lang.org/tools/install).
+To install Atalaia, you need to have Rust and Cargo installed. If you don't, follow the instructions on the [official Rust website](https://www.rust-lang.org/tools/install).
 
 Once Rust is set up, clone the repository and install the application:
 
 ```bash
-git clone https://github.com/mascanho/farol.git
-cd farol
+git clone https://github.com/mascanho/atalaia.git
+cd atalaia
 cargo install --path .
 ```
 
-This will install the `farol` executable in your Cargo bin directory (usually `~/.cargo/bin`), making it available from anywhere in your terminal.
+This will install the `atalaia` executable in your Cargo bin directory (usually `~/.cargo/bin`), making it available from anywhere in your terminal.
 
 ## ⚙️ Configuration
 
-Before using Farol, you need to configure your Reddit and Gemini API keys.
+Before using Atalaia, you need to configure your Reddit and Gemini API keys.
 
 1. **Create a Reddit App**: Go to your [Reddit apps](https://www.reddit.com/prefs/apps) page and create a new "script" app.
 2. **Get a Gemini API Key**: Obtain a Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-3. **Set API Keys**: When you first run `farol`, it will create a `settings.toml` file in your system's config directory. You can also run `farol --settings` to open the configuration file for editing.
-   - **Linux:** `~/.config/farol/settings.toml`
-   - **macOS:** `~/Library/Application Support/farol/settings.toml`
-   - **Windows:** `C:\Users\<YourUser>\AppData\Roaming\farol\settings.toml`
+3. **Set API Keys**: When you first run `atalaia`, it will create a `settings.toml` file in your system's config directory. You can also run `atalaia --settings` to open the configuration file for editing.
+   - **Linux:** `~/.config/atalaia/settings.toml`
+   - **macOS:** `~/Library/Application Support/atalaia/settings.toml`
+   - **Windows:** `C:\Users\<YourUser>\AppData\Roaming\atalaia\settings.toml`
 
    The `settings.toml` file will look like this:
 
@@ -53,14 +53,14 @@ Before using Farol, you need to configure your Reddit and Gemini API keys.
 
 ## 💻 Usage
 
-Farol provides several command-line options to interact with Reddit and Gemini.
+Atalaia provides several command-line options to interact with Reddit and Gemini.
 
 ### Fetching Reddit Posts
 
 Fetch posts from a specific subreddit and relevance (hot, new, top, etc.).
 
 ```bash
-farol --subreddit <subreddit_name> --relevance <relevance>
+atalaia --subreddit <subreddit_name> --relevance <relevance>
 ```
 
 If no subreddit or relevance is provided, it will default to `supplychain` and `hot`.
@@ -70,7 +70,7 @@ If no subreddit or relevance is provided, it will default to `supplychain` and `
 Search for posts on Reddit with a specific query.
 
 ```bash
-farol --find "<search_query>" --relevance <relevance>
+atalaia --find "<search_query>" --relevance <relevance>
 ```
 
 ### Interacting with Gemini AI
@@ -78,7 +78,7 @@ farol --find "<search_query>" --relevance <relevance>
 Ask a question to the Gemini AI based on the data stored in the local database.
 
 ```bash
-farol --gemini "<your_question>"
+atalaia --gemini "<your_question>"
 ```
 
 ### Generating Leads with Gemini AI
@@ -86,7 +86,7 @@ farol --gemini "<your_question>"
 Automatically generate leads from the collected Reddit data using Gemini AI.
 
 ```bash
-farol --leads
+atalaia --leads
 ```
 
 ### Exporting Data
@@ -94,7 +94,7 @@ farol --leads
 Export the collected Reddit data to an Excel file. The file will be saved in a `Reddit_data` folder on your desktop.
 
 ```bash
-farol --export
+atalaia --export
 ```
 
 ### Clearing the Database
@@ -102,7 +102,7 @@ farol --export
 Clear all the data from the local SQLite database.
 
 ```bash
-farol --clear
+atalaia --clear
 ```
 
 ### Managing Settings
@@ -110,7 +110,7 @@ farol --clear
 Open the `settings.toml` configuration file for editing.
 
 ```bash
-farol --settings
+atalaia --settings
 ```
 
 ### Adding API Keys
@@ -118,7 +118,7 @@ farol --settings
 Add your Reddit API key directly from the command line.
 
 ```bash
-farol --apikey <your_api_key>
+atalaia --apikey <your_api_key>
 ```
 
 ## 🛠️ Technologies Used

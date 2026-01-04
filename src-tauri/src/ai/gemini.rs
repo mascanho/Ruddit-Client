@@ -87,7 +87,7 @@ pub async fn read_application_log() -> Result<String, GeminiError> {
     let base_dirs = BaseDirs::new().ok_or(GeminiError::ConfigError(
         "Failed to get base directories for log file".to_string(),
     ))?;
-    let app_dir = base_dirs.data_dir().join("farol");
+    let app_dir = base_dirs.data_dir().join("atalaia");
     let log_path = app_dir.join("app.log");
 
     if !log_path.exists() {

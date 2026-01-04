@@ -137,7 +137,7 @@ pub async fn get_access_token(
     let response = client
         .post("https://www.reddit.com/api/v1/access_token")
         .header("Authorization", format!("Basic {}", encoded))
-        .header("User-Agent", "FarolApp/0.1 by Farol")
+        .header("User-Agent", "AtalaiaApp/0.1 by Atalaia")
         .form(&[("grant_type", "client_credentials")])
         .send()
         .await?;
@@ -291,7 +291,7 @@ pub async fn search_subreddit_posts(
             ("t", "all"),
         ])
         .header("Authorization", format!("Bearer {}", access_token))
-        .header("User-Agent", "RustFarolApp/0.1 by Farol")
+        .header("User-Agent", "RustAtalaiaApp/0.1 by Atalaia")
         .send()
         .await?;
 
@@ -591,7 +591,7 @@ pub async fn get_user_access_token(
     let response = client
         .post("https://www.reddit.com/api/v1/access_token")
         .header("Authorization", format!("Basic {}", encoded))
-        .header("User-Agent", format!("macos:com.farol.client:v0.1.0 (by /u/{})", username))
+        .header("User-Agent", format!("macos:com.atalaia.client:v0.1.0 (by /u/{})", username))
         .form(&[
             ("grant_type", "password"),
             ("username", username),
@@ -628,7 +628,7 @@ pub async fn post_comment(
     let response = client
         .post("https://oauth.reddit.com/api/comment")
         .header("Authorization", format!("Bearer {}", access_token))
-        .header("User-Agent", "FarolApp/0.1 by Farol")
+        .header("User-Agent", "AtalaiaApp/0.1 by Atalaia")
         .form(&[("thing_id", parent_id), ("text", text), ("api_type", "json")])
         .send()
         .await?;

@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Farol",
+  "productName": "Atalaia",
   "version": "0.0.1",
-  "identifier": "com.farol",
+  "identifier": "com.atalaia",
   "build": {
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Farol - 0.0.1",
+        "title": "Atalaia - 0.0.1",
         "minWidth": 1700,
         "width": 1700,
         "height": 1100,

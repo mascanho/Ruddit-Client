@@ -31,7 +31,7 @@ pub async fn send_assignment_email(
         <p>You have been assigned to a new Reddit post:</p>
         <blockquote>{}</blockquote>
         <p>Post ID: {}</p>
-        <p>Please check the Farol Client for more details.</p>",
+        <p>Please check the Atalaia Client for more details.</p>",
         assignee_name, post_title, post_id
     );
 

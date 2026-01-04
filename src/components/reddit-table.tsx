@@ -191,7 +191,7 @@ export function RedditTable({
   useEffect(() => {
     if (data.length === 0) return;
     const storedCrm = JSON.parse(
-      localStorage.getItem("farol-crm-data") || "{}",
+      localStorage.getItem("atalaia-crm-data") || "{}",
     );
 
     // Only update if we have new data to merge to avoid infinite loop if we put this in the dependency array incorrectly
@@ -208,17 +208,17 @@ export function RedditTable({
 
     // Update LocalStorage
     const storedCrm = JSON.parse(
-      localStorage.getItem("farol-crm-data") || "{}",
+      localStorage.getItem("atalaia-crm-data") || "{}",
     );
     const postData = storedCrm[postId] || {};
     storedCrm[postId] = { ...postData, ...updates };
-    localStorage.setItem("farol-crm-data", JSON.stringify(storedCrm));
+    localStorage.setItem("atalaia-crm-data", JSON.stringify(storedCrm));
   };
 
   useEffect(() => {
     if (externalPosts.length > 0) {
       const storedCrm = JSON.parse(
-        localStorage.getItem("farol-crm-data") || "{}",
+        localStorage.getItem("atalaia-crm-data") || "{}",
       );
 
       setData((prev) => {
@@ -283,7 +283,7 @@ export function RedditTable({
 
   useEffect(() => {
     const savedTimestamp = parseInt(
-      localStorage.getItem("farol-last-visit-timestamp") || "0",
+      localStorage.getItem("atalaia-last-visit-timestamp") || "0",
       10,
     );
     setLastVisitTimestamp(savedTimestamp);
@@ -305,7 +305,7 @@ export function RedditTable({
   useEffect(() => {
     if (isActive && maxDateAdded > 0) {
       localStorage.setItem(
-        "farol-last-visit-timestamp",
+        "atalaia-last-visit-timestamp",
         maxDateAdded.toString(),
       );
     }
