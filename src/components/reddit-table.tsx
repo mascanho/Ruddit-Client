@@ -266,7 +266,7 @@ export function RedditTable({
   const [sortDirection, setSortDirection] = useState<SortDirection>(
     settings.defaultSortDirection,
   );
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [selectedPost, setSelectedPost] = useState<RedditPost | null>(null);
   const [commentsPost, setCommentsPost] = useState<RedditPost | null>(null);
   const [comments, setComments] = useState<Message[]>([]);
@@ -321,7 +321,7 @@ export function RedditTable({
 
     try {
       await invoke("update_post_notes", {
-        id: editingNotePost.id.toString(),
+        id: editingNotePost.id,
         notes: currentNote,
       });
       toast.success("Note saved successfully");
@@ -370,7 +370,7 @@ export function RedditTable({
 
     try {
       await invoke("update_post_assignee", {
-        id: postId.toString(),
+        id: postId,
         assignee: assigneeToSave,
         title: postToUpdate.title,
       });
@@ -536,19 +536,19 @@ export function RedditTable({
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!settings.confirmDelete) {
-      setData(data.filter((post) => post.id !== parseInt(id, 10)));
-      removeSingleSubreddit(parseInt(id, 10)); // Update store
+      setData(data.filter((post) => post.id !== id));
+      removeSingleSubreddit(id); // Update store
       return;
     }
 
     await invoke("remove_single_reddit_command", { post: id });
     toast.info("Post deleted successfully");
     setData((prevData) =>
-      prevData.filter((post) => post.id !== parseInt(id, 10)),
+      prevData.filter((post) => post.id !== id),
     );
-    removeSingleSubreddit(parseInt(id, 10)); // Update store
+    removeSingleSubreddit(id); // Update store
     // No need to reload the window, UI updates via state change
   };
 
@@ -1161,7 +1161,7 @@ export function RedditTable({
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onClick={() => setDeleteId(post.id.toString())}
+                              onClick={() => setDeleteId(post.id)}
                               className="text-destructive focus:bg-destructive/10"
                             >
                               <Trash2 className="h-3 w-3 mr-2" /> Delete
