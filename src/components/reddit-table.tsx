@@ -774,64 +774,77 @@ export function RedditTable({
 
       <Card className="p-0 m-0 h-[770px] flex flex-col">
         {/* Single Table Container with Fixed Header */}
-        <div className="flex-1 overflow-auto relative">
-          <Table className="table-fixed">
-            {/* Fixed Header */}
-            <TableHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur-md shadow-sm">
-              <TableRow className="hover:bg-transparent border-b">
-                <TableHead className="w-[32px] px-2 text-center">
-                  <Notebook className="h-3.5 w-3.5 mx-auto opacity-50" />
+        <div className="flex-1 overflow-auto relative custom-scroll">
+          <Table
+            containerClassName="overflow-visible"
+            className="table-fixed w-full border-separate border-spacing-0"
+          >
+            <colgroup>
+              <col className="w-[32px]" />
+              <col className="w-[30px]" />
+              <col className="w-[85px]" />
+              <col />
+              <col className="w-[100px]" />
+              <col className="w-[60px]" />
+              <col className="w-[40px]" />
+              <col className="w-[95px]" />
+              <col className="w-[45px]" />
+              <col className="w-[45px]" />
+            </colgroup>
+            <TableHeader className="sticky top-0 z-40 bg-background shadow-sm">
+              <TableRow className="hover:bg-transparent border-none">
+                <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                  <Notebook className="h-3.5 w-3.5 mx-auto opacity-40" />
                 </TableHead>
-                <TableHead className="w-[30px] px-1 text-center font-mono text-[10px] uppercase tracking-wider opacity-60">
+                <TableHead className="sticky top-0 h-9 px-1 text-center font-mono text-[10px] uppercase tracking-wider opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   #
                 </TableHead>
-                <TableHead className="w-[85px] px-2">
+                <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100"
+                    className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
                     onClick={() => handleSort("formatted_date")}
                   >
                     Date
-                    <ArrowUpDown className="ml-1 h-3 w-3" />
+                    <ArrowUpDown className="h-3 w-3 opacity-30" />
                   </Button>
                 </TableHead>
-                <TableHead className="px-2">
+                <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100"
+                    className="h-7 px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center gap-1"
                     onClick={() => handleSort("title")}
                   >
                     Post Content
-                    <ArrowUpDown className="ml-1 h-3 w-3" />
+                    <ArrowUpDown className="h-3 w-3 opacity-30" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[110px] px-2 text-center">
+                <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 mx-auto"
+                    className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
                     onClick={() => handleSort("subreddit")}
                   >
                     Subreddit
-                    <ArrowUpDown className="ml-1 h-3 w-3" />
+                    <ArrowUpDown className="h-3 w-3 opacity-30" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[60px] px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-70">
+                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   Intent
                 </TableHead>
-                <TableHead className="w-[40px] px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-70">
-                  <span className="sr-only">Engaged</span>
+                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   <CheckCircle2 className="h-3.5 w-3.5 mx-auto" />
                 </TableHead>
-                <TableHead className="w-[100px] px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-70">
+                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   Status
                 </TableHead>
-                <TableHead className="w-[50px] px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-70">
+                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   Own
                 </TableHead>
-                <TableHead className="w-[50px] px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-70">
+                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   Op
                 </TableHead>
               </TableRow>
@@ -854,8 +867,8 @@ export function RedditTable({
                     <TableRow
                       key={post.id}
                       className={`group hover:z-10 relative text-[11px] h-8 transition-all border-l-[3px] border-b-[0.5px] border-b-border/50 ${post.date_added > lastVisitTimestamp
-                          ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.5)]"
-                          : "border-l-transparent hover:bg-muted/30"
+                        ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.5)]"
+                        : "border-l-transparent hover:bg-muted/30"
                         } ${settings.tableDensity === "compact"
                           ? "h-[30px]"
                           : settings.tableDensity === "spacious"
