@@ -135,11 +135,13 @@ export function RedditTable({
   externalPosts = [],
   searchState,
   onSearchStateChange,
+  isActive = false,
 }: {
   onAddComments: (comments: Message[]) => void;
   externalPosts?: RedditPost[];
   searchState: SearchState;
   onSearchStateChange: (state: SearchState) => void;
+  isActive?: boolean;
 }) {
   const [data, setData] = useState<RedditPost[]>(initialData);
   const { settings, updateSettings } = useAppSettings();
@@ -297,15 +299,15 @@ export function RedditTable({
   }, [data, lastVisitTimestamp]);
 
   // Effect to persist the latest timestamp to localStorage for the next session
+  // Done only when the tab becomes active to "acknowledge" current posts
   useEffect(() => {
-    if (maxDateAdded > lastVisitTimestamp) {
-      // We only update storage, NOT the state, so highlights persist for this session
+    if (isActive && maxDateAdded > 0) {
       localStorage.setItem(
         "ruddit-last-visit-timestamp",
-        maxDateAdded.toString(),
+        maxDateAdded.toString()
       );
     }
-  }, [maxDateAdded, lastVisitTimestamp]);
+  }, [isActive, maxDateAdded === 0]); // Trigger when isActive changes or when first data arrives
 
   const handleEditNote = (post: RedditPost) => {
     setEditingNotePost(post);

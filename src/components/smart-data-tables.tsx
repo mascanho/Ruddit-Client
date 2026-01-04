@@ -76,6 +76,7 @@ export function SmartDataTables() {
     redditRelevance: "all",
     messagesSearch: "",
   });
+  const [activeTab, setActiveTab] = useState("reddit");
 
   const { subRedditsSaved, setSingleSubreddit } = useAddSingleSubReddit();
 
@@ -132,6 +133,7 @@ export function SmartDataTables() {
   };
 
   const handleTabChange = (value: string) => {
+    setActiveTab(value);
     if (value === "reddit" && (subredditsModified || newPostsCount > 0)) {
       setSubredditsModified(false);
       setNewPostsCount(0);
@@ -303,6 +305,7 @@ export function SmartDataTables() {
             externalPosts={allSavedPosts}
             searchState={searchState}
             onSearchStateChange={setSearchState}
+            isActive={activeTab === "reddit"}
           />
         </TabsContent>
 

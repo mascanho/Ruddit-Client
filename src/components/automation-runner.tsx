@@ -53,7 +53,7 @@ export function AutomationRunner() {
         addLog("Starting automation cycle...", "info");
         await runMonitoredSubredditScan();
         await runGlobalKeywordSearch();
-        setLastRun(new Date());
+        setLastRun(Date.now());
         addLog("Cycle complete. Waiting for next interval.", "success");
     };
 
