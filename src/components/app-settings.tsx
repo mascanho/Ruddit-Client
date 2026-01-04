@@ -1371,7 +1371,7 @@ function RedditAuthConfig() {
             User Account (for Commenting)
           </Label>
           <p className="text-sm text-muted-foreground mb-3">
-            Necessary if you want to reply to threads directly from Ruddit.
+            Necessary if you want to reply to threads directly from Farol.
           </p>
           <div className="space-y-3">
             <div className="space-y-1">

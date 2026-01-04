@@ -45,12 +45,10 @@ pub async fn get_reddit_results(
         Ok(t) if !t.is_empty() => t,
         Ok(_) => {
             eprintln!("Empty access token received");
-            api_keys::ConfigDirs::edit_config_file().unwrap();
             return Err("config_updated".into()); // Return error to indicate config update needed
         }
         Err(e) => {
             eprintln!("Failed to retrieve access token: {:?}", e);
-            api_keys::ConfigDirs::edit_config_file().unwrap();
             return Err("config_updated".into()); // Return error to indicate config update needed
         }
     };

@@ -133,7 +133,7 @@ pub async fn get_access_token(
     let response = client
         .post("https://www.reddit.com/api/v1/access_token")
         .header("Authorization", format!("Basic {}", encoded))
-        .header("User-Agent", "RudditApp/0.1 by Ruddit")
+        .header("User-Agent", "FarolApp/0.1 by Farol")
         .form(&[("grant_type", "client_credentials")])
         .send()
         .await?;
@@ -283,7 +283,7 @@ pub async fn search_subreddit_posts(
             ("t", "all"),
         ])
         .header("Authorization", format!("Bearer {}", access_token))
-        .header("User-Agent", "RustRedditApp/0.1 by Ruddit")
+        .header("User-Agent", "RustFarolApp/0.1 by Farol")
         .send()
         .await?;
 
@@ -428,12 +428,10 @@ pub async fn get_post_comments(
         Ok(t) if !t.is_empty() => t,
         Ok(_) => {
             eprintln!("Empty access token received");
-            api_keys::ConfigDirs::edit_config_file().unwrap();
             return Ok(Vec::new());
         }
         Err(e) => {
             eprintln!("Failed to retrieve access token: {:?}", e);
-            api_keys::ConfigDirs::edit_config_file().unwrap();
             return Ok(Vec::new());
         }
     };
@@ -581,7 +579,7 @@ pub async fn get_user_access_token(
     let response = client
         .post("https://www.reddit.com/api/v1/access_token")
         .header("Authorization", format!("Basic {}", encoded))
-        .header("User-Agent", format!("macos:com.ruddit.client:v0.1.0 (by /u/{})", username))
+        .header("User-Agent", format!("macos:com.farol.client:v0.1.0 (by /u/{})", username))
         .form(&[
             ("grant_type", "password"),
             ("username", username),
@@ -613,7 +611,7 @@ pub async fn post_comment(
     let response = client
         .post("https://oauth.reddit.com/api/comment")
         .header("Authorization", format!("Bearer {}", access_token))
-        .header("User-Agent", "RudditApp/0.1 by Ruddit")
+        .header("User-Agent", "FarolApp/0.1 by Farol")
         .form(&[("thing_id", parent_id), ("text", text), ("api_type", "json")])
         .send()
         .await?;

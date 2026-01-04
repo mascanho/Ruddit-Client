@@ -74,6 +74,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronDown,
   User,
   Pencil,
@@ -189,7 +191,7 @@ export function RedditTable({
   useEffect(() => {
     if (data.length === 0) return;
     const storedCrm = JSON.parse(
-      localStorage.getItem("ruddit-crm-data") || "{}",
+      localStorage.getItem("farol-crm-data") || "{}",
     );
 
     // Only update if we have new data to merge to avoid infinite loop if we put this in the dependency array incorrectly
@@ -206,17 +208,17 @@ export function RedditTable({
 
     // Update LocalStorage
     const storedCrm = JSON.parse(
-      localStorage.getItem("ruddit-crm-data") || "{}",
+      localStorage.getItem("farol-crm-data") || "{}",
     );
     const postData = storedCrm[postId] || {};
     storedCrm[postId] = { ...postData, ...updates };
-    localStorage.setItem("ruddit-crm-data", JSON.stringify(storedCrm));
+    localStorage.setItem("farol-crm-data", JSON.stringify(storedCrm));
   };
 
   useEffect(() => {
     if (externalPosts.length > 0) {
       const storedCrm = JSON.parse(
-        localStorage.getItem("ruddit-crm-data") || "{}",
+        localStorage.getItem("farol-crm-data") || "{}",
       );
 
       setData((prev) => {
@@ -281,7 +283,7 @@ export function RedditTable({
 
   useEffect(() => {
     const savedTimestamp = parseInt(
-      localStorage.getItem("ruddit-last-visit-timestamp") || "0",
+      localStorage.getItem("farol-last-visit-timestamp") || "0",
       10,
     );
     setLastVisitTimestamp(savedTimestamp);
@@ -303,7 +305,7 @@ export function RedditTable({
   useEffect(() => {
     if (isActive && maxDateAdded > 0) {
       localStorage.setItem(
-        "ruddit-last-visit-timestamp",
+        "farol-last-visit-timestamp",
         maxDateAdded.toString(),
       );
     }
@@ -506,11 +508,12 @@ export function RedditTable({
     externalPosts,
   ]);
 
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+
   const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const endIndex = startIndex + rowsPerPage;
     return filteredAndSortedData.slice(startIndex, endIndex);
-  }, [filteredAndSortedData, currentPage, rowsPerPage, externalPosts]);
+  }, [filteredAndSortedData, startIndex, endIndex]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / rowsPerPage);
 
@@ -1240,71 +1243,91 @@ export function RedditTable({
           </Table>
         </div>
 
-        {/* Pagination Section */}
-        {filteredAndSortedData.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t flex-none">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Rows per page:
-              </span>
-              <Select
-                value={rowsPerPage.toString()}
-                onValueChange={(v) => {
-                  setRowsPerPage(Number(v));
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[80px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Footer - Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t backdrop-blur-md">
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+                  Display:
+                </span>
+                <select
+                  className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
+                  value={rowsPerPage}
+                  onChange={(e) => {
+                    setRowsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  <ChevronLeft className="h-4 w-4 -ml-3" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                  <ChevronRight className="h-4 w-4 -ml-3" />
-                </Button>
+                  {[10, 25, 50, 100].map((v) => (
+                    <option key={v} value={v}>
+                      {v} / Page
+                    </option>
+                  ))}
+                </select>
               </div>
+              <div className="text-[10px] font-mono text-muted-foreground uppercase">
+                Batch: {startIndex + 1}—
+                {Math.min(endIndex, filteredAndSortedData.length)} of{" "}
+                {filteredAndSortedData.length}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary/5 border border-primary/20">
+                <span className="text-[10px] font-bold text-primary opacity-60">
+                  PAGE
+                </span>
+                <span className="text-[11px] font-bold text-primary font-mono">
+                  {currentPage}
+                </span>
+                <span className="text-[10px] font-bold text-primary opacity-40">
+                  /
+                </span>
+                <span className="text-[11px] font-bold text-primary font-mono">
+                  {totalPages}
+                </span>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         )}

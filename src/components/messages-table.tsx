@@ -39,6 +39,8 @@ import {
   Copy,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
@@ -379,7 +381,9 @@ export function MessagesTable({
             <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t backdrop-blur-md">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">Page Size:</span>
+                  <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+                    Display:
+                  </span>
                   <select
                     className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
                     value={rowsPerPage}
@@ -388,13 +392,17 @@ export function MessagesTable({
                       setCurrentPage(1);
                     }}
                   >
-                    {[10, 25, 50, 100].map(v => (
-                      <option key={v} value={v}>{v}</option>
+                    {[10, 25, 50, 100].map((v) => (
+                      <option key={v} value={v}>
+                        {v} / Page
+                      </option>
                     ))}
                   </select>
                 </div>
-                <div className="text-[10px] font-mono text-muted-foreground uppercase opacity-40">
-                  Nodes {startIndex + 1}—{Math.min(endIndex, filteredAndSortedData.length)} total
+                <div className="text-[10px] font-mono text-muted-foreground uppercase">
+                  Batch: {startIndex + 1}—
+                  {Math.min(endIndex, filteredAndSortedData.length)} of{" "}
+                  {filteredAndSortedData.length}
                 </div>
               </div>
 
@@ -406,30 +414,40 @@ export function MessagesTable({
                   onClick={() => setCurrentPage(1)}
                   disabled={currentPage === 1}
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  <ChevronLeft className="h-4 w-4 -ml-3" />
+                  <ChevronsLeft className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
 
                 <div className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary/5 border border-primary/20">
-                  <span className="text-[11px] font-bold text-primary font-mono">{currentPage}</span>
-                  <span className="text-[10px] font-bold text-primary opacity-40">/</span>
-                  <span className="text-[11px] font-bold text-primary font-mono">{totalPages}</span>
+                  <span className="text-[10px] font-bold text-primary opacity-60">
+                    PAGE
+                  </span>
+                  <span className="text-[11px] font-bold text-primary font-mono">
+                    {currentPage}
+                  </span>
+                  <span className="text-[10px] font-bold text-primary opacity-40">
+                    /
+                  </span>
+                  <span className="text-[11px] font-bold text-primary font-mono">
+                    {totalPages}
+                  </span>
                 </div>
 
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
                   disabled={currentPage === totalPages}
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -441,8 +459,7 @@ export function MessagesTable({
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={currentPage === totalPages}
                 >
-                  <ChevronRight className="h-4 w-4" />
-                  <ChevronRight className="h-4 w-4 -ml-3" />
+                  <ChevronsRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>

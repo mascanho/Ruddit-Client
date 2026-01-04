@@ -58,7 +58,7 @@ impl DB {
             "Failed to get base directories",
         )))?;
 
-        let app_dir = base_dirs.data_dir().join("ruddit");
+        let app_dir = base_dirs.data_dir().join("farol");
 
         if !app_dir.exists() {
             std::fs::create_dir_all(&app_dir).map_err(|e| {
@@ -69,7 +69,7 @@ impl DB {
             })?;
         }
 
-        let db_path = app_dir.join("ruddit.db");
+        let db_path = app_dir.join("farol.db");
         let conn = Connection::open(db_path)?;
 
         let db_instance = DB { conn };

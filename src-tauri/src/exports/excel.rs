@@ -229,7 +229,7 @@ pub fn export_gemini_to_excel(json_str: &str) -> Result<(), XlsxError> {
     // Create output directory and save file
     let folder_name = "Reddit_data";
     let filename = format!(
-        "Ruddit_leads_{}.xlsx",
+        "Farol_leads_{}.xlsx",
         Local::now().format("%d-%m-%Y_%H-%M-%S")
     );
 
@@ -443,7 +443,7 @@ pub async fn export_comments_with_gemini(data: &str) -> Result<(), XlsxError> {
 
     let folder_name = "Reddit_data";
     let filename = format!(
-        "Ruddit_comments_{}.xlsx",
+        "Farol_comments_{}.xlsx",
         Local::now().format("%d-%m-%Y_%H-%M-%S")
     );
 

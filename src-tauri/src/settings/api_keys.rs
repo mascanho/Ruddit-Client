@@ -178,7 +178,7 @@ impl ConfigDirs {
         let config_dir = base_dirs.config_dir();
 
         // Create app-specific config directory
-        let app_config_dir = config_dir.join("ruddit");
+        let app_config_dir = config_dir.join("farol");
 
         println!("Creating config directory: {}", app_config_dir.display());
         fs::create_dir_all(&app_config_dir)?;
@@ -202,7 +202,7 @@ impl ConfigDirs {
         let config_dir = base_dirs.config_dir();
 
         // Path to the config file
-        let config_path = config_dir.join("ruddit/settings.toml");
+        let config_path = config_dir.join("farol/settings.toml");
 
         if !config_path.exists() {
             Self::create_default_config()?;
@@ -222,7 +222,7 @@ impl ConfigDirs {
     pub fn save_config(config: &AppConfig) -> Result<(), Box<dyn std::error::Error>> {
         let base_dirs = BaseDirs::new().ok_or("Failed to get base directories")?;
         let config_dir = base_dirs.config_dir();
-        let config_path = config_dir.join("ruddit/settings.toml");
+        let config_path = config_dir.join("farol/settings.toml");
 
         let toml_content = toml::to_string_pretty(config)?;
         fs::write(config_path, toml_content)?;
@@ -234,7 +234,7 @@ impl ConfigDirs {
         // get the config file path and edit natively.
         let base_dirs = BaseDirs::new().ok_or("Failed to get base directories")?;
         let config_dir = base_dirs.config_dir();
-        let config_path = config_dir.join("ruddit/settings.toml");
+        let config_path = config_dir.join("farol/settings.toml");
 
         #[cfg(target_os = "windows")]
         {
