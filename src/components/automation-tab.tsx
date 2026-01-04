@@ -339,9 +339,9 @@ export function AutomationTab() {
 
   const noKeywords =
     (settings.brandKeywords?.length || 0) +
-    (settings.competitorKeywords?.length || 0) +
-    (settings.monitoredKeywords?.length || 0) +
-    (settings.monitoredSubreddits?.length || 0) ===
+      (settings.competitorKeywords?.length || 0) +
+      (settings.monitoredKeywords?.length || 0) +
+      (settings.monitoredSubreddits?.length || 0) ===
     0;
 
   const keywordCategories = [
@@ -428,7 +428,9 @@ export function AutomationTab() {
               <div className="p-1 rounded-md bg-primary/10">
                 <Bot className="h-4 w-4 text-primary" />
               </div>
-              <h2 className="text-xs font-black uppercase tracking-widest text-foreground/80">Digital Agent</h2>
+              <h2 className="text-xs font-black uppercase tracking-widest text-foreground/80">
+                Digital Agent
+              </h2>
               <Badge
                 variant="outline"
                 className={`flex items-center gap-1.5 text-[9px] font-black py-0 px-2 rounded-full border-none ${isRunning ? "bg-green-500/10 text-green-500" : "bg-gray-500/10 text-muted-foreground"}`}
@@ -441,7 +443,9 @@ export function AutomationTab() {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Interval:</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">
+                  Interval:
+                </span>
                 <select
                   value={intervalMinutes.toString()}
                   onChange={(e) => setIntervalMinutes(parseInt(e.target.value))}
@@ -455,7 +459,9 @@ export function AutomationTab() {
                 </select>
               </div>
               <div className="flex items-center gap-2 border-l border-border/50 pl-4">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Last Run:</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">
+                  Last Run:
+                </span>
                 <span className="text-[10px] font-bold font-mono text-foreground/80">
                   {lastRun ? moment(lastRun).format("HH:mm:ss") : "--:--:--"}
                 </span>
@@ -557,7 +563,10 @@ export function AutomationTab() {
                   </div>
                 ) : (
                   logs.map((log) => (
-                    <div key={log.id} className="flex gap-2 items-start opacity-80 hover:opacity-100 transition-opacity">
+                    <div
+                      key={log.id}
+                      className="flex gap-2 items-start opacity-80 hover:opacity-100 transition-opacity"
+                    >
                       <span className="text-muted-foreground/40 shrink-0">
                         [{moment(log.timestamp).format("HH:mm:ss")}]
                       </span>
@@ -602,7 +611,7 @@ export function AutomationTab() {
               Reset Feed
             </button>
           </div>
-          <div className="p-0 flex-1 min-h-0 relative overflow-hidden">
+          <div className="p-0 flex-1 min-h-0 relative overflow-hidden rounded-none">
             {foundPosts.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground flex flex-col items-center justify-center h-full">
                 <Bot className="h-8 w-8 mx-auto mb-1 opacity-20" />
@@ -612,8 +621,8 @@ export function AutomationTab() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-y-scroll h-[calc(100vh-50vh)] custom-scroll border rounded-md">
-                <table className="w-full text-xs text-left table-fixed">
+              <div className="overflow-y-scroll h-[calc(100vh-50vh)] custom-scroll border rounded-none">
+                <table className="w-full text-xs text-left table-fixed rounded-none">
                   <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
                     <tr className="border-b">
                       {["Intent", "Title", "Subreddit"].map((h) => (

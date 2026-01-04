@@ -304,7 +304,7 @@ export function RedditTable({
     if (isActive && maxDateAdded > 0) {
       localStorage.setItem(
         "ruddit-last-visit-timestamp",
-        maxDateAdded.toString()
+        maxDateAdded.toString(),
       );
     }
   }, [isActive, maxDateAdded === 0]); // Trigger when isActive changes or when first data arrives
@@ -432,8 +432,6 @@ export function RedditTable({
     }
   };
 
-
-
   const subreddits = useMemo(() => {
     return Array.from(new Set(data.map((post) => post.subreddit)));
   }, [data, externalPosts]);
@@ -544,7 +542,9 @@ export function RedditTable({
 
     await invoke("remove_single_reddit_command", { post: id });
     toast.info("Post deleted successfully");
-    setData((prevData) => prevData.filter((post) => post.id !== parseInt(id, 10)));
+    setData((prevData) =>
+      prevData.filter((post) => post.id !== parseInt(id, 10)),
+    );
     removeSingleSubreddit(parseInt(id, 10)); // Update store
     // No need to reload the window, UI updates via state change
   };
@@ -694,7 +694,7 @@ export function RedditTable({
 
   return (
     <>
-      <Card className="p-3 shadow-sm border-border/60 bg-background/50 backdrop-blur-sm">
+      <Card className="p-3 shadow-sm border-border/60 bg-white backdrop-blur-sm">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col sm:flex-row gap-2 items-center">
             <div className="relative flex-1 group w-full">
@@ -708,29 +708,64 @@ export function RedditTable({
             </div>
 
             <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto custom-scroll">
-              <Select value={subredditFilter} onValueChange={setSubredditFilter}>
+              <Select
+                value={subredditFilter}
+                onValueChange={setSubredditFilter}
+              >
                 <SelectTrigger className="w-[140px] h-8 text-[11px] font-bold uppercase tracking-tight bg-background/50">
                   <SelectValue placeholder="Community" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" className="text-[11px] font-bold uppercase">All</SelectItem>
+                  <SelectItem
+                    value="all"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    All
+                  </SelectItem>
                   {subreddits.map((subreddit) => (
-                    <SelectItem key={subreddit} value={subreddit} className="text-[11px] font-bold">
+                    <SelectItem
+                      key={subreddit}
+                      value={subreddit}
+                      className="text-[11px] font-bold"
+                    >
                       r/{subreddit}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
+              <Select
+                value={relevanceFilter}
+                onValueChange={setRelevanceFilter}
+              >
                 <SelectTrigger className="w-[120px] h-8 text-[11px] font-bold uppercase tracking-tight bg-background/50">
                   <SelectValue placeholder="Intent" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" className="text-[11px] font-bold uppercase">All Intent</SelectItem>
-                  <SelectItem value="high" className="text-[11px] font-bold uppercase">High</SelectItem>
-                  <SelectItem value="medium" className="text-[11px] font-bold uppercase">Medium</SelectItem>
-                  <SelectItem value="low" className="text-[11px] font-bold uppercase">Low</SelectItem>
+                  <SelectItem
+                    value="all"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    All Intent
+                  </SelectItem>
+                  <SelectItem
+                    value="high"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    High
+                  </SelectItem>
+                  <SelectItem
+                    value="medium"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Medium
+                  </SelectItem>
+                  <SelectItem
+                    value="low"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Low
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -739,12 +774,42 @@ export function RedditTable({
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" className="text-[11px] font-bold uppercase">All Status</SelectItem>
-                  <SelectItem value="new" className="text-[11px] font-bold uppercase">New</SelectItem>
-                  <SelectItem value="investigating" className="text-[11px] font-bold uppercase">Investigating</SelectItem>
-                  <SelectItem value="replied" className="text-[11px] font-bold uppercase">Replied</SelectItem>
-                  <SelectItem value="closed" className="text-[11px] font-bold uppercase">Closed</SelectItem>
-                  <SelectItem value="ignored" className="text-[11px] font-bold uppercase">Ignored</SelectItem>
+                  <SelectItem
+                    value="all"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    All Status
+                  </SelectItem>
+                  <SelectItem
+                    value="new"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    New
+                  </SelectItem>
+                  <SelectItem
+                    value="investigating"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Investigating
+                  </SelectItem>
+                  <SelectItem
+                    value="replied"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Replied
+                  </SelectItem>
+                  <SelectItem
+                    value="closed"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Closed
+                  </SelectItem>
+                  <SelectItem
+                    value="ignored"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Ignored
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <Select
@@ -871,15 +936,17 @@ export function RedditTable({
                   <Fragment key={post.id}>
                     <TableRow
                       key={post.id}
-                      className={`group hover:z-10 relative text-[11px] h-8 transition-all border-l-[3px] border-b-[0.5px] border-b-border/50 ${post.date_added > lastVisitTimestamp
-                        ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.5)]"
-                        : "border-l-transparent hover:bg-muted/30"
-                        } ${settings.tableDensity === "compact"
+                      className={`group hover:z-10 relative text-[11px] h-8 transition-all border-l-[3px] border-b-[0.5px] border-b-border/50 ${
+                        post.date_added > lastVisitTimestamp
+                          ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.5)]"
+                          : "border-l-transparent hover:bg-muted/30"
+                      } ${
+                        settings.tableDensity === "compact"
                           ? "h-[30px]"
                           : settings.tableDensity === "spacious"
                             ? "h-12"
                             : "h-9"
-                        }`}
+                      }`}
                     >
                       <TableCell className="px-1 text-center">
                         <Button
@@ -889,8 +956,11 @@ export function RedditTable({
                           className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <ChevronDown
-                            className={`h-3 w-3 transition-transform duration-300 ${expandedRows.has(post.id.toString()) ? "rotate-180" : ""
-                              }`}
+                            className={`h-3 w-3 transition-transform duration-300 ${
+                              expandedRows.has(post.id.toString())
+                                ? "rotate-180"
+                                : ""
+                            }`}
                           />
                         </Button>
                       </TableCell>
@@ -936,7 +1006,9 @@ export function RedditTable({
                             {post.author && (
                               <div className="flex items-center gap-1 ml-1 border-l pl-2">
                                 <User className="h-2.5 w-2.5 opacity-50" />
-                                <span className="truncate">u/{post.author}</span>
+                                <span className="truncate">
+                                  u/{post.author}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -971,7 +1043,7 @@ export function RedditTable({
                         {post.intent && (
                           <Badge
                             className={`${getIntentColor(
-                              post.intent.toLowerCase()
+                              post.intent.toLowerCase(),
                             )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
                           >
                             {post.intent.slice(0, 3).toUpperCase()}
@@ -1005,14 +1077,16 @@ export function RedditTable({
                         >
                           <SelectTrigger
                             className={`w-full h-6 text-[10px] px-2 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(
-                              post.status
+                              post.status,
                             )} bg-opacity-10 hover:bg-opacity-20 transition-all font-bold rounded-md`}
                           >
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="text-[11px]">
                             <SelectItem value="new">New</SelectItem>
-                            <SelectItem value="investigating">Research</SelectItem>
+                            <SelectItem value="investigating">
+                              Research
+                            </SelectItem>
                             <SelectItem value="replied">Replied</SelectItem>
                             <SelectItem value="closed">Closed</SelectItem>
                             <SelectItem value="ignored">Ignored</SelectItem>
@@ -1030,7 +1104,7 @@ export function RedditTable({
                           <SelectTrigger className="w-6 h-6 rounded-full mx-auto p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden transition-transform active:scale-95">
                             <Avatar className="h-5 w-5 border border-muted-foreground/10">
                               {post.assignee &&
-                                post.assignee !== "unassigned" ? (
+                              post.assignee !== "unassigned" ? (
                                 <>
                                   <AvatarImage
                                     src={`https://avatar.vercel.sh/${post.assignee}`}
@@ -1069,10 +1143,17 @@ export function RedditTable({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="text-xs">
-                            <DropdownMenuItem onClick={() => handleGetComments(post, post.sort_type)}>
-                              <MessageCircle className="h-3 w-3 mr-2" /> Comments
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleGetComments(post, post.sort_type)
+                              }
+                            >
+                              <MessageCircle className="h-3 w-3 mr-2" />{" "}
+                              Comments
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditNote(post)}>
+                            <DropdownMenuItem
+                              onClick={() => handleEditNote(post)}
+                            >
                               <Pencil className="h-3 w-3 mr-2" /> Notes
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />

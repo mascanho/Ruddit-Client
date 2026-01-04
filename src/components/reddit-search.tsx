@@ -155,7 +155,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
+            (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -195,7 +195,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
+            (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -261,7 +261,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
+            (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -652,7 +652,7 @@ export function RedditSearch({
   function isColoredRelevance(sortType: string) {
     // Renamed parameter
     switch (
-    sortType // Use new parameter
+      sortType // Use new parameter
     ) {
       case "hot":
         return "bg-red-500";
@@ -670,7 +670,7 @@ export function RedditSearch({
   return (
     <div className="flex flex-col gap-4 animate-in fade-in duration-500">
       {/* Search Bar Section */}
-      <Card className="p-4 shadow-sm border-border/60 bg-background/50 backdrop-blur-sm">
+      <Card className="p-4 shadow-sm border-border/60 bg-white backdrop-blur-sm">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div>
@@ -690,10 +690,11 @@ export function RedditSearch({
                   size="sm"
                   onClick={() => toggleSort(sort)}
                   disabled={isSearching}
-                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${selectedSorts.includes(sort)
-                    ? "shadow-sm"
-                    : "opacity-60 hover:opacity-100 hover:bg-background/80"
-                    }`}
+                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${
+                    selectedSorts.includes(sort)
+                      ? "shadow-sm"
+                      : "opacity-60 hover:opacity-100 hover:bg-background/80"
+                  }`}
                 >
                   {sort === "hot" && <Flame className="h-3 w-3 mr-1.5" />}
                   {sort === "top" && <TrendingUp className="h-3 w-3 mr-1.5" />}
@@ -748,7 +749,9 @@ export function RedditSearch({
           <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/20 backdrop-blur-md sticky top-0 z-10 transition-colors">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">Sort:</span>
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+                  Sort:
+                </span>
                 <select
                   className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
                   value={viewSort}
@@ -766,17 +769,22 @@ export function RedditSearch({
               <div className="w-px h-3 bg-border/60" />
 
               <div className="flex items-center gap-1">
-                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40 mr-1">View:</span>
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40 mr-1">
+                  View:
+                </span>
                 {(["hot", "top", "new"] as SortType[]).map((filter) => (
                   <button
                     key={filter}
                     onClick={() => toggleViewFilter(filter)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewFilters.includes(filter)
-                      ? filter === "hot" ? "bg-red-500/10 text-red-600 dark:text-red-400" :
-                        filter === "top" ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" :
-                          "bg-green-500/10 text-green-600 dark:text-green-400"
-                      : "opacity-30 hover:opacity-100"
-                      }`}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
+                      viewFilters.includes(filter)
+                        ? filter === "hot"
+                          ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                          : filter === "top"
+                            ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                            : "bg-green-500/10 text-green-600 dark:text-green-400"
+                        : "opacity-30 hover:opacity-100"
+                    }`}
                   >
                     {filter}
                   </button>
@@ -786,15 +794,18 @@ export function RedditSearch({
               <div className="w-px h-3 bg-border/60" />
 
               <div className="flex items-center gap-1">
-                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40 mr-1">Intent:</span>
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40 mr-1">
+                  Intent:
+                </span>
                 {["High", "Medium", "Low"].map((intent) => (
                   <button
                     key={intent}
                     onClick={() => toggleViewIntentFilter(intent)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewIntentFilters.includes(intent)
-                      ? "bg-primary/10 text-primary"
-                      : "opacity-30 hover:opacity-100"
-                      }`}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
+                      viewIntentFilters.includes(intent)
+                        ? "bg-primary/10 text-primary"
+                        : "opacity-30 hover:opacity-100"
+                    }`}
                   >
                     {intent}
                   </button>
@@ -855,10 +866,13 @@ export function RedditSearch({
                           {result.sort_type?.split(",").map((type) => (
                             <span
                               key={type}
-                              className={`text-[9px] font-bold uppercase px-1 rounded-sm text-white ${type === "hot" ? "bg-red-500/80" :
-                                type === "top" ? "bg-blue-500/80" :
-                                  "bg-green-500/80"
-                                }`}
+                              className={`text-[9px] font-bold uppercase px-1 rounded-sm text-white ${
+                                type === "hot"
+                                  ? "bg-red-500/80"
+                                  : type === "top"
+                                    ? "bg-blue-500/80"
+                                    : "bg-green-500/80"
+                              }`}
                             >
                               {type}
                             </span>
@@ -870,7 +884,10 @@ export function RedditSearch({
                         </span>
                       </div>
 
-                      <h4 className="font-bold text-sm leading-snug group-hover:text-primary transition-colors cursor-pointer" onClick={() => handleOpenInBrowser(result.url)}>
+                      <h4
+                        className="font-bold text-sm leading-snug group-hover:text-primary transition-colors cursor-pointer"
+                        onClick={() => handleOpenInBrowser(result.url)}
+                      >
                         <KeywordHighlighter
                           text={result.title}
                           searchQuery={query}
@@ -908,7 +925,9 @@ export function RedditSearch({
                           </div>
                           <div className="flex items-center gap-1 border-l pl-2 border-border/40">
                             <span className="opacity-50">BY:</span>
-                            <span className="text-foreground/80">{result.author}</span>
+                            <span className="text-foreground/80">
+                              {result.author}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -949,7 +968,9 @@ export function RedditSearch({
             ) : (
               <div className="flex flex-col items-center justify-center py-20 opacity-30">
                 <Search className="h-10 w-10 mb-2" />
-                <p className="text-sm font-bold uppercase tracking-widest">No Node Data</p>
+                <p className="text-sm font-bold uppercase tracking-widest">
+                  No Node Data
+                </p>
               </div>
             )}
           </div>
@@ -959,7 +980,9 @@ export function RedditSearch({
             <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t backdrop-blur-md">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">Display:</span>
+                  <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+                    Display:
+                  </span>
                   <select
                     className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
                     value={rowsPerPage}
@@ -968,13 +991,16 @@ export function RedditSearch({
                       setCurrentPage(1);
                     }}
                   >
-                    {[10, 25, 50, 100].map(v => (
-                      <option key={v} value={v}>{v} / Page</option>
+                    {[10, 25, 50, 100].map((v) => (
+                      <option key={v} value={v}>
+                        {v} / Page
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div className="text-[10px] font-mono text-muted-foreground uppercase">
-                  Batch: {startIndex + 1}—{Math.min(endIndex, subreddits.length)} of {subreddits.length}
+                  Batch: {startIndex + 1}—
+                  {Math.min(endIndex, subreddits.length)} of {subreddits.length}
                 </div>
               </div>
 
@@ -992,24 +1018,36 @@ export function RedditSearch({
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
 
                 <div className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary/5 border border-primary/20">
-                  <span className="text-[10px] font-bold text-primary opacity-60">PAGE</span>
-                  <span className="text-[11px] font-bold text-primary font-mono">{currentPage}</span>
-                  <span className="text-[10px] font-bold text-primary opacity-40">/</span>
-                  <span className="text-[11px] font-bold text-primary font-mono">{totalPages}</span>
+                  <span className="text-[10px] font-bold text-primary opacity-60">
+                    PAGE
+                  </span>
+                  <span className="text-[11px] font-bold text-primary font-mono">
+                    {currentPage}
+                  </span>
+                  <span className="text-[10px] font-bold text-primary opacity-40">
+                    /
+                  </span>
+                  <span className="text-[11px] font-bold text-primary font-mono">
+                    {totalPages}
+                  </span>
                 </div>
 
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
                   disabled={currentPage === totalPages}
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -1033,7 +1071,9 @@ export function RedditSearch({
         query.trim() && (
           <div className="flex flex-col items-center justify-center p-12 bg-background/50 border border-dashed rounded-xl opacity-50 animate-in zoom-in duration-300">
             <Search className="h-8 w-8 mb-3 opacity-20" />
-            <p className="text-sm font-bold uppercase tracking-widest">Null Response</p>
+            <p className="text-sm font-bold uppercase tracking-widest">
+              Null Response
+            </p>
             <p className="text-xs mt-1">Found 0 nodes for query: {query}</p>
           </div>
         )
@@ -1045,11 +1085,11 @@ export function RedditSearch({
         post={
           commentsPost
             ? {
-              id: commentsPost.name || commentsPost.id,
-              title: commentsPost.title,
-              url: commentsPost.url,
-              subreddit: commentsPost.subreddit,
-            }
+                id: commentsPost.name || commentsPost.id,
+                title: commentsPost.title,
+                url: commentsPost.url,
+                subreddit: commentsPost.subreddit,
+              }
             : null
         }
         comments={comments}

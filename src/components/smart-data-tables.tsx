@@ -43,7 +43,6 @@ export type Message = {
   subreddit?: string;
 };
 
-
 export type RedditPost = {
   id: string;
   date: string;
@@ -143,16 +142,22 @@ export function SmartDataTables() {
   };
 
   const dataStats = useMemo(() => {
-    const uniqueSubreddits = Array.from(new Set(subRedditsSaved.map((p) => p.subreddit)));
+    const uniqueSubreddits = Array.from(
+      new Set(subRedditsSaved.map((p) => p.subreddit)),
+    );
     const avgRelevance =
       subRedditsSaved.length > 0
         ? subRedditsSaved.reduce((sum, p) => sum + p.relevance_score, 0) /
-        subRedditsSaved.length
+          subRedditsSaved.length
         : 0;
 
-    const highIntentPosts = subRedditsSaved.filter(p => p.intent?.toLowerCase() === 'high').length;
-    const postsWithNotes = subRedditsSaved.filter(p => p.notes && p.notes.trim() !== '').length;
-    const engagedPosts = subRedditsSaved.filter(p => p.engaged === 1).length;
+    const highIntentPosts = subRedditsSaved.filter(
+      (p) => p.intent?.toLowerCase() === "high",
+    ).length;
+    const postsWithNotes = subRedditsSaved.filter(
+      (p) => p.notes && p.notes.trim() !== "",
+    ).length;
+    const engagedPosts = subRedditsSaved.filter((p) => p.engaged === 1).length;
     const totalPosts = subRedditsSaved.length;
     const totalMessages = messages.length;
 
@@ -210,11 +215,17 @@ export function SmartDataTables() {
       <div className="mb-3 flex items-center justify-between px-2">
         <div className="flex items-center gap-3">
           <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-blue-600/50 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
-            <img src="/ruddit-logo.png" alt="logo" className="h-9 w-9 relative" />
+            <div className="absolute -inset-1 bg-linear-to-r from-primary/50 to-blue-600/50 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
+            <img
+              src="/ruddit-logo.png"
+              alt="logo"
+              className="h-9 w-9 relative"
+            />
           </div>
           <div>
-            <h1 className="text-lg font-black tracking-tighter uppercase leading-none text-foreground/90">Ruddit</h1>
+            <h1 className="text-lg font-black tracking-tighter uppercase leading-none text-foreground/90">
+              Ruddit
+            </h1>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 leading-none mt-1">
               Intelligence Engine
             </p>
@@ -223,11 +234,31 @@ export function SmartDataTables() {
 
         <section className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-border/40 shadow-sm">
           {[
-            { icon: Play, onClick: () => setSettingsOpen(true), tooltip: "Run" },
-            { icon: StopCircle, onClick: () => setSettingsOpen(true), tooltip: "Stop" },
-            { icon: Settings2, onClick: () => setSettingsOpen(true), tooltip: "Quick Settings" },
-            { icon: Cog, onClick: handleOpenSettings, tooltip: "Advanced Settings" },
-            { icon: Database, onClick: handleOpenDbFolder, tooltip: "Database" },
+            {
+              icon: Play,
+              onClick: () => setSettingsOpen(true),
+              tooltip: "Run",
+            },
+            {
+              icon: StopCircle,
+              onClick: () => setSettingsOpen(true),
+              tooltip: "Stop",
+            },
+            {
+              icon: Settings2,
+              onClick: () => setSettingsOpen(true),
+              tooltip: "Quick Settings",
+            },
+            {
+              icon: Cog,
+              onClick: handleOpenSettings,
+              tooltip: "Advanced Settings",
+            },
+            {
+              icon: Database,
+              onClick: handleOpenDbFolder,
+              tooltip: "Database",
+            },
           ].map((item, idx) => (
             <Button
               key={idx}
@@ -248,7 +279,7 @@ export function SmartDataTables() {
         className="w-full"
         onValueChange={handleTabChange}
       >
-        <TabsList className="flex w-full h-9 p-0.5 bg-muted/20 border-border/40 mb-2">
+        <TabsList className="flex w-full h-9 p-0.5 bg-blue-100/30 border-border/40 mb-2">
           <TabsTrigger
             value="reddit"
             className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
@@ -274,14 +305,32 @@ export function SmartDataTables() {
           >
             Messages
             {messages.length > 0 && (
-              <Badge variant="secondary" className="ml-2 h-3.5 px-1 text-[9px] font-black opacity-70">
+              <Badge
+                variant="secondary"
+                className="ml-2 h-3.5 px-1 text-[9px] font-black opacity-70"
+              >
                 {messages.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="search" className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">Search</TabsTrigger>
-          <TabsTrigger value="automation" className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">Automation</TabsTrigger>
-          <TabsTrigger value="ai" className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">AI Assistant</TabsTrigger>
+          <TabsTrigger
+            value="search"
+            className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
+            Search
+          </TabsTrigger>
+          <TabsTrigger
+            value="automation"
+            className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
+            Automation
+          </TabsTrigger>
+          <TabsTrigger
+            value="ai"
+            className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
+            AI Assistant
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="reddit" className="mt-0 outline-none">
