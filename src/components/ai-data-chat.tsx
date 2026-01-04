@@ -138,14 +138,13 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
               )}
 
               <div
-                className={`max-w-[100%] rounded-2xl p-4 shadow-sm ${
-                  message.role === "user"
-                    ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
-                    : "bg-muted/50 border border-border/50 rounded-tl-none"
-                }`}
+                className={`max-w-[100%] rounded-xl p-2.5 shadow-sm ${message.role === "user"
+                  ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
+                  : "bg-muted/50 border border-border/50 rounded-tl-none"
+                  }`}
               >
                 <div
-                  className={`text-sm leading-relaxed ${message.role === "user" ? "text-white/95" : "text-foreground"}`}
+                  className={`text-[13px] leading-snug ${message.role === "user" ? "text-white/95" : "text-foreground"}`}
                 >
                   {message.role === "assistant" ? (
                     <ReactMarkdown
@@ -234,11 +233,10 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
                   )}
                 </div>
                 <p
-                  className={`text-[10px] mt-2 font-medium ${
-                    message.role === "user"
-                      ? "text-white/60"
-                      : "text-muted-foreground"
-                  }`}
+                  className={`text-[10px] mt-2 font-medium ${message.role === "user"
+                    ? "text-white/60"
+                    : "text-muted-foreground"
+                    }`}
                 >
                   {message.timestamp.toLocaleTimeString([], {
                     hour: "2-digit",
@@ -304,15 +302,15 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
                 e.key === "Enter" && !e.shiftKey && handleSend()
               }
               disabled={isLoading}
-              className="pr-12 py-6 rounded-full border-border/50 focus-visible:ring-indigo-500/30 shadow-sm bg-background/80 backdrop-blur-sm"
+              className="pr-10 py-5 rounded-lg border-border/50 focus-visible:ring-indigo-500/30 shadow-sm bg-background/80 backdrop-blur-sm text-xs"
             />
             <Button
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
               size="icon"
-              className="absolute right-1.5 h-9 w-9 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md transition-all hover:scale-105"
+              className="absolute right-1 h-8 w-8 rounded-md bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md transition-all"
             >
-              <Send className="h-4 w-4 text-white" />
+              <Send className="h-3.5 w-3.5 text-white" />
             </Button>
           </div>
           <p className="text-[10px] text-center text-muted-foreground">

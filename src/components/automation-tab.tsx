@@ -18,8 +18,10 @@ import {
   Search,
   MessageCircle, // Added MessageCircle icon
 } from "lucide-react";
-import { RedditCommentsView } from "./reddit-comments-view"; // Added RedditCommentsView
-import type { Message } from "./smart-data-tables"; // Added Message type
+import { RedditCommentsView } from "./reddit-comments-view";
+import type { Message } from "./smart-data-tables";
+import moment from "moment";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -337,9 +339,9 @@ export function AutomationTab() {
 
   const noKeywords =
     (settings.brandKeywords?.length || 0) +
-      (settings.competitorKeywords?.length || 0) +
-      (settings.monitoredKeywords?.length || 0) +
-      (settings.monitoredSubreddits?.length || 0) ===
+    (settings.competitorKeywords?.length || 0) +
+    (settings.monitoredKeywords?.length || 0) +
+    (settings.monitoredSubreddits?.length || 0) ===
     0;
 
   const keywordCategories = [
@@ -402,17 +404,17 @@ export function AutomationTab() {
 
   return (
     <TooltipProvider>
-      <div className="p-2 space-y-2 bg-background text-foreground h-full flex flex-col">
+      <div className="p-1 space-y-1.5 bg-background text-foreground h-full flex flex-col">
         <style jsx global>{`
           .custom-scroll::-webkit-scrollbar {
-            width: 5px;
+            width: 4px;
           }
           .custom-scroll::-webkit-scrollbar-track {
             background: transparent;
           }
           .custom-scroll::-webkit-scrollbar-thumb {
             background: hsl(var(--border));
-            border-radius: 5px;
+            border-radius: 4px;
           }
           .custom-scroll::-webkit-scrollbar-thumb:hover {
             background: hsl(var(--accent-foreground));
@@ -420,86 +422,89 @@ export function AutomationTab() {
         `}</style>
 
         {/* === Main Control Panel === */}
-        <div className="bg-card rounded-lg border border-border shadow-sm">
-          <div className="p-2 border-b border-border flex items-center justify-between">
+        <div className="bg-card rounded-lg border border-border/60 shadow-sm overflow-hidden">
+          <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-muted/20">
             <div className="flex items-center gap-3">
-              <Bot className="h-5 w-5 text-primary" />
-              <h2 className="text-base font-semibold">Automation Agent</h2>
-              <span
-                className={`flex items-center gap-1.5 text-xs font-bold py-0.5 px-2 rounded-full ${isRunning ? "bg-green-500/10 text-green-500" : "bg-gray-500/10 text-muted-foreground"}`}
+              <div className="p-1 rounded-md bg-primary/10">
+                <Bot className="h-4 w-4 text-primary" />
+              </div>
+              <h2 className="text-xs font-black uppercase tracking-widest text-foreground/80">Digital Agent</h2>
+              <Badge
+                variant="outline"
+                className={`flex items-center gap-1.5 text-[9px] font-black py-0 px-2 rounded-full border-none ${isRunning ? "bg-green-500/10 text-green-500" : "bg-gray-500/10 text-muted-foreground"}`}
               >
                 <div
-                  className={`h-2 w-2 rounded-full ${isRunning ? "bg-green-500" : "bg-gray-500"}`}
+                  className={`h-1.5 w-1.5 rounded-full ${isRunning ? "bg-green-500 animate-pulse" : "bg-gray-500"}`}
                 ></div>
-                {isRunning ? "RUNNING" : "STOPPED"}
-              </span>
+                {isRunning ? "ACTIVE" : "STANDBY"}
+              </Badge>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-xs">
-                <label className="font-medium text-muted-foreground">
-                  Interval
-                </label>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Interval:</span>
                 <select
                   value={intervalMinutes.toString()}
                   onChange={(e) => setIntervalMinutes(parseInt(e.target.value))}
                   disabled={isRunning}
-                  className="bg-background border border-input rounded-md text-xs h-6 pl-1 pr-6 appearance-none focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="bg-transparent border-none text-[10px] font-bold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
                 >
-                  <option value="5">5 min</option>
-                  <option value="15">15 min</option>
-                  <option value="30">30 min</option>
-                  <option value="60">1 hour</option>
+                  <option value="5">5m</option>
+                  <option value="15">15m</option>
+                  <option value="30">30m</option>
+                  <option value="60">1h</option>
                 </select>
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="font-medium text-muted-foreground">
-                  Last Run:
-                </span>
-                <span className="font-semibold text-foreground">
-                  {lastRun ? new Date(lastRun).toLocaleTimeString() : "N/A"}
+              <div className="flex items-center gap-2 border-l border-border/50 pl-4">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Last Run:</span>
+                <span className="text-[10px] font-bold font-mono text-foreground/80">
+                  {lastRun ? moment(lastRun).format("HH:mm:ss") : "--:--:--"}
                 </span>
               </div>
-              <CustomButton
+              <button
                 onClick={() => setIsRunning(!isRunning)}
-                className={`w-24 h-7 text-sm ${isRunning ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+                className={`flex items-center gap-2 px-4 h-7 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${isRunning ? "bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white" : "bg-primary text-white hover:bg-primary/90 shadow-sm"}`}
               >
                 {isRunning ? (
                   <>
-                    <StopCircle className="mr-1 h-4 w-4" /> Stop
+                    <StopCircle className="h-3.5 w-3.5" /> STop Agent
                   </>
                 ) : (
                   <>
-                    <Play className="mr-1 h-4 w-4" /> Start
+                    <Play className="h-3.5 w-3.5" /> Initialize
                   </>
                 )}
-              </CustomButton>
+              </button>
             </div>
           </div>
           <div className="p-2 grid grid-cols-1 lg:grid-cols-3 gap-2">
-            <div className="lg:col-span-1 rounded-lg border flex flex-col h-[210px]">
-              <div className="flex justify-between items-center p-1.5 border-b">
-                <h3 className="text-sm font-semibold">Monitoring</h3>
+            <div className="lg:col-span-1 rounded-lg border border-border/40 bg-background/30 flex flex-col h-[180px]">
+              <div className="flex justify-between items-center px-2 py-1.5 border-b border-border/40 bg-muted/10">
+                <h3 className="text-[10px] font-black uppercase tracking-widest opacity-60 flex items-center gap-1.5">
+                  <Radar className="h-3 w-3" />
+                  Sensors
+                </h3>
                 {!noKeywords && (
-                  <CustomButton
+                  <button
                     onClick={() => setKeywordsExpanded(!keywordsExpanded)}
-                    className="h-5 text-xs px-1.5 bg-secondary hover:bg-muted"
+                    className="text-[9px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 transition-opacity"
                   >
-                    {keywordsExpanded ? "Show Less" : "Show All"}
-                  </CustomButton>
+                    {keywordsExpanded ? "COMPRESS" : "EXPAND"}
+                  </button>
                 )}
               </div>
-              <div className="p-1.5 flex-1 overflow-y-auto custom-scroll">
+              <div className="p-2 flex-1 overflow-y-auto custom-scroll">
                 {noKeywords ? (
-                  <span className="text-xs text-muted-foreground italic p-2">
-                    No keywords in settings.
+                  <span className="text-[10px] text-muted-foreground italic opacity-50">
+                    No active sensor patterns.
                   </span>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {keywordCategories.map(
                       (category) =>
                         category.keywords.length > 0 && (
                           <div key={category.title}>
-                            <h4 className="text-xs font-bold text-muted-foreground mb-1">
+                            <h4 className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground/40 mb-1 flex items-center gap-1">
+                              <span className="w-1 h-1 rounded-full bg-current opacity-30"></span>
                               {category.title}
                             </h4>
                             <div className="flex flex-wrap gap-1">
@@ -508,7 +513,7 @@ export function AutomationTab() {
                                 .map((k) => (
                                   <KeywordBadge
                                     key={k}
-                                    className={category.className}
+                                    className={`${category.className} text-[9px] font-bold px-1.5 py-0 rounded transition-all hover:scale-105`}
                                     onClick={handleKeywordClick}
                                     keyword={k}
                                   >
@@ -516,9 +521,8 @@ export function AutomationTab() {
                                   </KeywordBadge>
                                 ))}
                               {category.keywords.length > visibleKeywords && (
-                                <span className="text-xs text-muted-foreground p-1">
-                                  +{category.keywords.length - visibleKeywords}{" "}
-                                  more
+                                <span className="text-[9px] font-bold text-muted-foreground/40 p-0.5">
+                                  +{category.keywords.length - visibleKeywords}
                                 </span>
                               )}
                             </div>
@@ -529,37 +533,38 @@ export function AutomationTab() {
                 )}
               </div>
             </div>
-            <div className="lg:col-span-2 rounded-lg border flex flex-col h-[210px]">
-              <div className="p-1.5 border-b flex justify-between items-center">
-                <h3 className="text-sm font-semibold flex items-center gap-1">
-                  <Activity className="h-4 w-4" />
-                  Activity Log
+            <div className="lg:col-span-2 rounded-lg border border-border/40 bg-background/30 flex flex-col h-[180px]">
+              <div className="px-2 py-1.5 border-b border-border/40 bg-muted/10 flex justify-between items-center">
+                <h3 className="text-[10px] font-black uppercase tracking-widest opacity-60 flex items-center gap-1.5">
+                  <Activity className="h-3 w-3" />
+                  Data Feed
                 </h3>
-                <CustomButton
+                <button
                   onClick={clearLogs}
                   disabled={logs.length === 0}
-                  className="h-5 text-xs px-1.5 bg-secondary hover:bg-muted"
+                  className="text-[9px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 disabled:opacity-10"
                 >
-                  Clear
-                </CustomButton>
+                  FLUSH
+                </button>
               </div>
               <div
                 ref={scrollRef}
-                className="p-1.5 flex-1 overflow-y-scroll custom-scroll text-[11px] font-mono space-y-1"
+                className="p-2 flex-1 overflow-y-auto custom-scroll text-[10px] font-mono space-y-1 bg-black/5"
               >
                 {logs.length === 0 ? (
-                  <div className="text-center text-xs text-muted-foreground pt-10">
-                    Awaiting automation start...
+                  <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] opacity-10 pt-16">
+                    AWAITING TELEMETRY
                   </div>
                 ) : (
                   logs.map((log) => (
-                    <div key={log.id} className="flex gap-1.5 items-start">
-                      <span className="text-muted-foreground/60 mt-px">
-                        {new Date(log.timestamp).toLocaleTimeString()}
+                    <div key={log.id} className="flex gap-2 items-start opacity-80 hover:opacity-100 transition-opacity">
+                      <span className="text-muted-foreground/40 shrink-0">
+                        [{moment(log.timestamp).format("HH:mm:ss")}]
                       </span>
                       <span
-                        className={`flex-1 ${log.type === "error" ? "text-red-500" : log.type === "success" ? "text-green-500" : log.type === "warning" ? "text-yellow-500" : "text-foreground/80"}`}
+                        className={`flex-1 leading-relaxed ${log.type === "error" ? "text-red-500 font-bold" : log.type === "success" ? "text-green-500" : log.type === "warning" ? "text-yellow-500" : "text-foreground/70"}`}
                       >
+                        <span className="opacity-40 mr-1">{">"}</span>
                         {log.message}
                       </span>
                     </div>
@@ -571,40 +576,33 @@ export function AutomationTab() {
         </div>
 
         {/* === Results Table === */}
-        <div className="bg-card rounded-lg border border-border shadow-sm flex-1 flex flex-col min-h-0">
-          <div className="p-2 border-b border-border flex justify-between items-center">
-            <div className="flex-1">
-              <h2 className="text-base font-semibold">
-                Automated Findings ({filteredAndSortedPosts.length} /{" "}
-                {foundPosts.length})
+        <div className="bg-card rounded-lg border border-border/60 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="px-3 py-2 border-b border-border flex justify-between items-center bg-muted/10">
+            <div className="flex items-center gap-4">
+              <h2 className="text-[11px] font-black uppercase tracking-widest text-foreground/80">
+                Processed Results: {filteredAndSortedPosts.length}
               </h2>
-              <p className="text-xs text-muted-foreground">
-                Relevant posts found by the agent. Add them to your main
-                tracking table.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative w-48">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="relative w-48 group">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
                 <input
                   type="text"
-                  placeholder="Fuzzy search..."
+                  placeholder="Filter signals..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-background border border-input rounded-md text-xs h-7 pl-8 w-full focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="bg-background/50 border border-border/40 rounded px-7 h-7 text-[10px] w-full focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-medium"
                 />
               </div>
-              <CustomButton
-                onClick={clearFoundPosts}
-                disabled={foundPosts.length === 0}
-                className="h-7 text-xs px-2 bg-secondary hover:bg-red-700 hover:text-white hover:bg-muted text-secondary-foreground cursor-pointer"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Clear Results
-              </CustomButton>
             </div>
+            <button
+              onClick={clearFoundPosts}
+              disabled={foundPosts.length === 0}
+              className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-destructive/20 text-destructive/60 hover:bg-destructive hover:text-white transition-all rounded-md flex items-center gap-2"
+            >
+              <Trash2 className="h-3 w-3" />
+              Reset Feed
+            </button>
           </div>
-          <div className="p-2 flex-1 min-h-0">
+          <div className="p-0 flex-1 min-h-0 relative overflow-hidden">
             {foundPosts.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground flex flex-col items-center justify-center h-full">
                 <Bot className="h-8 w-8 mx-auto mb-1 opacity-20" />

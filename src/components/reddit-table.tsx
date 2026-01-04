@@ -694,80 +694,85 @@ export function RedditTable({
 
   return (
     <>
-      <Card className="px-6">
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Card className="p-3 shadow-sm border-border/60 bg-background/50 backdrop-blur-sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 items-center">
+            <div className="relative flex-1 group w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
               <Input
-                placeholder="Search posts..."
+                placeholder="Search tracked posts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-9 h-9 bg-background/80 border-border/60 focus:ring-1 focus:ring-primary/20 transition-all text-xs"
               />
             </div>
-            <Select value={subredditFilter} onValueChange={setSubredditFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="All subreddits" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All subreddits</SelectItem>
-                {subreddits.map((subreddit) => (
-                  <SelectItem key={subreddit} value={subreddit}>
-                    r/{subreddit}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="All relevance" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All relevance</SelectItem>
-                <SelectItem value="high">High (80+)</SelectItem>
-                <SelectItem value="medium">Medium (60-79)</SelectItem>
-                <SelectItem value="low">Low (&lt;60)</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="new">New</SelectItem>
-                <SelectItem value="investigating">Investigating</SelectItem>
-                <SelectItem value="replied">Replied</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="ignored">Ignored</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={engagementFilter}
-              onValueChange={setEngagementFilter}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="All engagement" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Engagement</SelectItem>
-                <SelectItem value="engaged">Engaged</SelectItem>
-                <SelectItem value="not_engaged">Not Engaged</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={handleExportToCsv}>
-              Export to CSV
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => setShowClearTableDialog(true)}
-            >
-              Clear Table
-            </Button>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            Showing {filteredAndSortedData.length} of {data.length} posts
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto custom-scroll">
+              <Select value={subredditFilter} onValueChange={setSubredditFilter}>
+                <SelectTrigger className="w-[140px] h-8 text-[11px] font-bold uppercase tracking-tight bg-background/50">
+                  <SelectValue placeholder="Community" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-[11px] font-bold uppercase">All</SelectItem>
+                  {subreddits.map((subreddit) => (
+                    <SelectItem key={subreddit} value={subreddit} className="text-[11px] font-bold">
+                      r/{subreddit}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
+                <SelectTrigger className="w-[120px] h-8 text-[11px] font-bold uppercase tracking-tight bg-background/50">
+                  <SelectValue placeholder="Intent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-[11px] font-bold uppercase">All Intent</SelectItem>
+                  <SelectItem value="high" className="text-[11px] font-bold uppercase">High</SelectItem>
+                  <SelectItem value="medium" className="text-[11px] font-bold uppercase">Medium</SelectItem>
+                  <SelectItem value="low" className="text-[11px] font-bold uppercase">Low</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[120px] h-8 text-[11px] font-bold uppercase tracking-tight bg-background/50">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-[11px] font-bold uppercase">All Status</SelectItem>
+                  <SelectItem value="new" className="text-[11px] font-bold uppercase">New</SelectItem>
+                  <SelectItem value="investigating" className="text-[11px] font-bold uppercase">Investigating</SelectItem>
+                  <SelectItem value="replied" className="text-[11px] font-bold uppercase">Replied</SelectItem>
+                  <SelectItem value="closed" className="text-[11px] font-bold uppercase">Closed</SelectItem>
+                  <SelectItem value="ignored" className="text-[11px] font-bold uppercase">Ignored</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={engagementFilter}
+                onValueChange={setEngagementFilter}
+              >
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="All engagement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Engagement</SelectItem>
+                  <SelectItem value="engaged">Engaged</SelectItem>
+                  <SelectItem value="not_engaged">Not Engaged</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={handleExportToCsv}>
+                Export to CSV
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => setShowClearTableDialog(true)}
+              >
+                Clear Table
+              </Button>
+            </div>
+            <div className="text-[10px] uppercase font-bold tracking-widest opacity-40 px-1">
+              Nodes: {filteredAndSortedData.length} / {data.length}
+            </div>
           </div>
         </div>
       </Card>
