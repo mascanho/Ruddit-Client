@@ -995,7 +995,10 @@ export function RedditTable({
                             </div>
                           </div>
                           <div className="flex items-center gap-2 mt-0.5 opacity-60 text-[9px]">
-                            <div className="flex items-center gap-1">
+                            <div 
+                              className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
+                              onClick={() => handleGetComments(post, post.sort_type)}
+                            >
                               <MessageCircle className="h-2.5 w-2.5" />
                               <span>{post.num_comments ?? 0}</span>
                             </div>
