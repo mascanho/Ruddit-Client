@@ -130,7 +130,7 @@ const useAutomationStore = create<AutomationStore>()(
               type,
             },
             ...state.logs,
-          ].slice(0, 100),
+          ],
         })),
       clearLogs: () => set({ logs: [] }),
       addFoundPosts: (newPosts) =>
@@ -138,7 +138,7 @@ const useAutomationStore = create<AutomationStore>()(
           const existingIds = new Set(state.foundPosts.map((p) => p.id));
           const uniqueNewPosts = newPosts.filter((p) => !existingIds.has(p.id));
           return {
-            foundPosts: [...uniqueNewPosts, ...state.foundPosts].slice(0, 500),
+            foundPosts: [...uniqueNewPosts, ...state.foundPosts],
           };
         }),
       clearFoundPosts: () => set({ foundPosts: [] }),

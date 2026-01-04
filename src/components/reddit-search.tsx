@@ -730,7 +730,7 @@ export function RedditSearch({
                 "Search"
               )}
             </Button>
-            <Button
+            {/*<Button
               variant="outline"
               onClick={searchMonitored}
               disabled={isSearching}
@@ -738,7 +738,7 @@ export function RedditSearch({
             >
               <Sparkles className="h-3.5 w-3.5 mr-2 text-primary" />
               Auto-Pilot
-            </Button>
+            </Button>*/}
           </div>
         </div>
       </Card>
