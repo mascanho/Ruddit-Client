@@ -282,7 +282,7 @@ export function SmartDataTables() {
         <TabsList className="flex w-full h-9 p-0.5 bg-blue-100/30 border-border/40 mb-2">
           <TabsTrigger
             value="reddit"
-            className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+            className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
           >
             Tracking Posts
             {subredditsModified && (
