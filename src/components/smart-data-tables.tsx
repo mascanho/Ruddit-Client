@@ -148,7 +148,7 @@ export function SmartDataTables() {
     const avgRelevance =
       subRedditsSaved.length > 0
         ? subRedditsSaved.reduce((sum, p) => sum + p.relevance_score, 0) /
-          subRedditsSaved.length
+        subRedditsSaved.length
         : 0;
 
     const highIntentPosts = subRedditsSaved.filter(
@@ -208,7 +208,7 @@ export function SmartDataTables() {
 
   return (
     <div
-      className="w-full max-w-full px-2 py-2"
+      className="w-full h-screen flex flex-col overflow-hidden px-2 py-2"
       style={{ fontSize: `${settings.fontSize}px` }}
     >
       <AutomationRunner />
@@ -276,7 +276,7 @@ export function SmartDataTables() {
 
       <Tabs
         defaultValue="reddit"
-        className="w-full"
+        className="flex-1 flex flex-col min-h-0 w-full"
         onValueChange={handleTabChange}
       >
         <TabsList className="flex w-full h-9 p-0.5 bg-blue-100/30 border-border/40 mb-2">
@@ -333,7 +333,7 @@ export function SmartDataTables() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="reddit" className="mt-0 outline-none">
+        <TabsContent value="reddit" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
           <RedditTable
             onAddComments={handleAddComments}
             externalPosts={allSavedPosts}
@@ -343,7 +343,7 @@ export function SmartDataTables() {
           />
         </TabsContent>
 
-        <TabsContent value="messages" className="mt-0 outline-none">
+        <TabsContent value="messages" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
           <MessagesTable
             externalMessages={messages}
             searchState={searchState}
@@ -352,18 +352,18 @@ export function SmartDataTables() {
           />
         </TabsContent>
 
-        <TabsContent value="search" className="mt-0 outline-none">
+        <TabsContent value="search" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
           <RedditSearch
             onAddResults={handleAddSearchResults}
             onNotifyNewPosts={handleNotifyNewPosts}
           />
         </TabsContent>
 
-        <TabsContent value="automation" className="mt-0 outline-none">
+        <TabsContent value="automation" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
           <AutomationTab />
         </TabsContent>
 
-        <TabsContent value="ai" className="mt-0 outline-none">
+        <TabsContent value="ai" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
           <AIDataChat dataStats={dataStats} />
         </TabsContent>
       </Tabs>

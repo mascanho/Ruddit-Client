@@ -693,7 +693,7 @@ export function RedditTable({
   };
 
   return (
-    <>
+    <div className="flex-1 flex flex-col min-h-0 gap-3">
       <Card className="p-3 shadow-sm border-border/60 bg-white backdrop-blur-sm">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col sm:flex-row gap-2 items-center">
@@ -842,7 +842,7 @@ export function RedditTable({
         </div>
       </Card>
 
-      <Card className="p-0 m-0 h-[770px] flex flex-col">
+      <Card className="p-0 m-0 flex-1 min-h-0 flex flex-col">
         {/* Single Table Container with Fixed Header */}
         <div className="flex-1 overflow-auto relative custom-scroll">
           <Table
@@ -936,17 +936,15 @@ export function RedditTable({
                   <Fragment key={post.id}>
                     <TableRow
                       key={post.id}
-                      className={`group hover:z-10 relative text-[11px] h-8 transition-all border-l-[3px] border-b-[0.5px] border-b-border/50 ${
-                        post.date_added > lastVisitTimestamp
-                          ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.5)]"
-                          : "border-l-transparent hover:bg-muted/30"
-                      } ${
-                        settings.tableDensity === "compact"
+                      className={`group hover:z-10 relative text-[11px] h-8 transition-all border-l-[3px] border-b-[0.5px] border-b-border/50 ${post.date_added > lastVisitTimestamp
+                        ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.5)]"
+                        : "border-l-transparent hover:bg-muted/30"
+                        } ${settings.tableDensity === "compact"
                           ? "h-[30px]"
                           : settings.tableDensity === "spacious"
                             ? "h-12"
                             : "h-9"
-                      }`}
+                        }`}
                     >
                       <TableCell className="px-1 text-center">
                         <Button
@@ -956,11 +954,10 @@ export function RedditTable({
                           className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <ChevronDown
-                            className={`h-3 w-3 transition-transform duration-300 ${
-                              expandedRows.has(post.id.toString())
-                                ? "rotate-180"
-                                : ""
-                            }`}
+                            className={`h-3 w-3 transition-transform duration-300 ${expandedRows.has(post.id.toString())
+                              ? "rotate-180"
+                              : ""
+                              }`}
                           />
                         </Button>
                       </TableCell>
@@ -995,7 +992,7 @@ export function RedditTable({
                             </div>
                           </div>
                           <div className="flex items-center gap-2 mt-0.5 opacity-60 text-[9px]">
-                            <div 
+                            <div
                               className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
                               onClick={() => handleGetComments(post, post.sort_type)}
                             >
@@ -1107,7 +1104,7 @@ export function RedditTable({
                           <SelectTrigger className="w-6 h-6 rounded-full mx-auto p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden transition-transform active:scale-95">
                             <Avatar className="h-5 w-5 border border-muted-foreground/10">
                               {post.assignee &&
-                              post.assignee !== "unassigned" ? (
+                                post.assignee !== "unassigned" ? (
                                 <>
                                   <AvatarImage
                                     src={`https://avatar.vercel.sh/${post.assignee}`}
@@ -1482,6 +1479,6 @@ export function RedditTable({
         sortType={sortTypeForComments}
         onSortTypeChange={handleSortTypeForCommentsChange}
       />
-    </>
+    </div>
   );
 }

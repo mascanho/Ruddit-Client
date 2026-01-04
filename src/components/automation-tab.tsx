@@ -339,9 +339,9 @@ export function AutomationTab() {
 
   const noKeywords =
     (settings.brandKeywords?.length || 0) +
-      (settings.competitorKeywords?.length || 0) +
-      (settings.monitoredKeywords?.length || 0) +
-      (settings.monitoredSubreddits?.length || 0) ===
+    (settings.competitorKeywords?.length || 0) +
+    (settings.monitoredKeywords?.length || 0) +
+    (settings.monitoredSubreddits?.length || 0) ===
     0;
 
   const keywordCategories = [
@@ -404,7 +404,7 @@ export function AutomationTab() {
 
   return (
     <TooltipProvider>
-      <div className="p-1 space-y-1.5 bg-background text-foreground h-full flex flex-col">
+      <div className="p-1 space-y-1.5 bg-background text-foreground flex-1 min-h-0 flex flex-col">
         <style jsx global>{`
           .custom-scroll::-webkit-scrollbar {
             width: 4px;
@@ -611,7 +611,7 @@ export function AutomationTab() {
               Reset Feed
             </button>
           </div>
-          <div className="p-0 flex-1 min-h-0 relative overflow-hidden rounded-none">
+          <div className="p-0 flex-1 min-h-0 relative overflow-hidden rounded-none flex flex-col">
             {foundPosts.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground flex flex-col items-center justify-center h-full">
                 <Bot className="h-8 w-8 mx-auto mb-1 opacity-20" />
@@ -621,7 +621,7 @@ export function AutomationTab() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-y-scroll h-[calc(100vh-50vh)] custom-scroll border rounded-none">
+              <div className="overflow-y-scroll flex-1 flex flex-col custom-scroll border rounded-none">
                 <table className="w-full text-xs text-left table-fixed rounded-none">
                   <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
                     <tr className="border-b">

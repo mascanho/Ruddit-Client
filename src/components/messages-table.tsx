@@ -163,7 +163,7 @@ export function MessagesTable({
 
   return (
     <>
-      <div className="flex flex-col gap-3 animate-in fade-in duration-500">
+      <div className="flex-1 flex flex-col gap-3 min-h-0 animate-in fade-in duration-500">
         {/* Search & Filter Card */}
         <Card className="p-3 shadow-sm border-border/60 bg-background/50 backdrop-blur-sm">
           <div className="flex flex-col sm:flex-row gap-3 items-center">
@@ -200,7 +200,7 @@ export function MessagesTable({
         </Card>
 
         {/* Main Table Container */}
-        <Card className="p-0 border-border/60 overflow-hidden flex flex-col h-[700px]">
+        <Card className="p-0 border-border/60 overflow-hidden flex flex-col flex-1 min-h-0">
           <div className="flex-1 overflow-auto relative custom-scroll">
             <Table className="table-fixed w-full border-separate border-spacing-0">
               <colgroup>

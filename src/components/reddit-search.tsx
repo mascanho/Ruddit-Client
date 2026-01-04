@@ -155,7 +155,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -195,7 +195,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -261,7 +261,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -652,7 +652,7 @@ export function RedditSearch({
   function isColoredRelevance(sortType: string) {
     // Renamed parameter
     switch (
-      sortType // Use new parameter
+    sortType // Use new parameter
     ) {
       case "hot":
         return "bg-red-500";
@@ -668,7 +668,7 @@ export function RedditSearch({
   console.log("paginatedResults:", paginatedResults);
 
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in duration-500">
+    <div className="flex-1 flex flex-col gap-4 min-h-0 animate-in fade-in duration-500">
       {/* Search Bar Section */}
       <Card className="p-4 shadow-sm border-border/60 bg-white backdrop-blur-sm">
         <div className="flex flex-col gap-4">
@@ -690,11 +690,10 @@ export function RedditSearch({
                   size="sm"
                   onClick={() => toggleSort(sort)}
                   disabled={isSearching}
-                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${
-                    selectedSorts.includes(sort)
-                      ? "shadow-sm"
-                      : "opacity-60 hover:opacity-100 hover:bg-background/80"
-                  }`}
+                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${selectedSorts.includes(sort)
+                    ? "shadow-sm"
+                    : "opacity-60 hover:opacity-100 hover:bg-background/80"
+                    }`}
                 >
                   {sort === "hot" && <Flame className="h-3 w-3 mr-1.5" />}
                   {sort === "top" && <TrendingUp className="h-3 w-3 mr-1.5" />}
@@ -744,7 +743,7 @@ export function RedditSearch({
       </Card>
 
       {subreddits.length > 0 ? (
-        <Card className="p-0 border-border/60 overflow-hidden flex flex-col h-[650px]">
+        <Card className="p-0 border-border/60 overflow-hidden flex flex-col flex-1 min-h-0">
           {/* View Contol Bar */}
           <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/20 backdrop-blur-md sticky top-0 z-10 transition-colors">
             <div className="flex items-center gap-3">
@@ -776,15 +775,14 @@ export function RedditSearch({
                   <button
                     key={filter}
                     onClick={() => toggleViewFilter(filter)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
-                      viewFilters.includes(filter)
-                        ? filter === "hot"
-                          ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                          : filter === "top"
-                            ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                            : "bg-green-500/10 text-green-600 dark:text-green-400"
-                        : "opacity-30 hover:opacity-100"
-                    }`}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewFilters.includes(filter)
+                      ? filter === "hot"
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                        : filter === "top"
+                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                          : "bg-green-500/10 text-green-600 dark:text-green-400"
+                      : "opacity-30 hover:opacity-100"
+                      }`}
                   >
                     {filter}
                   </button>
@@ -801,11 +799,10 @@ export function RedditSearch({
                   <button
                     key={intent}
                     onClick={() => toggleViewIntentFilter(intent)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
-                      viewIntentFilters.includes(intent)
-                        ? "bg-primary/10 text-primary"
-                        : "opacity-30 hover:opacity-100"
-                    }`}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewIntentFilters.includes(intent)
+                      ? "bg-primary/10 text-primary"
+                      : "opacity-30 hover:opacity-100"
+                      }`}
                   >
                     {intent}
                   </button>
@@ -866,13 +863,12 @@ export function RedditSearch({
                           {result.sort_type?.split(",").map((type) => (
                             <span
                               key={type}
-                              className={`text-[9px] font-bold uppercase px-1 rounded-sm text-white ${
-                                type === "hot"
-                                  ? "bg-red-500/80"
-                                  : type === "top"
-                                    ? "bg-blue-500/80"
-                                    : "bg-green-500/80"
-                              }`}
+                              className={`text-[9px] font-bold uppercase px-1 rounded-sm text-white ${type === "hot"
+                                ? "bg-red-500/80"
+                                : type === "top"
+                                  ? "bg-blue-500/80"
+                                  : "bg-green-500/80"
+                                }`}
                             >
                               {type}
                             </span>
@@ -1085,11 +1081,11 @@ export function RedditSearch({
         post={
           commentsPost
             ? {
-                id: commentsPost.name || commentsPost.id,
-                title: commentsPost.title,
-                url: commentsPost.url,
-                subreddit: commentsPost.subreddit,
-              }
+              id: commentsPost.name || commentsPost.id,
+              title: commentsPost.title,
+              url: commentsPost.url,
+              subreddit: commentsPost.subreddit,
+            }
             : null
         }
         comments={comments}
