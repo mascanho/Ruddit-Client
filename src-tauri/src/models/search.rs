@@ -126,7 +126,11 @@ pub async fn get_access_token(
     client_id: String,
     client_secret: String,
 ) -> Result<String, RedditError> {
-    let credentials = format!("{}:{}", client_id, client_secret);
+    if client_id == "CHANGE_ME" || client_secret == "CHANGE_ME" {
+        return Err(RedditError::ParseError("Reddit API credentials not configured. Please update your settings.".to_string()));
+    }
+
+    let credentials = format!("{}:{}", client_id.trim(), client_secret.trim());
     let encoded = general_purpose::STANDARD.encode(credentials);
 
     let client = Client::new();
@@ -138,11 +142,15 @@ pub async fn get_access_token(
         .send()
         .await?;
 
+    let status = response.status();
     let json: serde_json::Value = response.json().await?;
-    json["access_token"]
-        .as_str()
-        .map(|s| s.to_string())
-        .ok_or(RedditError::TokenExtraction)
+
+    if let Some(token) = json["access_token"].as_str() {
+        Ok(token.to_string())
+    } else {
+        eprintln!("Reddit Token Error (HTTP {}): {:?}", status, json);
+        Err(RedditError::TokenExtraction)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -542,7 +550,7 @@ fn extract_post_id_from_url(url: &str) -> Option<String> {
     // 3. /gallery/{id}
     // 4. /r/{subreddit}/s/{id} (shortened URLs)
     let re = Regex::new(
-        r"(?:reddit\.com/r/[^/]+/comments/|reddit\.com/comments/|reddit\.com/gallery/|reddit\.com/r/[^/]+/s/|i\.redd\.it/)([a-z0-9]+)"
+        r"(?:reddit\.com/r/[^/]+/comments/|reddit\.com/comments/|reddit\.com/gallery/|reddit\.com/r/[^/]+/s/|redd\.it/|i\.redd\.it/)([a-zA-Z0-9]+)"
     ).unwrap();
 
     re.captures(url)
@@ -567,6 +575,10 @@ pub async fn get_user_access_token(
     username: &str,
     password: &str,
 ) -> Result<String, RedditError> {
+    if client_id == "CHANGE_ME" || client_secret == "CHANGE_ME" || username.is_empty() || password.is_empty() {
+        return Err(RedditError::ParseError("Reddit User credentials not fully configured. Please update your settings.".to_string()));
+    }
+
     let client_id = client_id.trim();
     let client_secret = client_secret.trim();
     let username = username.trim();
@@ -588,18 +600,23 @@ pub async fn get_user_access_token(
         .send()
         .await?;
 
+    let status = response.status();
     let json: serde_json::Value = response.json().await?;
+
     if let Some(err) = json["error"].as_str() {
+        eprintln!("Reddit User Token Error (HTTP {}): {:?}", status, json);
         if err == "unauthorized_client" {
             return Err(RedditError::HttpError(401, "unauthorized_client: Check that your Reddit App Type is set to 'script' and your Client ID/Secret are correct.".to_string()));
         }
         return Err(RedditError::HttpError(401, err.to_string()));
     }
 
-    json["access_token"]
-        .as_str()
-        .map(|s| s.to_string())
-        .ok_or(RedditError::TokenExtraction)
+    if let Some(token) = json["access_token"].as_str() {
+        Ok(token.to_string())
+    } else {
+        eprintln!("Reddit User Token Error (HTTP {}): {:?}", status, json);
+        Err(RedditError::TokenExtraction)
+    }
 }
 
 pub async fn post_comment(

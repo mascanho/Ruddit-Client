@@ -555,7 +555,7 @@ export function RedditTable({
   const handleGetComments = async (post: RedditPost, sort_type: string) => {
     // Renamed parameter
     const fetchedComments = (await invoke("get_post_comments_command", {
-      url: post.url,
+      url: post.permalink,
       title: post.title,
       sortType: sort_type, // Use new parameter, camelCase for Tauri
       subreddit: post.subreddit, // Add subreddit here
@@ -576,7 +576,7 @@ export function RedditTable({
     setSortTypeForComments(newSortType);
     if (commentsPost) {
       const newComments = (await invoke("get_post_comments_command", {
-        url: commentsPost.url,
+        url: commentsPost.permalink,
         title: commentsPost.title,
         sortType: newSortType, // Use new parameter, camelCase for Taure
         subreddit: commentsPost.subreddit, // Add subreddit here

@@ -45,11 +45,11 @@ pub async fn get_reddit_results(
         Ok(t) if !t.is_empty() => t,
         Ok(_) => {
             eprintln!("Empty access token received");
-            return Err("config_updated".into()); // Return error to indicate config update needed
+            return Err("Reddit API returned an empty token. Please check your Client ID and Secret in settings.".into());
         }
         Err(e) => {
             eprintln!("Failed to retrieve access token: {:?}", e);
-            return Err("config_updated".into()); // Return error to indicate config update needed
+            return Err(format!("Reddit Authentication Failed: {}. Please check your API credentials in settings.", e));
         }
     };
 

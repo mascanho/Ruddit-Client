@@ -65,6 +65,7 @@ type SearchResult = {
   thumbnail?: string | null;
   intent?: string; // allow string from backend
   category?: "brand" | "competitor" | "general";
+  permalink?: string;
   date_added?: number;
 };
 
@@ -167,6 +168,7 @@ export function RedditSearch({
         selftext: post.selftext,
         thumbnail: post.thumbnail,
         intent: post.intent,
+        permalink: post.permalink,
         category: categorizePost(
           post.title,
           settings.brandKeywords,
@@ -207,6 +209,7 @@ export function RedditSearch({
         selftext: post.selftext,
         thumbnail: post.thumbnail,
         intent: post.intent,
+        permalink: post.permalink,
         category: categorizePost(
           post.title,
           settings.brandKeywords,
@@ -273,6 +276,7 @@ export function RedditSearch({
         selftext: post.selftext,
         thumbnail: post.thumbnail,
         intent: post.intent,
+        permalink: post.permalink,
         category: categorizePost(
           post.title,
           settings.brandKeywords,
@@ -323,7 +327,7 @@ export function RedditSearch({
           sort_type: result.sort_type,
           relevance_score: result.relevance_score,
           subreddit: result.subreddit,
-          permalink: result.url,
+          permalink: result.permalink || result.url,
           engaged: 0,
           assignee: "",
           notes: "",
@@ -350,7 +354,7 @@ export function RedditSearch({
         sort_type: result.sort_type,
         relevance_score: result.relevance_score,
         subreddit: result.subreddit,
-        permalink: result.url, // Using url as permalink
+        permalink: result.permalink || result.url, // Using permalink if available
         engaged: 0,
         assignee: "",
         notes: "",
@@ -453,7 +457,7 @@ export function RedditSearch({
         sort_type: result.sort_type,
         relevance_score: result.relevance_score,
         subreddit: result.subreddit,
-        permalink: result.url,
+        permalink: result.permalink || result.url,
         engaged: 0,
         assignee: "",
         notes: "",
