@@ -937,12 +937,13 @@ export function RedditTable({
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="px-1 text-center">
+                      <TableCell className="px-1 text-center overflow-hidden">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Badge
                               variant="outline"
-                              className="font-mono text-[9px] py-0 h-4 px-1.5 cursor-pointer hover:bg-accent/50 selection:bg-transparent bg-background/50 border-muted-foreground/10"
+                              className="font-mono text-[9px] py-0 h-4 px-1.5 cursor-pointer hover:bg-accent/50 selection:bg-transparent bg-background/50 border-muted-foreground/10 truncate max-w-full block"
+                              title={`r/${post.subreddit}`}
                             >
                               r/{post.subreddit}
                             </Badge>
