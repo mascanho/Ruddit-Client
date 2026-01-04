@@ -296,18 +296,18 @@ export function RedditTable({
     return Math.max(...newPosts.map((p) => p.timestamp));
   }, [data, lastVisitTimestamp]);
 
-  const handleTableInteraction = () => {
+  // Effect to persist the latest timestamp to localStorage for the next session
+  useEffect(() => {
     if (maxDateAdded > lastVisitTimestamp) {
-      setLastVisitTimestamp(maxDateAdded);
+      // We only update storage, NOT the state, so highlights persist for this session
       localStorage.setItem(
         "ruddit-last-visit-timestamp",
         maxDateAdded.toString(),
       );
     }
-  };
+  }, [maxDateAdded, lastVisitTimestamp]);
 
   const handleEditNote = (post: RedditPost) => {
-    handleTableInteraction();
     setEditingNotePost(post);
     setCurrentNote(post.notes || "");
   };
@@ -409,7 +409,7 @@ export function RedditTable({
 
     try {
       await invoke("update_post_engaged_status", {
-        id: parseInt(postId, 10),
+        id: postId,
         engaged: newEngagedStatus,
       });
 
@@ -430,7 +430,7 @@ export function RedditTable({
     }
   };
 
-  
+
 
   const subreddits = useMemo(() => {
     return Array.from(new Set(data.map((post) => post.subreddit)));
@@ -535,14 +535,14 @@ export function RedditTable({
 
   const handleDelete = async (id: string) => {
     if (!settings.confirmDelete) {
-      setData(data.filter((post) => post.id !== id));
+      setData(data.filter((post) => post.id !== parseInt(id, 10)));
       removeSingleSubreddit(parseInt(id, 10)); // Update store
       return;
     }
 
     await invoke("remove_single_reddit_command", { post: id });
     toast.info("Post deleted successfully");
-    setData((prevData) => prevData.filter((post) => post.id !== id));
+    setData((prevData) => prevData.filter((post) => post.id !== parseInt(id, 10)));
     removeSingleSubreddit(parseInt(id, 10)); // Update store
     // No need to reload the window, UI updates via state change
   };
@@ -868,32 +868,26 @@ export function RedditTable({
                   <Fragment key={post.id}>
                     <TableRow
                       key={post.id}
-                      onClick={handleTableInteraction}
-                      className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-2 ${
-                        post.date_added > lastVisitTimestamp
-                          ? post.timestamp === latestPostTimestamp
-                            ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"
-                            : "bg-green-500/5 dark:bg-green-500/10 border-l-green-400"
-                          : "border-l-transparent"
-                      } ${
-                        settings.tableDensity === "compact"
+                      className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-[3px] ${post.date_added > lastVisitTimestamp
+                        ? "bg-blue-500/10 dark:bg-blue-500/15 border-l-blue-500"
+                        : "border-l-transparent hover:bg-muted/50"
+                        } ${settings.tableDensity === "compact"
                           ? "h-2"
                           : settings.tableDensity === "spacious"
                             ? "h-2"
                             : "h-2"
-                      }`}
+                        }`}
                     >
                       <TableCell className="px-3 p-0">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => toggleRowExpansion(post.id)}
+                          onClick={() => toggleRowExpansion(post.id.toString())}
                           className="h-8 w-8"
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${
-                              expandedRows.has(post.id) ? "rotate-180" : ""
-                            }`}
+                            className={`h-4 w-4 transition-transform ${expandedRows.has(post.id.toString()) ? "rotate-180" : ""
+                              }`}
                           />
                         </Button>
                       </TableCell>
@@ -1065,7 +1059,7 @@ export function RedditTable({
                             <SelectTrigger className="w-8 h-8 rounded-full p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden flex items-center justify-center">
                               <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
                                 {post.assignee &&
-                                post.assignee !== "unassigned" ? (
+                                  post.assignee !== "unassigned" ? (
                                   <>
                                     <AvatarImage
                                       src={`https://avatar.vercel.sh/${post.assignee}`}
@@ -1159,7 +1153,7 @@ export function RedditTable({
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onClick={() => setDeleteId(post.id)}
+                              onClick={() => setDeleteId(post.id.toString())}
                               className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -1169,7 +1163,7 @@ export function RedditTable({
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                    {expandedRows.has(post.id) && (
+                    {expandedRows.has(post.id.toString()) && (
                       <TableRow>
                         <TableCell colSpan={11} className="p-0">
                           {" "}
