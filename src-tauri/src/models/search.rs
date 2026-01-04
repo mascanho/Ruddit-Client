@@ -127,7 +127,14 @@ pub async fn get_access_token(
     client_secret: String,
 ) -> Result<String, RedditError> {
     if client_id == "CHANGE_ME" || client_secret == "CHANGE_ME" {
-        return Err(RedditError::ParseError("Reddit API credentials not configured. Please update your settings.".to_string()));
+        let missing = if client_id == "CHANGE_ME" && client_secret == "CHANGE_ME" {
+            "Client ID and Secret"
+        } else if client_id == "CHANGE_ME" {
+            "Client ID"
+        } else {
+            "Client Secret"
+        };
+        return Err(RedditError::ParseError(format!("Reddit API {} not configured. Please update your settings.", missing)));
     }
 
     let credentials = format!("{}:{}", client_id.trim(), client_secret.trim());

@@ -203,9 +203,30 @@ impl ConfigDirs {
 
         // Path to the config file
         let config_path = config_dir.join("atalaia/settings.toml");
+        let old_config_path = config_dir.join("farol/settings.toml");
 
         if !config_path.exists() {
-            Self::create_default_config()?;
+            // Check for old Farol config to migrate
+            if old_config_path.exists() {
+                println!("Migrating settings from Farol to Atalaia (new install)...");
+                let app_config_dir = config_dir.join("atalaia");
+                fs::create_dir_all(&app_config_dir)?;
+                fs::copy(&old_config_path, &config_path)?;
+                println!("Migration successful.");
+            } else {
+                println!("No old config found. Creating default Atalaia config.");
+                Self::create_default_config()?;
+            }
+        } else if old_config_path.exists() {
+            // If Atalaia config exists but is default, and Farol config exists, migrate
+            let toml_content = fs::read_to_string(&config_path)?;
+            if let Ok(current_config) = toml::from_str::<AppConfig>(&toml_content) {
+                if current_config.api_keys.reddit_api_id == "CHANGE_ME" {
+                    println!("Atalaia settings are default. Migrating from Farol (overwrite)...");
+                    fs::copy(&old_config_path, &config_path)?;
+                    println!("Migration successful.");
+                }
+            }
         }
 
         println!("Reading config file: {:#?}", config_path);
