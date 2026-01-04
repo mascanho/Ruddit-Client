@@ -405,21 +405,7 @@ export function AutomationTab() {
   return (
     <TooltipProvider>
       <div className="p-1 space-y-1.5 bg-background text-foreground flex-1 min-h-0 flex flex-col">
-        <style jsx global>{`
-          .custom-scroll::-webkit-scrollbar {
-            width: 4px;
-          }
-          .custom-scroll::-webkit-scrollbar-track {
-            background: transparent;
-          }
-          .custom-scroll::-webkit-scrollbar-thumb {
-            background: hsl(var(--border));
-            border-radius: 4px;
-          }
-          .custom-scroll::-webkit-scrollbar-thumb:hover {
-            background: hsl(var(--accent-foreground));
-          }
-        `}</style>
+
 
         {/* === Main Control Panel === */}
         <div className="bg-card rounded-lg border border-border/60 shadow-sm overflow-hidden">
@@ -621,7 +607,7 @@ export function AutomationTab() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-y-scroll flex-1 flex flex-col custom-scroll border rounded-none">
+              <div className="overflow-y-auto flex-1 flex flex-col custom-scroll border rounded-none">
                 <table className="w-full text-xs text-left table-fixed rounded-none">
                   <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
                     <tr className="border-b">

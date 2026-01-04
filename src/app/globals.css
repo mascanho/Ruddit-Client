@@ -126,3 +126,31 @@
 radix-_r_5l_ {
     @apply w-full max-w-[800px] max-h-[80vh];
 }
+
+/* Custom Scrollbar */
+.custom-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: oklch(0.5 0 0 / 0.2);
+    border-radius: 10px;
+    transition: background 0.2s;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.5 0 0 / 0.4);
+}
+
+.dark .custom-scroll::-webkit-scrollbar-thumb {
+    background: oklch(0.8 0 0 / 0.2);
+}
+
+.dark .custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.8 0 0 / 0.4);
+}
