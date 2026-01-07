@@ -1,9 +1,9 @@
 <div align="center">
-  <img src="public/ruddit-logo.png" alt="Ruddit Client Logo" width="200" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin: 20px 0;">
-  <h1>Ruddit Client</h1>
+  <img src="public/atalaia.png" alt="Atalaia Logo" width="200" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin: 20px 0;">
+  <h1>Atalaia</h1>
 </div>
 
-**Ruddit-Client** is a desktop application for interacting with Reddit and leveraging Google's Gemini AI, built with Tauri, Next.js, and Rust.
+**Atalaia** is a desktop application for interacting with Reddit and leveraging Google's Gemini AI, built with Tauri, Next.js, and Rust.
 
 ## ✨ Features
 
@@ -16,12 +16,12 @@
 
 ## 🚀 Getting Started
 
-To get started with Ruddit-Client, you'll need to have Node.js and Rust installed.
+To get started with Atalaia, you'll need to have Node.js and Rust installed.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/mascanho/Ruddit-Client.git
-   cd Ruddit-Client
+   git clone https://github.com/mascanho/atalaia.git
+   cd atalaia
    ```
 
 2. **Install dependencies:**
@@ -44,7 +44,7 @@ You will need to configure your Reddit and Gemini API keys in the application se
 
 ## 💻 Usage
 
-Ruddit-Client provides a user-friendly interface to explore Reddit content and leverage AI for insights.
+Atalaia provides a user-friendly interface to explore Reddit content and leverage AI for insights.
 
 - **Search**: Search for posts and comments on Reddit.
 - **Analyze**: Use the AI-powered chat to ask questions about the data.

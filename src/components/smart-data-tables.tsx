@@ -217,7 +217,7 @@ export function SmartDataTables() {
           <div className="relative group">
             <div className="absolute -inset-1 bg-linear-to-r from-primary/50 to-blue-600/50 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
             <img
-              src="/ruddit-logo.png"
+              src="/atalaia.png"
               alt="logo"
               className="h-9 w-9 relative"
             />
