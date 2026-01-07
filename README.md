@@ -1,9 +1,9 @@
 <div align="center">
-  <img src="public/atalaia.png" alt="Atalaia Logo" width="200" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin: 20px 0;">
+  <img src="public/atalaia.png" alt="Atalaia Logo" width="200" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin: 10px 0;">
   <h1>Atalaia</h1>
 </div>
 
-**Atalaia** is a desktop application for interacting with Reddit and leveraging Google's Gemini AI, built with Tauri, Next.js, and Rust.
+**Atalaia** is a desktop application for interacting with Reddit and leveraging LLMs to discover leads and topics using sentiment analysis, allowing the user to better engage with prospects and control the brand narrative built with Tauri, Next.js, and Rust.
 
 ## ✨ Features
 
@@ -19,12 +19,14 @@
 To get started with Atalaia, you'll need to have Node.js and Rust installed.
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/mascanho/atalaia.git
    cd atalaia
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
@@ -68,3 +70,4 @@ Contributions are welcome! If you have ideas for new features or find a bug, ple
 ## 📄 License
 
 This project is licensed under the MIT License.
+
