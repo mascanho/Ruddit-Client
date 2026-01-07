@@ -1,7 +1,5 @@
-// @ts-nocheck
-"use client";
-
 import { useState, useMemo, useEffect } from "react";
+import moment from "moment";
 import {
   Table,
   TableBody,
@@ -41,6 +39,8 @@ import {
   Copy,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
@@ -51,7 +51,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Message, SearchState } from "./smart-data-tables";
-import { useAppSettings } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
+import { toast } from "sonner";
 
 type SortField = keyof Message | null;
 type SortDirection = "asc" | "desc";
@@ -76,11 +77,7 @@ export function MessagesTable({
     if (newMessages.length > 0) {
       setData((prev) => [...prev, ...newMessages]);
 
-      toast({
-        title: "New messages added",
-        description: `${newMessages.length} new message${newMessages.length > 1 ? "s" : ""} added to Messages`,
-        duration: 3000,
-      });
+      toast.success(`${newMessages.length} new message${newMessages.length > 1 ? "s" : ""} added to Messages`);
     }
   }, [externalMessages]);
 
@@ -123,11 +120,12 @@ export function MessagesTable({
     return filtered;
   }, [data, searchQuery, sortField, sortDirection]);
 
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+
   const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const endIndex = startIndex + rowsPerPage;
     return filteredAndSortedData.slice(startIndex, endIndex);
-  }, [filteredAndSortedData, currentPage, rowsPerPage]);
+  }, [filteredAndSortedData, startIndex, endIndex]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / rowsPerPage);
 
@@ -167,293 +165,307 @@ export function MessagesTable({
 
   return (
     <>
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 flex space-x-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex-1 flex flex-col gap-3 min-h-0 animate-in fade-in duration-500">
+        {/* Search & Filter Card */}
+        <Card className="p-3 shadow-sm border-border/60 bg-background/50 backdrop-blur-sm">
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <div className="relative flex-1 group w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
               <Input
                 placeholder="Search by username, message, or ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-9 h-9 bg-background/80 border-border/60 focus:ring-1 focus:ring-primary/20 transition-all text-xs"
               />
-              <Button onClick={handleClearComments} variant="destructive">
-                Clear Messages
-              </Button>
             </div>
-            {hasActiveFilters && (
-              <Button variant="outline" size="icon" onClick={clearFilters}>
-                <X className="h-4 w-4" />
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                onClick={handleClearComments}
+                variant="outline"
+                size="sm"
+                className="h-9 px-4 text-[11px] font-bold uppercase tracking-wider border-destructive/30 text-destructive/80 hover:bg-destructive hover:text-white transition-all shadow-sm"
+              >
+                Flush All
               </Button>
-            )}
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={clearFilters}
+                  className="h-9 w-9 opacity-50 hover:opacity-100 transition-all"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
+        </Card>
 
-          <div className="text-sm text-muted-foreground">
-            Showing {filteredAndSortedData.length} of {data.length} messages
-          </div>
-        </div>
-      </Card>
-
-      <Card>
-        <div className="border-b">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[60px] bg-background sticky top-0 z-10">
-                    #
-                  </TableHead>
-                  <TableHead className="w-[200px] bg-background sticky top-0 z-10">
+        {/* Main Table Container */}
+        <Card className="p-0 border-border/60 overflow-hidden flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-auto relative custom-scroll">
+            <Table className="table-fixed w-full border-separate border-spacing-0">
+              <colgroup>
+                <col className="w-[45px]" />
+                <col className="w-[150px]" />
+                <col className="w-[200px]" />
+                <col />
+                <col className="w-[120px]" />
+                <col className="w-[90px]" />
+                <col className="w-[60px]" />
+              </colgroup>
+              <TableHeader className="sticky top-0 z-40 bg-background shadow-sm">
+                <TableRow className="hover:bg-transparent border-none">
+                  <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50 font-mono text-[10px] uppercase tracking-wider opacity-50">#</TableHead>
+                  <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="-ml-3 h-8"
+                      className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
                       onClick={() => handleSort("username")}
                     >
-                      Username
-                      <ArrowUpDown className="ml-2 h-3 w-3" />
+                      User
+                      <ArrowUpDown className="h-3 w-3 opacity-30" />
                     </Button>
                   </TableHead>
-                  <TableHead className="min-w-[300px] bg-background sticky top-0 z-10">
+                  <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="-ml-3 h-8"
+                      className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
                       onClick={() => handleSort("message")}
                     >
-                      Topic
-                      <ArrowUpDown className="ml-2 h-3 w-3" />
+                      Topic Reference
+                      <ArrowUpDown className="h-3 w-3 opacity-30" />
                     </Button>
                   </TableHead>
-                  <TableHead className="min-w-[300px] bg-background sticky top-0 z-10">
+                  <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                    <span className="text-[10px] uppercase font-bold tracking-tight opacity-50 px-1">Message Content</span>
+                  </TableHead>
+                  <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="-ml-3 h-8"
-                      onClick={() => handleSort("message")}
-                    >
-                      Message
-                      <ArrowUpDown className="ml-2 h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="w-[180px] bg-background sticky top-0 z-10">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="-ml-3 h-8"
+                      className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
                       onClick={() => handleSort("id")}
                     >
-                      subreddit
-                      <ArrowUpDown className="ml-2 h-3 w-3" />
+                      Context
+                      <ArrowUpDown className="h-3 w-3 opacity-30" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[110px] bg-background sticky top-0 z-10">
+                  <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="-ml-3 h-8"
+                      className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
                       onClick={() => handleSort("date")}
                     >
-                      Date
-                      <ArrowUpDown className="ml-2 h-3 w-3" />
+                      Logged
+                      <ArrowUpDown className="h-3 w-3 opacity-30" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[70px] bg-background sticky top-0 z-10">
+                  <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50 font-mono text-[10px] uppercase tracking-wider opacity-50">
                     Actions
                   </TableHead>
                 </TableRow>
               </TableHeader>
-            </Table>
-          </div>
-        </div>
 
-        <div className="max-h-[600px] overflow-y-auto overflow-x-auto">
-          <Table>
-            <TableBody>
-              {paginatedData.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    No messages found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedData.map((message, index) => (
-                  <TableRow
-                    key={message.id}
-                    className={`group ${settings.tableDensity === "compact" ? "h-10" : settings.tableDensity === "spacious" ? "h-16" : "h-12"}`}
-                  >
-                    <TableCell className="text-muted-foreground text-sm font-medium w-[60px]">
-                      {(currentPage - 1) * rowsPerPage + index + 1}
+              <TableBody>
+                {paginatedData.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="h-24 text-center text-[11px] font-bold uppercase tracking-widest opacity-30"
+                    >
+                      Null Buffer: No Messages
                     </TableCell>
-                    <TableCell className="w-[200px]">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-xs font-medium text-primary">
-                            {message?.author?.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-medium truncate">
+                  </TableRow>
+                ) : (
+                  paginatedData.map((message, index) => (
+                    <TableRow
+                      key={message.id}
+                      className="group h-9 hover:bg-accent/30 transition-colors border-b border-border/40"
+                    >
+                      <TableCell className="text-center font-mono text-[10px] opacity-30">
+                        {(currentPage - 1) * rowsPerPage + index + 1}
+                      </TableCell>
+                      <TableCell className="px-2">
+                        <div className="flex items-center gap-2">
+                          <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-bold text-primary">
+                              {message?.author?.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="font-bold text-[11px] truncate text-foreground/80">
                             {message?.author}
                           </span>
-                          {message?.source && (
-                            <span className="text-xs text-muted-foreground line-clamp-1">
-                              {message?.id}
-                            </span>
-                          )}
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="min-w-[300px]">
-                      <div className="line-clamp-2 text-sm">
-                        {message?.post_title?.slice(0, 100)}
-                        {message?.post_title?.length > 100 && "..."}
-                      </div>
-                    </TableCell>
-                    <TableCell className="min-w-[300px]">
-                      <div className="line-clamp-2 text-sm">
-                        {message?.body?.slice(0, 100)}
-                        {message?.body?.length > 100 && "..."}
-                      </div>
-                    </TableCell>
-                    <TableCell className="w-[180px]">
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="secondary"
-                          className="font-mono text-xs"
-                        >
-                          {message?.subreddit}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleCopyId(message?.id)}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm w-[110px]">
-                      {message?.formatted_date.slice(0, 10)}
-                    </TableCell>
-                    <TableCell className="w-[70px]">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                      </TableCell>
+                      <TableCell className="px-2">
+                        <div className="text-[10px] opacity-60 line-clamp-1 italic font-medium">
+                          {message?.post_title || "Direct Message"}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-2">
+                        <div className="text-[11px] font-medium line-clamp-1 leading-relaxed text-foreground/90">
+                          {message?.body}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-2">
+                        <div className="flex items-center gap-1.5 overflow-hidden">
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-[9px] py-0 h-4 px-1.5 bg-background/50 border-muted-foreground/10 truncate max-w-[80px]"
+                          >
+                            r/{message?.subreddit}
+                          </Badge>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleCopyId(message?.id)}
                           >
-                            <MoreVertical className="h-4 w-4" />
+                            <Copy className="h-3 w-3" />
                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => setSelectedMessage(message)}
-                          >
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            View Full Message
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleCopyId(message.id)}
-                          >
-                            <Copy className="mr-2 h-4 w-4" />
-                            Copy ID
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => setDeleteId(message.id)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-2 text-center font-mono text-[10px] opacity-60">
+                        {moment(message?.formatted_date).format("DD.MM.YY")}
+                      </TableCell>
+                      <TableCell className="px-1 text-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-40 hover:opacity-100"
+                            >
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem
+                              className="text-[11px] font-bold uppercase tracking-tight"
+                              onClick={() => setSelectedMessage(message)}
+                            >
+                              <MessageSquare className="mr-2 h-3.5 w-3.5" />
+                              Expand View
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-[11px] font-bold uppercase tracking-tight"
+                              onClick={() => handleCopyId(message.id)}
+                            >
+                              <Copy className="mr-2 h-3.5 w-3.5" />
+                              Registry ID
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => setDeleteId(message.id)}
+                              className="text-[11px] font-bold uppercase tracking-tight text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-3.5 w-3.5" />
+                              Purge Record
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
-        {filteredAndSortedData.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Rows per page:
-              </span>
-              <Select
-                value={rowsPerPage.toString()}
-                onValueChange={(v) => {
-                  setRowsPerPage(Number(v));
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[80px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Footer Pagination */}
+          {filteredAndSortedData.length > 0 && (
+            <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t backdrop-blur-md">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+                    Display:
+                  </span>
+                  <select
+                    className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
+                    value={rowsPerPage}
+                    onChange={(e) => {
+                      setRowsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    {[10, 25, 50, 100].map((v) => (
+                      <option key={v} value={v}>
+                        {v} / Page
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="text-[10px] font-mono text-muted-foreground uppercase">
+                  Batch: {startIndex + 1}—
+                  {Math.min(endIndex, filteredAndSortedData.length)} of{" "}
+                  {filteredAndSortedData.length}
+                </div>
+              </div>
 
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
-              </span>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
                   onClick={() => setCurrentPage(1)}
                   disabled={currentPage === 1}
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  <ChevronLeft className="h-4 w-4 -ml-3" />
+                  <ChevronsLeft className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  onClick={() => setCurrentPage(currentPage - 1)}
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
+
+                <div className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary/5 border border-primary/20">
+                  <span className="text-[10px] font-bold text-primary opacity-60">
+                    PAGE
+                  </span>
+                  <span className="text-[11px] font-bold text-primary font-mono">
+                    {currentPage}
+                  </span>
+                  <span className="text-[10px] font-bold text-primary opacity-40">
+                    /
+                  </span>
+                  <span className="text-[11px] font-bold text-primary font-mono">
+                    {totalPages}
+                  </span>
+                </div>
+
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  onClick={() => setCurrentPage(currentPage + 1)}
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
                   disabled={currentPage === totalPages}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={currentPage === totalPages}
                 >
-                  <ChevronRight className="h-4 w-4" />
-                  <ChevronRight className="h-4 w-4 -ml-3" />
+                  <ChevronsRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-          </div>
-        )}
-      </Card>
+          )}
+        </Card>
+      </div>
 
       {settings.confirmDelete && (
         <AlertDialog

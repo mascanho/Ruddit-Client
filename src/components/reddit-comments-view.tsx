@@ -40,7 +40,7 @@ import moment from "moment";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import type { Message } from "./smart-data-tables";
-import { useAppSettings } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 import { KeywordHighlighter } from "./keyword-highlighter";
 import { useOpenUrl } from "@/hooks/useOpenUrl";
 import type { RedditPost } from "./reddit-table";
@@ -114,9 +114,7 @@ const CommentItem = ({
       style={{ marginLeft: depth > 0 ? `${Math.min(depth * 12, 48)}px` : "0" }}
     >
       <Card
-        className={`p-3 mb-3 ${
-          depth > 0 ? "border-l-2 border-l-primary/30" : ""
-        }`}
+        className={`p-2 mb-2 ${depth > 0 ? "border-l border-l-primary/20" : "border-border/60"} shadow-sm bg-background/50 backdrop-blur-sm`}
         style={isMonitoredUser ? { backgroundColor: "rgba(59, 130, 246, 0.1)" } : {}}
       >
         <div className="flex items-start gap-2">
@@ -179,11 +177,7 @@ const CommentItem = ({
             {isReplying && (
               <div className="mt-3">
                 <ReplySection
-                  parentId={
-                    comment.id.startsWith("t1_")
-                      ? comment.id
-                      : `t1_${comment.id}`
-                  }
+                  parentId={`t1_${comment.id}`}
                   onSuccess={() => {
                     setIsReplying(false);
                     onReplySuccess();
@@ -341,9 +335,9 @@ export function RedditCommentsView({
       <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden outline-none">
         <div className="flex flex-col h-full overflow-hidden">
           {/* Header: Fixed */}
-          <div className="flex-shrink-0 p-4 md:p-6 border-b bg-muted/5">
+          <div className="flex-shrink-0 p-2 md:p-3 border-b bg-muted/5">
             <DialogHeader className="mb-0">
-              <DialogTitle className="flex items-center gap-2 pr-8 text-lg font-bold">
+              <DialogTitle className="flex items-center gap-1 pr-4 text-lg font-bold">
                 <MessageCircle className="h-5 w-5 text-primary" />
                 <span
                   className="truncate cursor-pointer hover:underline"
@@ -354,8 +348,8 @@ export function RedditCommentsView({
               </DialogTitle>
               {post && (
                 <DialogDescription asChild>
-                  <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <section className="flex items-center gap-3 flex-wrap">
+                  <div className="mt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <section className="flex items-center gap-1 flex-wrap">
                       <Badge
                         variant="outline"
                         className="font-mono text-[10px] py-0 h-5"
@@ -387,7 +381,7 @@ export function RedditCommentsView({
                         {moment(post.timestamp * 1000).fromNow()}
                       </span>
                     </section>
-                    <section className="flex items-center gap-2">
+                    <section className="flex items-center gap-1">
                       <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
                         Sort:
                       </span>
@@ -434,22 +428,14 @@ export function RedditCommentsView({
 
           {/* Footer: Sticky */}
           {post && isConfigured && (
-            <div className="flex-shrink-0 border-t bg-background p-4 md:px-6 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
+            <div className="flex-shrink-0 border-t bg-background p-2 md:px-4 shadow-sm">
               <div className="max-w-4xl mx-auto">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                    <Send className="h-3 w-3" />
-                    Your Thoughts
-                  </h4>
-                </div>
                 <ReplySection
-                  parentId={
-                    post.id.startsWith("t3_") ? post.id : `t3_${post.id}`
-                  }
+                  parentId={`t3_${post.id}`}
                   onSuccess={() => {
                     onSortTypeChange(sortType); // Trigger refresh
                   }}
-                  placeholder="Add a comment..."
+                  placeholder="Transmit new signal..."
                   autoFocus={false}
                   compact={true}
                 />

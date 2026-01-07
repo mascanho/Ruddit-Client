@@ -10,32 +10,22 @@ import { Sparkles, Send, Bot, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-};
+import { useAIChatStore, Message } from "@/store/ai-chat-store";
 
 type DataStats = {
   totalPosts: number;
   totalMessages: number;
-  subreddits: string[];
+  uniqueSubredditsCount: number;
+  highIntentPostsCount: number;
+  postsWithNotesCount: number;
+  engagedPostsCount: number;
   topKeywords: string[];
   averageRelevance: number;
 };
 
 export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Hello! I'm your AI assistant powered by Gemini. I have access to your tracked Reddit posts and can answer questions, analyze trends, or help you draft responses. What would you like to know?",
-      timestamp: new Date(),
-    },
-  ]);
+  const { messages, isLoading, addMessage, setIsLoading } = useAIChatStore();
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -69,12 +59,9 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    addMessage(userMessage);
     setInput("");
     setIsLoading(true);
-
-    // Simulate AI processing
-    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const response = await generateResponse(userMessage.content);
 
@@ -84,12 +71,12 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, assistantMessage]);
+    addMessage(assistantMessage);
     setIsLoading(false);
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-7rem)] min-h-[500px] border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
+    <div className="flex flex-col h-[calc(100vh-8rem)] min-h-[500px] border-border/50 bg-gradient-to-b from-background/50 to-background backdrop-blur-sm">
       <div className="p-1 border-b bg-muted/30 backdrop-blur-md sticky top-0 z-10">
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           <Badge
@@ -108,13 +95,31 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
             variant="secondary"
             className="text-[10px] px-2 py-0.5 bg-pink-500/10 text-pink-500 border-pink-500/20 whitespace-nowrap"
           >
-            {dataStats.subreddits.length} Subreddits
+            {dataStats.uniqueSubredditsCount} Subreddits
           </Badge>
           <Badge
             variant="secondary"
             className="text-[10px] px-2 py-0.5 bg-orange-500/10 text-orange-500 border-orange-500/20 whitespace-nowrap"
           >
             {dataStats.averageRelevance.toFixed(1)}% Relevance
+          </Badge>
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-2 py-0.5 bg-green-500/10 text-green-500 border-green-500/20 whitespace-nowrap"
+          >
+            {dataStats.highIntentPostsCount} High Intent
+          </Badge>
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-500 border-yellow-500/20 whitespace-nowrap"
+          >
+            {dataStats.postsWithNotesCount} With Notes
+          </Badge>
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-500 border-blue-500/20 whitespace-nowrap"
+          >
+            {dataStats.engagedPostsCount} Engaged
           </Badge>
         </div>
       </div>
@@ -133,14 +138,13 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
               )}
 
               <div
-                className={`max-w-[100%] rounded-2xl p-4 shadow-sm ${
-                  message.role === "user"
-                    ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
-                    : "bg-muted/50 border border-border/50 rounded-tl-none"
-                }`}
+                className={`max-w-[100%] rounded-xl p-2.5 shadow-sm ${message.role === "user"
+                  ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
+                  : "bg-muted/50 border border-border/50 rounded-tl-none"
+                  }`}
               >
                 <div
-                  className={`text-sm leading-relaxed ${message.role === "user" ? "text-white/95" : "text-foreground"}`}
+                  className={`text-[13px] leading-snug ${message.role === "user" ? "text-white/95" : "text-foreground"}`}
                 >
                   {message.role === "assistant" ? (
                     <ReactMarkdown
@@ -229,11 +233,10 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
                   )}
                 </div>
                 <p
-                  className={`text-[10px] mt-2 font-medium ${
-                    message.role === "user"
-                      ? "text-white/60"
-                      : "text-muted-foreground"
-                  }`}
+                  className={`text-[10px] mt-2 font-medium ${message.role === "user"
+                    ? "text-white/60"
+                    : "text-muted-foreground"
+                    }`}
                 >
                   {message.timestamp.toLocaleTimeString([], {
                     hour: "2-digit",
@@ -299,15 +302,15 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
                 e.key === "Enter" && !e.shiftKey && handleSend()
               }
               disabled={isLoading}
-              className="pr-12 py-6 rounded-full border-border/50 focus-visible:ring-indigo-500/30 shadow-sm bg-background/80 backdrop-blur-sm"
+              className="pr-10 py-5 rounded-lg border-border/50 focus-visible:ring-indigo-500/30 shadow-sm bg-background/80 backdrop-blur-sm text-xs"
             />
             <Button
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
               size="icon"
-              className="absolute right-1.5 h-9 w-9 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md transition-all hover:scale-105"
+              className="absolute right-1 h-8 w-8 rounded-md bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md transition-all"
             >
-              <Send className="h-4 w-4 text-white" />
+              <Send className="h-3.5 w-3.5 text-white" />
             </Button>
           </div>
           <p className="text-[10px] text-center text-muted-foreground">

@@ -126,23 +126,38 @@ pub async fn get_access_token(
     client_id: String,
     client_secret: String,
 ) -> Result<String, RedditError> {
-    let credentials = format!("{}:{}", client_id, client_secret);
+    if client_id == "CHANGE_ME" || client_secret == "CHANGE_ME" {
+        let missing = if client_id == "CHANGE_ME" && client_secret == "CHANGE_ME" {
+            "Client ID and Secret"
+        } else if client_id == "CHANGE_ME" {
+            "Client ID"
+        } else {
+            "Client Secret"
+        };
+        return Err(RedditError::ParseError(format!("Reddit API {} not configured. Please update your settings.", missing)));
+    }
+
+    let credentials = format!("{}:{}", client_id.trim(), client_secret.trim());
     let encoded = general_purpose::STANDARD.encode(credentials);
 
     let client = Client::new();
     let response = client
         .post("https://www.reddit.com/api/v1/access_token")
         .header("Authorization", format!("Basic {}", encoded))
-        .header("User-Agent", "RudditApp/0.1 by Ruddit")
+        .header("User-Agent", "AtalaiaApp/0.1 by Atalaia")
         .form(&[("grant_type", "client_credentials")])
         .send()
         .await?;
 
+    let status = response.status();
     let json: serde_json::Value = response.json().await?;
-    json["access_token"]
-        .as_str()
-        .map(|s| s.to_string())
-        .ok_or(RedditError::TokenExtraction)
+
+    if let Some(token) = json["access_token"].as_str() {
+        Ok(token.to_string())
+    } else {
+        eprintln!("Reddit Token Error (HTTP {}): {:?}", status, json);
+        Err(RedditError::TokenExtraction)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -283,7 +298,7 @@ pub async fn search_subreddit_posts(
             ("t", "all"),
         ])
         .header("Authorization", format!("Bearer {}", access_token))
-        .header("User-Agent", "RustRedditApp/0.1 by Ruddit")
+        .header("User-Agent", "RustAtalaiaApp/0.1 by Atalaia")
         .send()
         .await?;
 
@@ -428,12 +443,10 @@ pub async fn get_post_comments(
         Ok(t) if !t.is_empty() => t,
         Ok(_) => {
             eprintln!("Empty access token received");
-            api_keys::ConfigDirs::edit_config_file().unwrap();
             return Ok(Vec::new());
         }
         Err(e) => {
             eprintln!("Failed to retrieve access token: {:?}", e);
-            api_keys::ConfigDirs::edit_config_file().unwrap();
             return Ok(Vec::new());
         }
     };
@@ -544,7 +557,7 @@ fn extract_post_id_from_url(url: &str) -> Option<String> {
     // 3. /gallery/{id}
     // 4. /r/{subreddit}/s/{id} (shortened URLs)
     let re = Regex::new(
-        r"(?:reddit\.com/r/[^/]+/comments/|reddit\.com/comments/|reddit\.com/gallery/|reddit\.com/r/[^/]+/s/|i\.redd\.it/)([a-z0-9]+)"
+        r"(?:reddit\.com/r/[^/]+/comments/|reddit\.com/comments/|reddit\.com/gallery/|reddit\.com/r/[^/]+/s/|redd\.it/|i\.redd\.it/)([a-zA-Z0-9]+)"
     ).unwrap();
 
     re.captures(url)
@@ -569,6 +582,10 @@ pub async fn get_user_access_token(
     username: &str,
     password: &str,
 ) -> Result<String, RedditError> {
+    if client_id == "CHANGE_ME" || client_secret == "CHANGE_ME" || username.is_empty() || password.is_empty() {
+        return Err(RedditError::ParseError("Reddit User credentials not fully configured. Please update your settings.".to_string()));
+    }
+
     let client_id = client_id.trim();
     let client_secret = client_secret.trim();
     let username = username.trim();
@@ -581,7 +598,7 @@ pub async fn get_user_access_token(
     let response = client
         .post("https://www.reddit.com/api/v1/access_token")
         .header("Authorization", format!("Basic {}", encoded))
-        .header("User-Agent", format!("macos:com.ruddit.client:v0.1.0 (by /u/{})", username))
+        .header("User-Agent", format!("macos:com.atalaia.client:v0.1.0 (by /u/{})", username))
         .form(&[
             ("grant_type", "password"),
             ("username", username),
@@ -590,18 +607,23 @@ pub async fn get_user_access_token(
         .send()
         .await?;
 
+    let status = response.status();
     let json: serde_json::Value = response.json().await?;
+
     if let Some(err) = json["error"].as_str() {
+        eprintln!("Reddit User Token Error (HTTP {}): {:?}", status, json);
         if err == "unauthorized_client" {
             return Err(RedditError::HttpError(401, "unauthorized_client: Check that your Reddit App Type is set to 'script' and your Client ID/Secret are correct.".to_string()));
         }
         return Err(RedditError::HttpError(401, err.to_string()));
     }
 
-    json["access_token"]
-        .as_str()
-        .map(|s| s.to_string())
-        .ok_or(RedditError::TokenExtraction)
+    if let Some(token) = json["access_token"].as_str() {
+        Ok(token.to_string())
+    } else {
+        eprintln!("Reddit User Token Error (HTTP {}): {:?}", status, json);
+        Err(RedditError::TokenExtraction)
+    }
 }
 
 pub async fn post_comment(
@@ -613,7 +635,7 @@ pub async fn post_comment(
     let response = client
         .post("https://oauth.reddit.com/api/comment")
         .header("Authorization", format!("Bearer {}", access_token))
-        .header("User-Agent", "RudditApp/0.1 by Ruddit")
+        .header("User-Agent", "AtalaiaApp/0.1 by Atalaia")
         .form(&[("thing_id", parent_id), ("text", text), ("api_type", "json")])
         .send()
         .await?;

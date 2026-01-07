@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 // This should match your Rust PostDataWrapper
 interface PostDataWrapper {
@@ -52,6 +53,7 @@ interface SingleSubredditTable {
   subRedditsSaved: PostDataWrapper[]; // Changed to match backend format
   setSingleSubreddit: (subreddits: PostDataWrapper[]) => void;
   addSingleSubreddit: (subreddit: PostDataWrapper) => void; // Changed parameter type
+  removeSingleSubreddit: (postId: number) => void;
   clearSavedSubredditsTable: () => void; // Add this method to clear the table
 }
 
@@ -76,13 +78,18 @@ const useAddSingleSubReddit = create<SingleSubredditTable>((set, get) => ({
       set({ subRedditsSaved: [...current, subreddit] });
     }
   },
+  removeSingleSubreddit: (postId: number) => {
+    set((state) => ({
+      subRedditsSaved: state.subRedditsSaved.filter((p) => p.id !== postId),
+    }));
+  },
   clearSavedSubredditsTable: () => set({ subRedditsSaved: [] }),
 }));
 
 // AUTOMATION STORE
 interface LogEntry {
   id: string;
-  timestamp: Date;
+  timestamp: number;
   message: string;
   type: "info" | "success" | "warning" | "error";
 }
@@ -90,51 +97,57 @@ interface LogEntry {
 interface AutomationStore {
   isRunning: boolean;
   intervalMinutes: number;
-  lastRun: Date | null;
+  lastRun: number | null;
   logs: LogEntry[];
   foundPosts: PostDataWrapper[];
   setIsRunning: (isRunning: boolean) => void;
   setIntervalMinutes: (minutes: number) => void;
-  setLastRun: (date: Date) => void;
+  setLastRun: (timestamp: number) => void;
   addLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
   clearLogs: () => void;
   addFoundPosts: (posts: PostDataWrapper[]) => void;
   clearFoundPosts: () => void;
 }
 
-const useAutomationStore = create<AutomationStore>((set) => ({
-  isRunning: false,
-  intervalMinutes: 15,
-  lastRun: null,
-  logs: [],
-  foundPosts: [],
-  setIsRunning: (isRunning) => set({ isRunning }),
-  setIntervalMinutes: (intervalMinutes) => set({ intervalMinutes }),
-  setLastRun: (lastRun) => set({ lastRun }),
-  addLog: (message, type = "info") =>
-    set((state) => ({
-      logs: [
-        {
-          id: Math.random().toString(36).substring(7),
-          timestamp: new Date(),
-          message,
-          type,
-        },
-        ...state.logs,
-      ].slice(0, 100), // Keep last 100 logs
-    })),
-  clearLogs: () => set({ logs: [] }),
-  addFoundPosts: (newPosts) =>
-    set((state) => {
-      // Avoid duplicates based on ID
-      const existingIds = new Set(state.foundPosts.map((p) => p.id));
-      const uniqueNewPosts = newPosts.filter((p) => !existingIds.has(p.id));
-      return {
-        foundPosts: [...uniqueNewPosts, ...state.foundPosts].slice(0, 500), // Limit total stored posts
-      };
+const useAutomationStore = create<AutomationStore>()(
+  persist(
+    (set) => ({
+      isRunning: false,
+      intervalMinutes: 15,
+      lastRun: null,
+      logs: [],
+      foundPosts: [],
+      setIsRunning: (isRunning) => set({ isRunning }),
+      setIntervalMinutes: (intervalMinutes) => set({ intervalMinutes }),
+      setLastRun: (lastRun) => set({ lastRun }),
+      addLog: (message, type = "info") =>
+        set((state) => ({
+          logs: [
+            {
+              id: Math.random().toString(36).substring(7),
+              timestamp: Date.now(),
+              message,
+              type,
+            },
+            ...state.logs,
+          ],
+        })),
+      clearLogs: () => set({ logs: [] }),
+      addFoundPosts: (newPosts) =>
+        set((state) => {
+          const existingIds = new Set(state.foundPosts.map((p) => p.id));
+          const uniqueNewPosts = newPosts.filter((p) => !existingIds.has(p.id));
+          return {
+            foundPosts: [...uniqueNewPosts, ...state.foundPosts],
+          };
+        }),
+      clearFoundPosts: () => set({ foundPosts: [] }),
     }),
-  clearFoundPosts: () => set({ foundPosts: [] }),
-}));
+    {
+      name: "ruddit-automation-storage",
+    }
+  )
+);
 
 export { useSubredditsStore, useRedditPostsTab, useAddSingleSubReddit, useAutomationStore };
 export type { PostDataWrapper, RedditPost, LogEntry };

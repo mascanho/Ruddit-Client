@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAppSettings } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 import { useAutomationStore, useAddSingleSubReddit, PostDataWrapper } from "@/store/store";
 import { invoke } from "@tauri-apps/api/core";
 import { calculateIntent, categorizePost, matchesKeyword } from "@/lib/marketing-utils";
@@ -27,12 +27,8 @@ export function AutomationRunner() {
     // AUTOMATION LOGIC
     useEffect(() => {
         if (isRunning) {
-            // Check if already running to avoid double-logging or overlapping on strict mode remounts
-            // But here safely assume we want to ensure it's on.
             if (!automationIntervalRef.current) {
-                // Run immediately on start
                 runAutomationCycle();
-
                 automationIntervalRef.current = setInterval(() => {
                     runAutomationCycle();
                 }, intervalMinutes * 60 * 1000);
@@ -55,20 +51,20 @@ export function AutomationRunner() {
 
     const runAutomationCycle = async () => {
         addLog("Starting automation cycle...", "info");
-
-        // 1. MONITORED SUBREDDIT DEEP SCAN (Priority)
         await runMonitoredSubredditScan();
-
-        // 2. GLOBAL KEYWORD SEARCH & SUBREDDIT DISCOVERY
         await runGlobalKeywordSearch();
-
-        setLastRun(new Date());
+        setLastRun(Date.now());
         addLog("Cycle complete. Waiting for next interval.", "success");
     };
 
-    // Shared processing function to filter and format posts
     const processAndFilterPosts = (posts: PostDataWrapper[], source: string) => {
         const currentSettings = settingsRef.current;
+        const allKeywords = [
+            ...(currentSettings.monitoredKeywords || []),
+            ...(currentSettings.brandKeywords || []),
+            ...(currentSettings.competitorKeywords || []),
+        ];
+
         return posts
             .map(post => {
                 const category = categorizePost(post.title, currentSettings.brandKeywords, currentSettings.competitorKeywords);
@@ -76,24 +72,8 @@ export function AutomationRunner() {
                 return { ...post, category, intent: intent.charAt(0).toUpperCase() + intent.slice(1) };
             })
             .filter(post => {
-                // Filter logic: Only keep High/Medium intent OR Brand mentions
-                const isHighMedium = post.intent === "High" || post.intent === "Medium";
-                const isBrand = post.category === "brand" || post.category === "competitor";
-
-                // Rigorous check against CURRENT settings
-                const text = (post.title + " " + (post.selftext || ""));
-                const matchesGeneral = currentSettings.monitoredKeywords.some(k => matchesKeyword(text, k));
-                const matchesBrand = currentSettings.brandKeywords.some(k => matchesKeyword(text, k));
-                const matchesCompetitor = currentSettings.competitorKeywords.some(k => matchesKeyword(text, k));
-
-                if (!matchesGeneral && !matchesBrand && !matchesCompetitor) return false;
-
-                // If it's a "General" keyword match, enforce High/Medium intent
-                if (matchesGeneral && !matchesBrand && !matchesCompetitor) {
-                    return isHighMedium;
-                }
-
-                return true;
+                const text = (post.title + " " + (post.selftext || "")).toLowerCase();
+                return allKeywords.some(k => text.includes(k.toLowerCase()));
             });
     };
 
@@ -102,9 +82,9 @@ export function AutomationRunner() {
         addLog("Running Global Keyword Search & Subreddit Discovery...", "info");
 
         const allKeywords = [
-            ...currentSettings.brandKeywords.map(k => ({ term: k, type: 'brand' })),
-            ...currentSettings.competitorKeywords.map(k => ({ term: k, type: 'competitor' })),
-            ...currentSettings.monitoredKeywords.map(k => ({ term: k, type: 'general' }))
+            ...(currentSettings.brandKeywords || []).map(k => ({ term: k, type: 'brand' })),
+            ...(currentSettings.competitorKeywords || []).map(k => ({ term: k, type: 'competitor' })),
+            ...(currentSettings.monitoredKeywords || []).map(k => ({ term: k, type: 'general' }))
         ];
 
         if (allKeywords.length === 0) {
@@ -113,22 +93,21 @@ export function AutomationRunner() {
         }
 
         const discoveredSubreddits = new Set<string>();
-        const existingSubreddits = new Set(currentSettings.monitoredSubreddits.map(s => s.toLowerCase()));
+        const existingSubreddits = new Set((currentSettings.monitoredSubreddits || []).map(s => s.toLowerCase()));
 
         const chunkSize = 5;
         for (let i = 0; i < allKeywords.length; i += chunkSize) {
             const chunk = allKeywords.slice(i, i + chunkSize);
-            const query = chunk.map(k => k.term).join(" OR ");
+            const query = chunk.map(k => `"${k.term}"`).join(" OR ");
 
-            addLog(`Searching Global for: ${query}...`, "info");
+            addLog(`Searching Globally for: ${chunk.map(k => k.term).join(", ")}...`, "info");
 
             try {
                 const results: PostDataWrapper[] = await invoke("get_reddit_results", {
-                    sortTypes: ["new"],
+                    sortTypes: ["new", "relevance"],
                     query: query
                 });
 
-                // Discovery logic: find subreddits that aren't already monitored
                 results.forEach(post => {
                     const sub = post.subreddit.toLowerCase();
                     if (!existingSubreddits.has(sub)) {
@@ -140,84 +119,67 @@ export function AutomationRunner() {
 
                 if (relevantPosts.length > 0) {
                     addFoundPosts(relevantPosts);
-                    addLog(`Found ${relevantPosts.length} matches globally.`, "success");
+                    addLog(`Found ${relevantPosts.length} new matches globally.`, "success");
                 }
             } catch (error) {
                 addLog(`Global search failed: ${error}`, "error");
             }
-            // Check if stopped during async wait
-            if (!settingsRef.current) break;
+            if (!automationIntervalRef.current) break;
             await new Promise(r => setTimeout(r, 2000));
         }
 
         if (discoveredSubreddits.size > 0) {
             const list = Array.from(discoveredSubreddits).slice(0, 5).join(", r/");
-            addLog(`Discovered potentially relevant subreddits: r/${list}`, "success");
+            addLog(`Discovered new subreddits: r/${list}`, "success");
         }
     };
 
     const runMonitoredSubredditScan = async () => {
         const currentSettings = settingsRef.current;
-        if (currentSettings.monitoredSubreddits.length === 0) {
+        const monitoredSubreddits = currentSettings.monitoredSubreddits || [];
+        if (monitoredSubreddits.length === 0) {
             return;
         }
 
-        addLog(`Deep scanning ${currentSettings.monitoredSubreddits.length} subreddits (New & Top)...`, "info");
+        addLog(`Deep scanning ${monitoredSubreddits.length} subreddits...`, "info");
 
         const allKeywords = [
-            ...currentSettings.brandKeywords,
-            ...currentSettings.competitorKeywords,
-            ...currentSettings.monitoredKeywords
+            ...(currentSettings.brandKeywords || []),
+            ...(currentSettings.competitorKeywords || []),
+            ...(currentSettings.monitoredKeywords || [])
         ];
 
-        for (const subreddit of currentSettings.monitoredSubreddits) {
-            addLog(`Scanning r/${subreddit}...`, "info");
+        if (allKeywords.length === 0) {
+            addLog("No keywords to search in monitored subreddits.", "warning");
+            return;
+        }
 
-            // 1. Scan "New" and "Top" (day) feeds
-            const feeds = ["new", "top"];
-            for (const feed of feeds) {
+        for (const subreddit of monitoredSubreddits) {
+            if (!automationIntervalRef.current) break;
+            addLog(`Scanning r/${subreddit} for all monitored keywords...`, "info");
+
+            const chunkSize = 8;
+            for (let i = 0; i < allKeywords.length; i += chunkSize) {
+                if (!automationIntervalRef.current) break;
+                const chunk = allKeywords.slice(i, i + chunkSize);
+                const query = `subreddit:${subreddit} (${chunk.map(k => `"${k}"`).join(" OR ")})`;
+
                 try {
                     const results: PostDataWrapper[] = await invoke("get_reddit_results", {
-                        sortTypes: [feed],
-                        query: `r/${subreddit}`
+                        sortTypes: ["new", "relevance"],
+                        query: query
                     });
-                    const relevantPosts = processAndFilterPosts(results, `r/${subreddit} (${feed})`);
+                    const relevantPosts = processAndFilterPosts(results, `r/${subreddit} search`);
                     if (relevantPosts.length > 0) {
                         addFoundPosts(relevantPosts);
-                        addLog(`Found ${relevantPosts.length} matches in r/${subreddit} (${feed} feed).`, "success");
+                        addLog(`Found ${relevantPosts.length} keyword matches in r/${subreddit}.`, "success");
                     }
                 } catch (error) {
-                    addLog(`Failed to scan ${feed} in r/${subreddit}: ${error}`, "error");
+                    console.error(`Search failed for ${query}`, error);
+                    addLog(`Search failed in r/${subreddit}: ${error}`, "error");
                 }
+                await new Promise(r => setTimeout(r, 1500));
             }
-
-            // 2. Targeted Keyword Search (More robust)
-            if (allKeywords.length > 0) {
-                const chunkSize = 8; // Slightly larger chunks for performance
-                for (let i = 0; i < allKeywords.length; i += chunkSize) {
-                    const chunk = allKeywords.slice(i, i + chunkSize);
-                    // Use a more inclusive query format
-                    const query = `subreddit:${subreddit} (${chunk.map(k => `"${k}"`).join(" OR ")})`;
-
-                    try {
-                        // Search both new and relevance for keywords
-                        const results: PostDataWrapper[] = await invoke("get_reddit_results", {
-                            sortTypes: ["new", "relevance"],
-                            query: query
-                        });
-                        const relevantPosts = processAndFilterPosts(results, `r/${subreddit} search`);
-                        if (relevantPosts.length > 0) {
-                            addFoundPosts(relevantPosts);
-                            addLog(`Found ${relevantPosts.length} keyword matches in r/${subreddit}.`, "success");
-                        }
-                    } catch (error) {
-                        console.error(`Search failed for ${query}`, error);
-                    }
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-            }
-
-            await new Promise(r => setTimeout(r, 1500));
         }
     };
 

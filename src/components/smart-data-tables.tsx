@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { RedditTable } from "./reddit-table";
 import { MessagesTable } from "./messages-table";
-import { AppSettingsDialog, useAppSettings } from "./app-settings";
+import { AppSettingsDialog } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 import { RedditSearch } from "./reddit-search";
 import { AIDataChat } from "./ai-data-chat";
 import { LeadsGenerator } from "./leads-generator";
@@ -38,8 +39,9 @@ export type Message = {
   body?: string;
   formatted_date?: string;
   parent_id?: string;
+  post_title?: string;
+  subreddit?: string;
 };
-
 
 export type RedditPost = {
   id: string;
@@ -75,8 +77,9 @@ export function SmartDataTables() {
     redditRelevance: "all",
     messagesSearch: "",
   });
+  const [activeTab, setActiveTab] = useState("reddit");
 
-  const { subRedditsSaved } = useAddSingleSubReddit();
+  const { subRedditsSaved, setSingleSubreddit } = useAddSingleSubReddit();
 
   // GET ALL THE COMMENTS FROM DB AND SHOW IN THE FRONT END TABLE
 
@@ -95,20 +98,20 @@ export function SmartDataTables() {
   }, [allSavedPosts]);
 
   // GET ALL THE SAVED POSTS FROM DB AND SHOW IN THE FRONT END TABLE
-
-  async function getAllRedditsSaved() {
-    try {
-      const data: any = await invoke("get_all_posts");
-      console.log(data, "ALL SAVED POSTS");
-      setAllSavedPosts(data);
-    } catch (err) {
-      console.log(err);
-    }
-  }
+  useEffect(() => {
+    invoke("get_all_posts")
+      .then((data) => {
+        console.log(data, "ALL SAVED POSTS");
+        setSingleSubreddit(data as any[]);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, []);
 
   useEffect(() => {
-    getAllRedditsSaved();
-  }, [redditPosts, subRedditsSaved]);
+    setAllSavedPosts(subRedditsSaved);
+  }, [subRedditsSaved]);
 
   const handleAddComments = (comments: Message[]) => {
     setMessages((prev) => [...prev, ...comments]);
@@ -131,6 +134,7 @@ export function SmartDataTables() {
   };
 
   const handleTabChange = (value: string) => {
+    setActiveTab(value);
     if (value === "reddit" && (subredditsModified || newPostsCount > 0)) {
       setSubredditsModified(false);
       setNewPostsCount(0);
@@ -138,21 +142,36 @@ export function SmartDataTables() {
   };
 
   const dataStats = useMemo(() => {
-    const subreddits = Array.from(new Set(redditPosts.map((p) => p.subreddit)));
+    const uniqueSubreddits = Array.from(
+      new Set(subRedditsSaved.map((p) => p.subreddit)),
+    );
     const avgRelevance =
-      redditPosts.length > 0
-        ? redditPosts.reduce((sum, p) => sum + p.relevance, 0) /
-        redditPosts.length
+      subRedditsSaved.length > 0
+        ? subRedditsSaved.reduce((sum, p) => sum + p.relevance_score, 0) /
+        subRedditsSaved.length
         : 0;
 
+    const highIntentPosts = subRedditsSaved.filter(
+      (p) => p.intent?.toLowerCase() === "high",
+    ).length;
+    const postsWithNotes = subRedditsSaved.filter(
+      (p) => p.notes && p.notes.trim() !== "",
+    ).length;
+    const engagedPosts = subRedditsSaved.filter((p) => p.engaged === 1).length;
+    const totalPosts = subRedditsSaved.length;
+    const totalMessages = messages.length;
+
     return {
-      totalPosts: redditPosts.length,
-      totalMessages: messages.length,
-      subreddits,
+      totalPosts,
+      totalMessages,
+      uniqueSubredditsCount: uniqueSubreddits.length,
+      highIntentPostsCount: highIntentPosts,
+      postsWithNotesCount: postsWithNotes,
+      engagedPostsCount: engagedPosts,
       topKeywords: settings.monitoredKeywords || [],
       averageRelevance: avgRelevance,
     };
-  }, [redditPosts, messages, settings]);
+  }, [subRedditsSaved, messages, settings]);
 
   // HANDLE DELETING THE COMMENTS FROM THE TABLE
   async function handleClearComments() {
@@ -189,114 +208,142 @@ export function SmartDataTables() {
 
   return (
     <div
-      className="container mx-auto  px-4 w-full max-w-full"
+      className="w-full h-screen flex flex-col overflow-hidden px-2 py-2"
       style={{ fontSize: `${settings.fontSize}px` }}
     >
       <AutomationRunner />
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center">
-          <img src="/ruddit-logo.png" alt="logo" className="h-auto w-12" />
-          <section className="ml-3 mt-3">
-            <h1 className="text-2xl font-bold tracking-tight">Ruddit</h1>
-            <p className="text-muted-foreground text-xs">
-              Lead Generation and Brand Monitoring
+      <div className="mb-3 flex items-center justify-between px-2">
+        <div className="flex items-center gap-3">
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-linear-to-r from-primary/50 to-blue-600/50 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
+            <img
+              src="/ruddit-logo.png"
+              alt="logo"
+              className="h-9 w-9 relative"
+            />
+          </div>
+          <div>
+            <h1 className="text-lg font-black tracking-tighter uppercase leading-none text-foreground/90">
+              Atalaia
+            </h1>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 leading-none mt-1">
+              Intelligence Engine
             </p>
-          </section>
+          </div>
         </div>
-        <section className="flex space-x-2   justify-between">
-          <Button
-            className="cursor-pointer"
-            variant="outline"
-            size="icon"
-            onClick={() => setSettingsOpen(true)}
-          >
-            <Play className="h-4 w-4" />
-          </Button>
-          <Button
-            className="cursor-pointer"
-            variant="outline"
-            size="icon"
-            onClick={() => setSettingsOpen(true)}
-          >
-            <StopCircle className="h-4 w-4" />
-          </Button>
-          <Button
-            className="cursor-pointer"
-            variant="outline"
-            size="icon"
-            onClick={() => setSettingsOpen(true)}
-          >
-            <Settings2 className="h-4 w-4" />
-          </Button>
-          <Button
-            className="cursor-pointer"
-            variant="outline"
-            size="icon"
-            onClick={handleOpenSettings}
-          >
-            <Cog className="h-4 w-4" />
-          </Button>
-          <Button
-            className="cursor-pointer"
-            variant="outline"
-            size="icon"
-            onClick={handleOpenDbFolder}
-          >
-            <Database className="h-4 w-4" />
-          </Button>
+
+        <section className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-border/40 shadow-sm">
+          {[
+            {
+              icon: Play,
+              onClick: () => setSettingsOpen(true),
+              tooltip: "Run",
+            },
+            {
+              icon: StopCircle,
+              onClick: () => setSettingsOpen(true),
+              tooltip: "Stop",
+            },
+            {
+              icon: Settings2,
+              onClick: () => setSettingsOpen(true),
+              tooltip: "Quick Settings",
+            },
+            {
+              icon: Cog,
+              onClick: handleOpenSettings,
+              tooltip: "Advanced Settings",
+            },
+            {
+              icon: Database,
+              onClick: handleOpenDbFolder,
+              tooltip: "Database",
+            },
+          ].map((item, idx) => (
+            <Button
+              key={idx}
+              className="h-8 w-8 cursor-pointer hover:bg-background hover:shadow-sm transition-all"
+              variant="ghost"
+              size="icon"
+              onClick={item.onClick}
+              title={item.tooltip}
+            >
+              <item.icon className="h-4 w-4 opacity-70 group-hover:opacity-100" />
+            </Button>
+          ))}
         </section>
       </div>
 
       <Tabs
         defaultValue="reddit"
-        className="w-full"
+        className="flex-1 flex flex-col min-h-0 w-full"
         onValueChange={handleTabChange}
       >
-        <TabsList className="grid w-full flex justify-between w-full max-w-full grid-cols-5 ">
-          <TabsTrigger value="reddit" className="relative">
+        <TabsList className="flex w-full h-9 p-0.5 bg-blue-100/30 border-border/40 mb-2">
+          <TabsTrigger
+            value="reddit"
+            className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+          >
             Tracking Posts
             {subredditsModified && (
               <Badge
                 variant="destructive"
-                className="ml-2 px-1.5 py-0.5 text-xs flex items-center gap-1"
+                className="ml-2 h-3.5 px-1 text-[9px] font-black"
               >
-                <AlertCircle className="h-3 w-3" />
-                Updated
+                UPDATED
               </Badge>
             )}
             {newPostsCount > 0 && (
-              <Badge className="ml-2 px-2 py-0.5 text-xs bg-green-600 hover:bg-green-700">
+              <Badge className="ml-2 h-3.5 px-1 text-[9px] font-black bg-green-600">
                 +{newPostsCount}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="messages">
+          <TabsTrigger
+            value="messages"
+            className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
             Messages
             {messages.length > 0 && (
-              <span className="ml-2 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
+              <Badge
+                variant="secondary"
+                className="ml-2 h-3.5 px-1 text-[9px] font-black opacity-70"
+              >
                 {messages.length}
-              </span>
+              </Badge>
             )}
           </TabsTrigger>
-          {/* <TabsTrigger value="leads"> */}
-          {/*   <TrendingUp className="h-4 w-4 mr-1" /> */}
-          {/*   Leads */}
-          {/* </TabsTrigger> */}
-          <TabsTrigger value="search">Search</TabsTrigger>
-          <TabsTrigger value="automation">Automation</TabsTrigger>
-          <TabsTrigger value="ai">AI Assistant</TabsTrigger>
+          <TabsTrigger
+            value="search"
+            className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
+            Search
+          </TabsTrigger>
+          <TabsTrigger
+            value="automation"
+            className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
+            Automation
+          </TabsTrigger>
+          <TabsTrigger
+            value="ai"
+            className="flex-1 text-[11px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
+            AI Assistant
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="reddit" className="space-y-4">
+        <TabsContent value="reddit" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
           <RedditTable
             onAddComments={handleAddComments}
             externalPosts={allSavedPosts}
             searchState={searchState}
             onSearchStateChange={setSearchState}
+            isActive={activeTab === "reddit"}
           />
         </TabsContent>
 
-        <TabsContent value="messages" className="space-y-4">
+        <TabsContent value="messages" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
           <MessagesTable
             externalMessages={messages}
             searchState={searchState}
@@ -305,22 +352,18 @@ export function SmartDataTables() {
           />
         </TabsContent>
 
-        <TabsContent value="leads" className="space-y-4">
-          <LeadsGenerator posts={redditPosts} messages={messages} />
-        </TabsContent>
-
-        <TabsContent value="search" className="space-y-4">
+        <TabsContent value="search" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
           <RedditSearch
             onAddResults={handleAddSearchResults}
             onNotifyNewPosts={handleNotifyNewPosts}
           />
         </TabsContent>
 
-        <TabsContent value="automation" className="space-y-4">
+        <TabsContent value="automation" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
           <AutomationTab />
         </TabsContent>
 
-        <TabsContent value="ai" className="space-y-4">
+        <TabsContent value="ai" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
           <AIDataChat dataStats={dataStats} />
         </TabsContent>
       </Tabs>

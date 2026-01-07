@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAppSettings } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 import { invoke } from "@tauri-apps/api/core";
 import {
   useAddSingleSubReddit,
@@ -65,6 +65,7 @@ type SearchResult = {
   thumbnail?: string | null;
   intent?: string; // allow string from backend
   category?: "brand" | "competitor" | "general";
+  permalink?: string;
   date_added?: number;
 };
 
@@ -103,7 +104,6 @@ export function RedditSearch({
 
   // Helper function to escape special characters for regex
 
-
   // Persist query and sorts
   useEffect(() => {
     localStorage.setItem("lastRedditSearchQuery", query);
@@ -123,8 +123,6 @@ export function RedditSearch({
   useEffect(() => {
     localStorage.setItem("lastRedditSearchRows", rowsPerPage.toString());
   }, [rowsPerPage]);
-
-
 
   const addSubredditToMonitoring = (subreddit: string) => {
     const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
@@ -170,6 +168,7 @@ export function RedditSearch({
         selftext: post.selftext,
         thumbnail: post.thumbnail,
         intent: post.intent,
+        permalink: post.permalink,
         category: categorizePost(
           post.title,
           settings.brandKeywords,
@@ -210,6 +209,7 @@ export function RedditSearch({
         selftext: post.selftext,
         thumbnail: post.thumbnail,
         intent: post.intent,
+        permalink: post.permalink,
         category: categorizePost(
           post.title,
           settings.brandKeywords,
@@ -276,6 +276,7 @@ export function RedditSearch({
         selftext: post.selftext,
         thumbnail: post.thumbnail,
         intent: post.intent,
+        permalink: post.permalink,
         category: categorizePost(
           post.title,
           settings.brandKeywords,
@@ -326,7 +327,7 @@ export function RedditSearch({
           sort_type: result.sort_type,
           relevance_score: result.relevance_score,
           subreddit: result.subreddit,
-          permalink: result.url,
+          permalink: result.permalink || result.url,
           engaged: 0,
           assignee: "",
           notes: "",
@@ -353,7 +354,7 @@ export function RedditSearch({
         sort_type: result.sort_type,
         relevance_score: result.relevance_score,
         subreddit: result.subreddit,
-        permalink: result.url, // Using url as permalink
+        permalink: result.permalink || result.url, // Using permalink if available
         engaged: 0,
         assignee: "",
         notes: "",
@@ -456,7 +457,7 @@ export function RedditSearch({
         sort_type: result.sort_type,
         relevance_score: result.relevance_score,
         subreddit: result.subreddit,
-        permalink: result.url,
+        permalink: result.permalink || result.url,
         engaged: 0,
         assignee: "",
         notes: "",
@@ -671,402 +672,412 @@ export function RedditSearch({
   console.log("paginatedResults:", paginatedResults);
 
   return (
-    <Card className="p-6">
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Search Reddit</h3>
-          <p className="text-sm text-muted-foreground">
-            Search for posts across Reddit and add them to your tracking table
-          </p>
-        </div>
+    <div className="flex-1 flex flex-col gap-4 min-h-0 animate-in fade-in duration-500">
+      {/* Search Bar Section */}
+      <Card className="p-4 shadow-sm border-border/60 bg-white backdrop-blur-sm">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wider opacity-80 flex items-center gap-2">
+                <Search className="h-4 w-4 text-primary" />
+                Reddit Engine
+              </h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Query global subreddits and monitor specific keywords
+              </p>
+            </div>
+            <div className="flex gap-1.5 p-1 bg-muted/30 rounded-lg border border-border/40">
+              {(["hot", "top", "new"] as SortType[]).map((sort) => (
+                <Button
+                  key={sort}
+                  variant={selectedSorts.includes(sort) ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => toggleSort(sort)}
+                  disabled={isSearching}
+                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${selectedSorts.includes(sort)
+                    ? "shadow-sm"
+                    : "opacity-60 hover:opacity-100 hover:bg-background/80"
+                    }`}
+                >
+                  {sort === "hot" && <Flame className="h-3 w-3 mr-1.5" />}
+                  {sort === "top" && <TrendingUp className="h-3 w-3 mr-1.5" />}
+                  {sort === "new" && <Clock className="h-3 w-3 mr-1.5" />}
+                  {sort}
+                </Button>
+              ))}
+            </div>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Find by:</span>
           <div className="flex gap-2">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
+              <Input
+                placeholder="Search subreddits, keywords, or topics..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="pl-9 h-10 bg-background/80 border-border/60 focus:ring-1 focus:ring-primary/20 transition-all text-sm"
+              />
+            </div>
             <Button
-              variant={selectedSorts.includes("hot") ? "default" : "outline"}
-              size="sm"
-              onClick={() => toggleSort("hot")}
-              disabled={isSearching}
+              onClick={handleSearch}
+              disabled={isSearching || !query.trim()}
+              className="px-6 h-10 font-bold uppercase text-[11px] tracking-wider shadow-md hover:shadow-lg transition-all active:scale-95"
             >
-              <Flame className="h-4 w-4 mr-2" />
-              Hot
+              {isSearching ? (
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Running...
+                </div>
+              ) : (
+                "Search"
+              )}
             </Button>
-            <Button
-              variant={selectedSorts.includes("top") ? "default" : "outline"}
-              size="sm"
-              onClick={() => toggleSort("top")}
+            {/*<Button
+              variant="outline"
+              onClick={searchMonitored}
               disabled={isSearching}
+              className="h-10 border-border/60 text-[11px] font-bold uppercase tracking-wider hover:bg-primary/5 transition-all"
             >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Top
-            </Button>
-            <Button
-              variant={selectedSorts.includes("new") ? "default" : "outline"}
-              size="sm"
-              onClick={() => toggleSort("new")}
-              disabled={isSearching}
-            >
-              <Clock className="h-4 w-4 mr-2" />
-              New
-            </Button>
+              <Sparkles className="h-3.5 w-3.5 mr-2 text-primary" />
+              Auto-Pilot
+            </Button>*/}
           </div>
-          {selectedSorts.length > 1 && (
-            <Badge variant="secondary" className="text-xs">
-              {selectedSorts.length} filters active
-            </Badge>
-          )}
         </div>
+      </Card>
 
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search subreddits, keywords, or topics..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="pl-9"
-            />
-          </div>
-          <Button
-            onClick={handleSearch}
-            disabled={isSearching || !query.trim()}
-          >
-            {isSearching ? "Searching..." : "Search"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={searchMonitored}
-            disabled={isSearching}
-          >
-            <Sparkles className="h-4 w-4 mr-2" />
-            Use Monitored
-          </Button>
-        </div>
-
-        {subreddits.length > 0 ? (
-          <>
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-muted-foreground">
-                  {subreddits.length} results found
-                </p>
-                <div className="h-4 w-px bg-border mx-2" />
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    Sort order:
-                  </span>
-                  <select
-                    className="border rounded px-2 py-1 text-xs bg-background"
-                    value={viewSort}
-                    onChange={(e) => setViewSort(e.target.value as any)}
-                  >
-                    <option value="date-desc">Newest First</option>
-                    <option value="date-asc">Oldest First</option>
-                    <option value="score-desc">Highest Score</option>
-                    <option value="score-asc">Lowest Score</option>
-                    <option value="comments-desc">Most Comments</option>
-                    <option value="comments-asc">Fewest Comments</option>
-                    <option value="original">Unsorted</option>
-                  </select>
-                </div>
-                <div className="h-4 w-px bg-border mx-2" />
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    Filter view:
-                  </span>
-                  <Button
-                    variant={
-                      viewFilters.includes("hot") ? "secondary" : "ghost"
-                    }
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => toggleViewFilter("hot")}
-                  >
-                    <Flame className="h-3 w-3 mr-1" />
-                    Hot
-                  </Button>
-                  <Button
-                    variant={
-                      viewFilters.includes("top") ? "secondary" : "ghost"
-                    }
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => toggleViewFilter("top")}
-                  >
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                    Top
-                  </Button>
-                  <Button
-                    variant={
-                      viewFilters.includes("new") ? "secondary" : "ghost"
-                    }
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => toggleViewFilter("new")}
-                  >
-                    <Clock className="h-3 w-3 mr-1" />
-                    New
-                  </Button>
-                </div>
-                <div className="h-4 w-px bg-border mx-2" />
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Intent:</span>
-                  <Button
-                    variant={
-                      viewIntentFilters.includes("High") ? "secondary" : "ghost"
-                    }
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => toggleViewIntentFilter("High")}
-                  >
-                    High
-                  </Button>
-                  <Button
-                    variant={
-                      viewIntentFilters.includes("Medium")
-                        ? "secondary"
-                        : "ghost"
-                    }
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => toggleViewIntentFilter("Medium")}
-                  >
-                    Medium
-                  </Button>
-                  <Button
-                    variant={
-                      viewIntentFilters.includes("Low") ? "secondary" : "ghost"
-                    }
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => toggleViewIntentFilter("Low")}
-                  >
-                    Low
-                  </Button>
-                </div>
+      {subreddits.length > 0 ? (
+        <Card className="p-0 border-border/60 overflow-hidden flex flex-col flex-1 min-h-0">
+          {/* View Contol Bar */}
+          <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/20 backdrop-blur-md sticky top-0 z-10 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+                  Sort:
+                </span>
+                <select
+                  className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
+                  value={viewSort}
+                  onChange={(e) => setViewSort(e.target.value as any)}
+                >
+                  <option value="date-desc">Newest First</option>
+                  <option value="date-asc">Oldest First</option>
+                  <option value="score-desc">Popularity</option>
+                  <option value="score-asc">Lowest Score</option>
+                  <option value="comments-desc">Engagement</option>
+                  <option value="comments-asc">Fewest Comments</option>
+                </select>
               </div>
-              <Button variant="outline" size="sm" onClick={addAllToTable}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add All to Table
-              </Button>
+
+              <div className="w-px h-3 bg-border/60" />
+
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40 mr-1">
+                  View:
+                </span>
+                {(["hot", "top", "new"] as SortType[]).map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => toggleViewFilter(filter)}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewFilters.includes(filter)
+                      ? filter === "hot"
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                        : filter === "top"
+                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                          : "bg-green-500/10 text-green-600 dark:text-green-400"
+                      : "opacity-30 hover:opacity-100"
+                      }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
+
+              <div className="w-px h-3 bg-border/60" />
+
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40 mr-1">
+                  Intent:
+                </span>
+                {["High", "Medium", "Low"].map((intent) => (
+                  <button
+                    key={intent}
+                    onClick={() => toggleViewIntentFilter(intent)}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewIntentFilters.includes(intent)
+                      ? "bg-primary/10 text-primary"
+                      : "opacity-30 hover:opacity-100"
+                      }`}
+                  >
+                    {intent}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="space-y-3 max-h-[570px] overflow-y-auto">
-              {paginatedResults.length > 0 ? (
-                paginatedResults.map((result) => (
-                  <Card
-                    key={result.id}
-                    className="p-4 hover:bg-accent/50 transition-colors relative"
-                  >
-                    {result?.is_self && (
-                      <div className="absolute bottom-4 right-4">
-                        <div className="px-3 text-xs py-1 rounded-xl border border-gray-300 text-gray-400">
-                          Post
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium mb-1 line-clamp-2 text-base">
-                          <KeywordHighlighter
-                            text={result.title}
-                            searchQuery={query}
-                            brandKeywords={settings.brandKeywords}
-                            competitorKeywords={settings.competitorKeywords}
-                            generalKeywords={settings.monitoredKeywords}
-                          />
-                        </h4>
-                        {result.snippet && (
-                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                            {result.snippet}
-                          </p>
-                        )}
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-mono opacity-50 uppercase mr-2">
+                {subreddits.length} Nodes Discovered
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={addAllToTable}
+                className="h-7 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10 transition-all border border-primary/20 shadow-sm"
+              >
+                <Plus className="h-3 w-3 mr-1.5" />
+                Import All
+              </Button>
+            </div>
+          </div>
 
-                        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                          {result.intent && (
+          {/* Results List - Redesigned to be dense and sleek */}
+          <div className="flex-1 overflow-y-auto custom-scroll bg-background/30 p-2 space-y-1.5">
+            {paginatedResults.length > 0 ? (
+              paginatedResults.map((result) => (
+                <div
+                  key={result.id}
+                  className="group relative p-3 rounded-lg border border-border/40 bg-background/50 hover:bg-background hover:shadow-md hover:border-border/80 transition-all duration-200"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                             <Badge
-                              className={getIntentColor(
-                                result.intent.toLowerCase(),
-                              )}
+                              variant="outline"
+                              className="font-mono text-[9px] py-0 h-4 px-1.5 cursor-pointer hover:bg-accent/50 selection:bg-transparent bg-background/50 border-muted-foreground/10"
                             >
-                              {result.intent.toUpperCase()} INTENT
+                              r/{result.subreddit}
                             </Badge>
-                          )}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem
+                              className="text-xs"
+                              onClick={() =>
+                                addSubredditToMonitoring(result.subreddit)
+                              }
+                            >
+                              <Radar className="h-4 w-4 mr-2" />
+                              Monitor r/{result.subreddit}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
 
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Badge
-                                variant="outline"
-                                className="font-mono text-xs cursor-pointer hover:bg-accent/50 selection:bg-transparent"
-                              >
-                                r/{result.subreddit}
-                              </Badge>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              <DropdownMenuItem onClick={() => addSubredditToMonitoring(result.subreddit)}>
-                                <Radar className="h-4 w-4 mr-2" />
-                                Add to Monitoring
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-
+                        <div className="flex gap-1">
                           {result.sort_type?.split(",").map((type) => (
-                            <Badge
+                            <span
                               key={type}
-                              className={isColoredRelevance(type)}
+                              className={`text-[9px] font-bold uppercase px-1 rounded-sm text-white ${type === "hot"
+                                ? "bg-red-500/80"
+                                : type === "top"
+                                  ? "bg-blue-500/80"
+                                  : "bg-green-500/80"
+                                }`}
                             >
                               {type}
-                            </Badge>
+                            </span>
                           ))}
+                        </div>
 
-                          <div className="h-4 w-px bg-border mx-1" />
+                        <span className="text-[10px] text-muted-foreground opacity-40 font-mono">
+                          {moment(result.formatted_date).fromNow()}
+                        </span>
+                      </div>
 
-                          <div className="flex items-center gap-4">
-                            <span title="Score">
-                              Score:{" "}
-                              <span className="font-medium text-foreground">
-                                {result.score}
-                              </span>
-                            </span>
-                            <span title="Comments">
-                              Comments:{" "}
-                              <span className="font-medium text-foreground">
-                                {result.num_comments}
-                              </span>
-                            </span>
-                            <span title="Author">
-                              By:{" "}
-                              <span className="font-medium text-foreground">
-                                {result.author}
-                              </span>
-                            </span>
-                            <span title="Date">
-                              {moment(result.formatted_date).fromNow()}
+                      <h4
+                        className="font-bold text-sm leading-snug group-hover:text-primary transition-colors cursor-pointer"
+                        onClick={() => handleOpenInBrowser(result.url)}
+                      >
+                        <KeywordHighlighter
+                          text={result.title}
+                          searchQuery={query}
+                          brandKeywords={settings.brandKeywords}
+                          competitorKeywords={settings.competitorKeywords}
+                          generalKeywords={settings.monitoredKeywords}
+                        />
+                      </h4>
+
+                      {result.snippet && (
+                        <p className="text-[11px] text-muted-foreground line-clamp-1 mt-1 opacity-70 italic">
+                          {result.snippet}
+                        </p>
+                      )}
+
+                      <div className="flex items-center gap-3 mt-2.5">
+                        {result.intent && (
+                          <Badge
+                            className={`${getIntentColor(
+                              result.intent.toLowerCase(),
+                            )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
+                          >
+                            {result.intent.toUpperCase()}
+                          </Badge>
+                        )}
+
+                        <div className="flex items-center gap-3 text-[10px] font-medium text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full border border-border/30">
+                          <div className="flex items-center gap-1">
+                            <ArrowUpDown className="h-2.5 w-2.5" />
+                            <span>{result.score}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Plus className="h-2.5 w-2.5 opacity-50" />
+                            <span>{result.num_comments}</span>
+                          </div>
+                          <div className="flex items-center gap-1 border-l pl-2 border-border/40">
+                            <span className="opacity-50">BY:</span>
+                            <span className="text-foreground/80">
+                              {result.author}
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="cursor-pointer hover:bg-blue-900 hover:text-white"
-                          onClick={() =>
-                            handleGetComments(result, sortTypeForComments)
-                          }
-                        >
-                          Comments
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="cursor-pointer hover:bg-blue-900 hover:text-white"
-                          onClick={() => handleOpenInBrowser(result.url)}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="cursor-pointer hover:bg-blue-900 hover:text-white"
-                          onClick={() => addToTable(result)}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add
-                        </Button>
-                      </div>
                     </div>
-                  </Card>
-                ))
-              ) : (
-                <p className="text-center text-sm text-muted-foreground py-4">
-                  No results match current filters.
-                </p>
-              )}
-            </div>
 
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm text-muted-foreground">
-                      Rows per page:
-                    </label>
-                    <select
-                      className="border rounded px-2 py-1 text-sm bg-background"
-                      value={rowsPerPage}
-                      onChange={(e) => {
-                        setRowsPerPage(Number(e.target.value));
-                        setCurrentPage(1);
-                      }}
-                    >
-                      <option value={10}>10</option>
-                      <option value={25}>25</option>
-                      <option value={50}>50</option>
-                      <option value={100}>100</option>
-                    </select>
+                    <div className="flex flex-col gap-1 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 w-24 text-[10px] font-bold uppercase transition-all hover:bg-blue-600 hover:text-white hover:border-blue-600"
+                        onClick={() =>
+                          handleGetComments(result, sortTypeForComments)
+                        }
+                      >
+                        Comments
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 w-24 text-[10px] font-bold uppercase transition-all hover:bg-blue-600 hover:text-white hover:border-blue-600"
+                        onClick={() => handleOpenInBrowser(result.url)}
+                      >
+                        Browse
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-7 w-24 text-[10px] font-bold uppercase transition-all shadow-sm active:scale-95"
+                        onClick={() => addToTable(result)}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Import
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Showing {startIndex + 1}-
-                    {Math.min(endIndex, subreddits.length)} of{" "}
-                    {subreddits.length}
-                  </p>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm px-2">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
-                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 opacity-30">
+                <Search className="h-10 w-10 mb-2" />
+                <p className="text-sm font-bold uppercase tracking-widest">
+                  No Node Data
+                </p>
               </div>
             )}
-          </>
-        ) : (
-          !isSearching && hasSearched && query.trim() && (
-            <p className="text-center text-sm text-muted-foreground py-4">
-              No results found for "{query}".
+          </div>
+
+          {/* Footer - Redesigned Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t backdrop-blur-md">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+                    Display:
+                  </span>
+                  <select
+                    className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
+                    value={rowsPerPage}
+                    onChange={(e) => {
+                      setRowsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    {[10, 25, 50, 100].map((v) => (
+                      <option key={v} value={v}>
+                        {v} / Page
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="text-[10px] font-mono text-muted-foreground uppercase">
+                  Batch: {startIndex + 1}—
+                  {Math.min(endIndex, subreddits.length)} of {subreddits.length}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                <div className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary/5 border border-primary/20">
+                  <span className="text-[10px] font-bold text-primary opacity-60">
+                    PAGE
+                  </span>
+                  <span className="text-[11px] font-bold text-primary font-mono">
+                    {currentPage}
+                  </span>
+                  <span className="text-[10px] font-bold text-primary opacity-40">
+                    /
+                  </span>
+                  <span className="text-[11px] font-bold text-primary font-mono">
+                    {totalPages}
+                  </span>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+      ) : (
+        !isSearching &&
+        hasSearched &&
+        query.trim() && (
+          <div className="flex flex-col items-center justify-center p-12 bg-background/50 border border-dashed rounded-xl opacity-50 animate-in zoom-in duration-300">
+            <Search className="h-8 w-8 mb-3 opacity-20" />
+            <p className="text-sm font-bold uppercase tracking-widest">
+              Null Response
             </p>
-          )
-        )}
-      </div>
+            <p className="text-xs mt-1">Found 0 nodes for query: {query}</p>
+          </div>
+        )
+      )}
 
       <RedditCommentsView
         isOpen={commentsPost !== null}
@@ -1085,6 +1096,6 @@ export function RedditSearch({
         sortType={sortTypeForComments}
         onSortTypeChange={handleSortTypeForCommentsChange}
       />
-    </Card>
+    </div>
   );
 }

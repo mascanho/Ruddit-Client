@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Fragment } from "react";
+import { useState, useEffect, useMemo, Fragment, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import type { Message, SearchState } from "./smart-data-tables";
 import { RedditCommentsView } from "./reddit-comments-view";
-import { useAppSettings } from "./app-settings";
+import { useAppSettings } from "@/store/settings-store";
 import { Radar } from "lucide-react";
 import { KeywordHighlighter } from "./keyword-highlighter";
 import { invoke } from "@tauri-apps/api/core";
@@ -74,6 +74,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronDown,
   User,
   Pencil,
@@ -87,7 +89,7 @@ const initialData: RedditPost[] = []; // Declare initialData here
 
 // Define RedditPost type to match Rust's PostDataWrapper
 export type RedditPost = {
-  id: string;
+  id: number;
   timestamp: number;
   formatted_date: string;
   title: string;
@@ -103,7 +105,7 @@ export type RedditPost = {
   author?: string;
   score?: number;
   is_self?: boolean;
-  selftext?: string;
+  selftext?: string | null;
   name?: string;
   date_added: number;
   // Client-side fields
@@ -135,16 +137,24 @@ export function RedditTable({
   externalPosts = [],
   searchState,
   onSearchStateChange,
+  isActive = false,
 }: {
   onAddComments: (comments: Message[]) => void;
   externalPosts?: RedditPost[];
   searchState: SearchState;
   onSearchStateChange: (state: SearchState) => void;
+  isActive?: boolean;
 }) {
   const [data, setData] = useState<RedditPost[]>(initialData);
   const { settings, updateSettings } = useAppSettings();
   const [statusFilter, setStatusFilter] = useState("all");
   const [engagementFilter, setEngagementFilter] = useState("all");
+
+  const {
+    addSingleSubreddit,
+    removeSingleSubreddit,
+    clearSavedSubredditsTable,
+  } = useAddSingleSubReddit();
 
   const addSubredditToMonitoring = (subreddit: string) => {
     const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
@@ -181,7 +191,7 @@ export function RedditTable({
   useEffect(() => {
     if (data.length === 0) return;
     const storedCrm = JSON.parse(
-      localStorage.getItem("ruddit-crm-data") || "{}",
+      localStorage.getItem("atalaia-crm-data") || "{}",
     );
 
     // Only update if we have new data to merge to avoid infinite loop if we put this in the dependency array incorrectly
@@ -190,7 +200,7 @@ export function RedditTable({
     // we can intercept the setting of data there.
   }, []);
 
-  const updateCrmData = (postId: string, updates: Partial<RedditPost>) => {
+  const updateCrmData = (postId: number, updates: Partial<RedditPost>) => {
     // Update local state
     setData((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, ...updates } : p)),
@@ -198,12 +208,45 @@ export function RedditTable({
 
     // Update LocalStorage
     const storedCrm = JSON.parse(
-      localStorage.getItem("ruddit-crm-data") || "{}",
+      localStorage.getItem("atalaia-crm-data") || "{}",
     );
     const postData = storedCrm[postId] || {};
     storedCrm[postId] = { ...postData, ...updates };
-    localStorage.setItem("ruddit-crm-data", JSON.stringify(storedCrm));
+    localStorage.setItem("atalaia-crm-data", JSON.stringify(storedCrm));
   };
+
+  useEffect(() => {
+    if (externalPosts.length > 0) {
+      const storedCrm = JSON.parse(
+        localStorage.getItem("atalaia-crm-data") || "{}",
+      );
+
+      setData((prev) => {
+        const existingIds = new Set(prev.map((p) => p.id));
+        const newPosts = externalPosts.filter((p) => !existingIds.has(p.id));
+
+        // Merge with CRM data
+        const mergedNewPosts = newPosts.map((p) => ({
+          ...p,
+          status: storedCrm[p.id]?.status || p.status || "new",
+          intent: storedCrm[p.id]?.intent || p.intent || "low", // default to low if unknown? or calculate?
+          category: storedCrm[p.id]?.category || p.category || "general",
+          engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
+        }));
+
+        // Also update existing posts with CRM data if needed (e.g. on reload)
+        const updatedPrev = prev.map((p) => ({
+          ...p,
+          status: storedCrm[p.id]?.status || p.status || "new",
+          intent: storedCrm[p.id]?.intent || p.intent,
+          category: storedCrm[p.id]?.category || p.category,
+          engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
+        }));
+
+        return [...updatedPrev, ...mergedNewPosts];
+      });
+    }
+  }, [externalPosts, toast]);
 
   const searchQuery = searchState.redditSearch;
   const setSearchQuery = (value: string) =>
@@ -223,7 +266,7 @@ export function RedditTable({
   const [sortDirection, setSortDirection] = useState<SortDirection>(
     settings.defaultSortDirection,
   );
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [selectedPost, setSelectedPost] = useState<RedditPost | null>(null);
   const [commentsPost, setCommentsPost] = useState<RedditPost | null>(null);
   const [comments, setComments] = useState<Message[]>([]);
@@ -240,7 +283,7 @@ export function RedditTable({
 
   useEffect(() => {
     const savedTimestamp = parseInt(
-      localStorage.getItem("ruddit-last-visit-timestamp") || "0",
+      localStorage.getItem("atalaia-last-visit-timestamp") || "0",
       10,
     );
     setLastVisitTimestamp(savedTimestamp);
@@ -257,18 +300,18 @@ export function RedditTable({
     return Math.max(...newPosts.map((p) => p.timestamp));
   }, [data, lastVisitTimestamp]);
 
-  const handleTableInteraction = () => {
-    if (maxDateAdded > lastVisitTimestamp) {
-      setLastVisitTimestamp(maxDateAdded);
+  // Effect to persist the latest timestamp to localStorage for the next session
+  // Done only when the tab becomes active to "acknowledge" current posts
+  useEffect(() => {
+    if (isActive && maxDateAdded > 0) {
       localStorage.setItem(
-        "ruddit-last-visit-timestamp",
+        "atalaia-last-visit-timestamp",
         maxDateAdded.toString(),
       );
     }
-  };
+  }, [isActive, maxDateAdded === 0]); // Trigger when isActive changes or when first data arrives
 
   const handleEditNote = (post: RedditPost) => {
-    handleTableInteraction();
     setEditingNotePost(post);
     setCurrentNote(post.notes || "");
   };
@@ -278,7 +321,7 @@ export function RedditTable({
 
     try {
       await invoke("update_post_notes", {
-        id: parseInt(editingNotePost.id, 10),
+        id: editingNotePost.id,
         notes: currentNote,
       });
       toast.success("Note saved successfully");
@@ -311,7 +354,7 @@ export function RedditTable({
     });
   };
 
-  const handleAssign = async (postId: string, personName: string) => {
+  const handleAssign = async (postId: number, personName: string) => {
     const postToUpdate = data.find((p) => p.id === postId);
     if (!postToUpdate) return;
 
@@ -327,7 +370,7 @@ export function RedditTable({
 
     try {
       await invoke("update_post_assignee", {
-        id: parseInt(postId, 10),
+        id: postId,
         assignee: assigneeToSave,
         title: postToUpdate.title,
       });
@@ -351,7 +394,7 @@ export function RedditTable({
     }
   };
 
-  const handleEngagedToggle = async (postId: string, isEngaged: boolean) => {
+  const handleEngagedToggle = async (postId: number, isEngaged: boolean) => {
     const postToUpdate = data.find((p) => p.id === postId);
     if (!postToUpdate) return;
 
@@ -365,9 +408,12 @@ export function RedditTable({
       ),
     );
 
+    // Update CRM data in localStorage
+    updateCrmData(postId, { engaged: newEngagedStatus });
+
     try {
       await invoke("update_post_engaged_status", {
-        id: parseInt(postId, 10),
+        id: postId,
         engaged: newEngagedStatus,
       });
 
@@ -383,39 +429,10 @@ export function RedditTable({
           p.id === postId ? { ...p, engaged: originalEngagedStatus } : p,
         ),
       );
+      // Revert localStorage on error as well
+      updateCrmData(postId, { engaged: originalEngagedStatus });
     }
   };
-
-  useEffect(() => {
-    if (externalPosts.length > 0) {
-      const storedCrm = JSON.parse(
-        localStorage.getItem("ruddit-crm-data") || "{}",
-      );
-
-      setData((prev) => {
-        const existingIds = new Set(prev.map((p) => p.id));
-        const newPosts = externalPosts.filter((p) => !existingIds.has(p.id));
-
-        // Merge with CRM data
-        const mergedNewPosts = newPosts.map((p) => ({
-          ...p,
-          status: storedCrm[p.id]?.status || p.status || "new",
-          intent: storedCrm[p.id]?.intent || p.intent || "low", // default to low if unknown? or calculate?
-          category: storedCrm[p.id]?.category || p.category || "general",
-        }));
-
-        // Also update existing posts with CRM data if needed (e.g. on reload)
-        const updatedPrev = prev.map((p) => ({
-          ...p,
-          status: storedCrm[p.id]?.status || p.status || "new",
-          intent: storedCrm[p.id]?.intent || p.intent,
-          category: storedCrm[p.id]?.category || p.category,
-        }));
-
-        return [...updatedPrev, ...mergedNewPosts];
-      });
-    }
-  }, [externalPosts, toast]);
 
   const subreddits = useMemo(() => {
     return Array.from(new Set(data.map((post) => post.subreddit)));
@@ -455,7 +472,11 @@ export function RedditTable({
       );
     });
 
-    if (sortField) {
+    // Always sort by date_added descending as the primary sort
+    filtered.sort((a, b) => b.date_added - a.date_added);
+
+    // Apply secondary sort if a sortField is selected and it's not date_added
+    if (sortField && sortField !== "date_added") {
       filtered.sort((a, b) => {
         const aValue = a[sortField];
         const bValue = b[sortField];
@@ -487,17 +508,24 @@ export function RedditTable({
     externalPosts,
   ]);
 
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+
   const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const endIndex = startIndex + rowsPerPage;
     return filteredAndSortedData.slice(startIndex, endIndex);
-  }, [filteredAndSortedData, currentPage, rowsPerPage, externalPosts]);
+  }, [filteredAndSortedData, startIndex, endIndex]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / rowsPerPage);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, subredditFilter, relevanceFilter, statusFilter, engagementFilter]);
+  }, [
+    searchQuery,
+    subredditFilter,
+    relevanceFilter,
+    statusFilter,
+    engagementFilter,
+  ]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -508,24 +536,26 @@ export function RedditTable({
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!settings.confirmDelete) {
       setData(data.filter((post) => post.id !== id));
+      removeSingleSubreddit(id); // Update store
       return;
     }
 
     await invoke("remove_single_reddit_command", { post: id });
     toast.info("Post deleted successfully");
-
-    // Wait a few seconds before reloading
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    window.location.reload();
+    setData((prevData) =>
+      prevData.filter((post) => post.id !== id),
+    );
+    removeSingleSubreddit(id); // Update store
+    // No need to reload the window, UI updates via state change
   };
 
   const handleGetComments = async (post: RedditPost, sort_type: string) => {
     // Renamed parameter
     const fetchedComments = (await invoke("get_post_comments_command", {
-      url: post.url,
+      url: post.permalink,
       title: post.title,
       sortType: sort_type, // Use new parameter, camelCase for Tauri
       subreddit: post.subreddit, // Add subreddit here
@@ -546,7 +576,7 @@ export function RedditTable({
     setSortTypeForComments(newSortType);
     if (commentsPost) {
       const newComments = (await invoke("get_post_comments_command", {
-        url: commentsPost.url,
+        url: commentsPost.permalink,
         title: commentsPost.title,
         sortType: newSortType, // Use new parameter, camelCase for Taure
         subreddit: commentsPost.subreddit, // Add subreddit here
@@ -603,19 +633,13 @@ export function RedditTable({
   const handleClearTable = async () => {
     try {
       await invoke("clear_saved_reddits");
-      toast("Table is being deleted", {
-        description: "All your entries will be lost.",
+      toast("Table is being cleared", {
+        description: "All your entries will be removed from the UI.",
         position: "top-center",
-        action: {
-          label: "Warning",
-          onClick: () => console.log("Undo"),
-        },
       });
-
-      // delay 1 second
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      window.location.reload();
+      setData([]); // Clear local state
+      clearSavedSubredditsTable(); // Update store
+      // No need to reload the window, UI updates via state change
     } catch (err) {
       console.log(err);
     }
@@ -672,160 +696,229 @@ export function RedditTable({
   };
 
   return (
-    <>
-      <Card className="px-6">
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="flex-1 flex flex-col min-h-0 gap-3">
+      <Card className="p-3 shadow-sm border-border/60 bg-white backdrop-blur-sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 items-center">
+            <div className="relative flex-1 group w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
               <Input
-                placeholder="Search posts..."
+                placeholder="Search tracked posts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-9 h-9 bg-background/80 border-border/60 focus:ring-1 focus:ring-primary/20 transition-all text-xs"
               />
             </div>
-            <Select value={subredditFilter} onValueChange={setSubredditFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="All subreddits" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All subreddits</SelectItem>
-                {subreddits.map((subreddit) => (
-                  <SelectItem key={subreddit} value={subreddit}>
-                    r/{subreddit}
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto custom-scroll">
+              <Select
+                value={subredditFilter}
+                onValueChange={setSubredditFilter}
+              >
+                <SelectTrigger className="w-[140px] h-8 text-[11px] font-bold uppercase tracking-tight bg-background/50">
+                  <SelectValue placeholder="Community" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    value="all"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    All
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="All relevance" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All relevance</SelectItem>
-                <SelectItem value="high">High (80+)</SelectItem>
-                <SelectItem value="medium">Medium (60-79)</SelectItem>
-                <SelectItem value="low">Low (&lt;60)</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="new">New</SelectItem>
-                <SelectItem value="investigating">Investigating</SelectItem>
-                <SelectItem value="replied">Replied</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="ignored">Ignored</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={engagementFilter} onValueChange={setEngagementFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="All engagement" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Engagement</SelectItem>
-                <SelectItem value="engaged">Engaged</SelectItem>
-                <SelectItem value="not_engaged">Not Engaged</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={handleExportToCsv}>
-              Export to CSV
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => setShowClearTableDialog(true)}
-            >
-              Clear Table
-            </Button>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            Showing {filteredAndSortedData.length} of {data.length} posts
+                  {subreddits.map((subreddit) => (
+                    <SelectItem
+                      key={subreddit}
+                      value={subreddit}
+                      className="text-[11px] font-bold"
+                    >
+                      r/{subreddit}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={relevanceFilter}
+                onValueChange={setRelevanceFilter}
+              >
+                <SelectTrigger className="w-[120px] h-8 text-[11px] font-bold uppercase tracking-tight bg-background/50">
+                  <SelectValue placeholder="Intent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    value="all"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    All Intent
+                  </SelectItem>
+                  <SelectItem
+                    value="high"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    High
+                  </SelectItem>
+                  <SelectItem
+                    value="medium"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Medium
+                  </SelectItem>
+                  <SelectItem
+                    value="low"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Low
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[120px] h-8 text-[11px] font-bold uppercase tracking-tight bg-background/50">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    value="all"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    All Status
+                  </SelectItem>
+                  <SelectItem
+                    value="new"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    New
+                  </SelectItem>
+                  <SelectItem
+                    value="investigating"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Investigating
+                  </SelectItem>
+                  <SelectItem
+                    value="replied"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Replied
+                  </SelectItem>
+                  <SelectItem
+                    value="closed"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Closed
+                  </SelectItem>
+                  <SelectItem
+                    value="ignored"
+                    className="text-[11px] font-bold uppercase"
+                  >
+                    Ignored
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={engagementFilter}
+                onValueChange={setEngagementFilter}
+              >
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="All engagement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Engagement</SelectItem>
+                  <SelectItem value="engaged">Engaged</SelectItem>
+                  <SelectItem value="not_engaged">Not Engaged</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={handleExportToCsv}>
+                Export to CSV
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => setShowClearTableDialog(true)}
+              >
+                Clear Table
+              </Button>
+            </div>
+            <div className="text-[10px] uppercase font-bold tracking-widest opacity-40 px-1">
+              Nodes: {filteredAndSortedData.length} / {data.length}
+            </div>
           </div>
         </div>
       </Card>
 
-      <Card className="p-0 m-0 h-[770px] flex flex-col">
+      <Card className="p-0 m-0 flex-1 min-h-0 flex flex-col">
         {/* Single Table Container with Fixed Header */}
-        <div className="flex-1 overflow-auto relative">
-          <Table>
-            {/* Fixed Header */}
-            <TableHeader className="sticky top-0 z-10 bg-background">
-              <TableRow>
-                <TableHead className="w-[40px] p-3">
-                  {/* Expand/Collapse */}
-                  <Notebook className="h-4 w-4" />
+        <div className="flex-1 overflow-auto relative custom-scroll">
+          <Table
+            containerClassName="overflow-visible"
+            className="table-fixed w-full border-separate border-spacing-0"
+          >
+            <colgroup>
+              <col className="w-[32px]" />
+              <col className="w-[30px]" />
+              <col className="w-[85px]" />
+              <col />
+              <col className="w-[100px]" />
+              <col className="w-[60px]" />
+              <col className="w-[40px]" />
+              <col className="w-[95px]" />
+              <col className="w-[45px]" />
+              <col className="w-[45px]" />
+            </colgroup>
+            <TableHeader className="sticky top-0 z-40 bg-background shadow-sm">
+              <TableRow className="hover:bg-transparent border-none">
+                <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                  <Notebook className="h-3.5 w-3.5 mx-auto opacity-40" />
                 </TableHead>
-                <TableHead className="w-[30px] p-3">
+                <TableHead className="sticky top-0 h-9 px-1 text-center font-mono text-[10px] uppercase tracking-wider opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                  #
+                </TableHead>
+                <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="-ml-3 h-8 font-medium"
-                  >
-                    #
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[30px] p-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="-ml-3 h-8 font-medium"
+                    className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
                     onClick={() => handleSort("formatted_date")}
                   >
                     Date
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
+                    <ArrowUpDown className="h-3 w-3 opacity-30" />
                   </Button>
                 </TableHead>
-                <TableHead className="min-w-[300px] p-3">
+                <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="-ml-3 h-8 font-medium"
+                    className="h-7 px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center gap-1"
                     onClick={() => handleSort("title")}
                   >
-                    Title
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
+                    Post Content
+                    <ArrowUpDown className="h-3 w-3 opacity-30" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[150px] p-3">
+                <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="-ml-3 h-8 font-medium"
+                    className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
                     onClick={() => handleSort("subreddit")}
                   >
                     Subreddit
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
+                    <ArrowUpDown className="h-3 w-3 opacity-30" />
                   </Button>
                 </TableHead>
-
-                <TableHead className="w-[100px] p-3 font-medium text-center">
+                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   Intent
                 </TableHead>
-
-                <TableHead className="w-[30px] p-3 text-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="-ml-3 h-8 font-medium"
-                    onClick={() => handleSort("engaged")}
-                  >
-                    Engaged
-                  </Button>
+                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                  <CheckCircle2 className="h-3.5 w-3.5 mx-auto" />
                 </TableHead>
-                <TableHead className="w-[120px] p-3 text-center font-medium">
+                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   Status
                 </TableHead>
-                <TableHead className="w-[100px] p-3 text-center">
-                  <div className="flex items-center justify-center font-medium">
-                    Assignee
-                  </div>
+                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                  Own
                 </TableHead>
-                <TableHead className="w-[70px] p-3 text-center font-medium">
-                  Actions
+                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                  Op
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -835,10 +928,10 @@ export function RedditTable({
               {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={11} // Updated colSpan
-                    className="h-10 text-center text-muted-foreground"
+                    colSpan={10}
+                    className="h-24 text-center text-muted-foreground opacity-50"
                   >
-                    No posts found.
+                    No posts matching your current filters.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -846,327 +939,261 @@ export function RedditTable({
                   <Fragment key={post.id}>
                     <TableRow
                       key={post.id}
-                      onClick={handleTableInteraction}
-                      className={`group text-xs p-0 h-2 transition-colors duration-500 border-l-2 ${
-                        post.date_added > lastVisitTimestamp
-                          ? post.timestamp === latestPostTimestamp
-                            ? "bg-green-500/20 dark:bg-green-500/30 border-l-green-600"
-                            : "bg-green-500/5 dark:bg-green-500/10 border-l-green-400"
-                          : "border-l-transparent"
-                      } ${
-                        settings.tableDensity === "compact"
-                          ? "h-2"
+                      className={`group hover:z-10 relative text-[11px] h-8 transition-all border-l-[3px] border-b-[0.5px] border-b-border/50 ${post.date_added > lastVisitTimestamp
+                        ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.5)]"
+                        : "border-l-transparent hover:bg-muted/30"
+                        } ${settings.tableDensity === "compact"
+                          ? "h-[30px]"
                           : settings.tableDensity === "spacious"
-                            ? "h-2"
-                            : "h-2"
-                      }`}
+                            ? "h-12"
+                            : "h-9"
+                        }`}
                     >
-                      <TableCell className="px-3 p-0">
+                      <TableCell className="px-1 text-center">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => toggleRowExpansion(post.id)}
-                          className="h-8 w-8"
+                          onClick={() => toggleRowExpansion(post.id.toString())}
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${
-                              expandedRows.has(post.id) ? "rotate-180" : ""
-                            }`}
+                            className={`h-3 w-3 transition-transform duration-300 ${expandedRows.has(post.id.toString())
+                              ? "rotate-180"
+                              : ""
+                              }`}
                           />
                         </Button>
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-xs font-medium w-[30px] p-3">
+                      <TableCell className="text-muted-foreground/40 font-mono text-[9px] px-1 text-center">
                         {(currentPage - 1) * rowsPerPage + index + 1}
                       </TableCell>
-                      <TableCell className="font-mono text-xs w-[110px] px-3">
+                      <TableCell className="font-mono text-[10px] px-2 whitespace-nowrap opacity-70">
                         {post?.formatted_date?.slice(0, 10).trim() || "N/A"}
                       </TableCell>
-                      <TableCell className="min-w-[300px] px-3">
-                        <div className="flex items-center gap-2">
-                          <div className="mt-0.5 text-muted-foreground/50">
-                            {post.is_self ? (
-                              <FileText className="h-3.5 w-3.5" />
-                            ) : (
-                              <LinkIcon className="h-3.5 w-3.5" />
-                            )}
-                          </div>
-                          <div
-                            onClick={() => openUrl(post.url)}
-                            className="line-clamp-1 font-medium cursor-pointer hover:underline flex-1"
-                          >
-                            <KeywordHighlighter
-                              text={post.title || "No title"}
-                              brandKeywords={settings.brandKeywords}
-                              competitorKeywords={settings.competitorKeywords}
-                              generalKeywords={settings.monitoredKeywords}
-                              searchQuery={searchQuery}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          {post.category === "brand" && (
-                            <Badge
-                              variant="secondary"
-                              className="bg-blue-100 text-blue-800 text-[10px] h-5"
-                            >
-                              Brand
-                            </Badge>
-                          )}
-                          {post.category === "competitor" && (
-                            <Badge
-                              variant="secondary"
-                              className="bg-orange-100 text-orange-800 text-[10px] h-5"
-                            >
-                              Competitor
-                            </Badge>
-                          )}
-                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                      <TableCell className="px-2 min-w-0 max-w-0 w-full overflow-hidden">
+                        <div className="flex flex-col gap-0">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="shrink-0 opacity-40">
+                              {post.is_self ? (
+                                <FileText className="h-3 w-3" />
+                              ) : (
+                                <LinkIcon className="h-3 w-3" />
+                              )}
+                            </span>
                             <div
-                              className="flex items-center gap-1 cursor-pointer hover:text-primary"
-                              onClick={() =>
-                                handleGetComments(post, post.sort_type)
-                              }
+                              onClick={() => openUrl(post.url)}
+                              className="font-medium cursor-pointer hover:underline truncate text-foreground/90 group-hover:text-primary transition-colors"
+                              title={post.title}
                             >
-                              <MessageCircle className="h-3 w-3" />
+                              <KeywordHighlighter
+                                text={post.title || "No title"}
+                                brandKeywords={settings.brandKeywords}
+                                competitorKeywords={settings.competitorKeywords}
+                                generalKeywords={settings.monitoredKeywords}
+                                searchQuery={searchQuery}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 opacity-60 text-[9px]">
+                            <div
+                              className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
+                              onClick={() => handleGetComments(post, post.sort_type)}
+                            >
+                              <MessageCircle className="h-2.5 w-2.5" />
                               <span>{post.num_comments ?? 0}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <ArrowUpDown className="h-3 w-3" />
+                              <ArrowUpDown className="h-2.5 w-2.5" />
                               <span>{post.score ?? 0}</span>
                             </div>
+                            {post.author && (
+                              <div className="flex items-center gap-1 ml-1 border-l pl-2">
+                                <User className="h-2.5 w-2.5 opacity-50" />
+                                <span className="truncate">
+                                  u/{post.author}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="w-[150px] px-3">
-                        <div className="flex flex-col gap-0.5">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Badge
-                                variant="outline"
-                                className="font-mono w-fit text-[10px] py-0 h-4 cursor-pointer hover:bg-accent/50 selection:bg-transparent"
-                              >
-                                r/{post.subreddit}
-                              </Badge>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  addSubredditToMonitoring(post.subreddit)
-                                }
-                              >
-                                <Radar className="h-4 w-4 mr-2" />
-                                Add to Monitoring
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          {post.author && (
-                            <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                              <User className="h-2.5 w-2.5" />
-                              u/{post.author}
-                            </div>
-                          )}
-                        </div>
+                      <TableCell className="px-1 text-center overflow-hidden">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="font-mono text-[9px] py-0 h-4 px-1.5 cursor-pointer hover:bg-accent/50 selection:bg-transparent bg-background/50 border-muted-foreground/10 truncate max-w-full block"
+                              title={`r/${post.subreddit}`}
+                            >
+                              r/{post.subreddit}
+                            </Badge>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem
+                              className="text-xs"
+                              onClick={() =>
+                                addSubredditToMonitoring(post.subreddit)
+                              }
+                            >
+                              <Radar className="h-4 w-4" />
+                              Monitor r/{post.subreddit}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
 
-                      <TableCell className="w-[100px] px-3 text-center">
+                      <TableCell className="px-1 text-center">
                         {post.intent && (
                           <Badge
-                            className={`${getIntentColor(post.intent.toLowerCase())} text-[10px] h-5 px-1.5 font-medium border-0`}
+                            className={`${getIntentColor(
+                              post.intent.toLowerCase(),
+                            )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
                           >
-                            {post.intent.toUpperCase()}
+                            {post.intent.slice(0, 3).toUpperCase()}
                           </Badge>
                         )}
                       </TableCell>
 
-                      <TableCell className="w-[20px] px-3 text-center">
+                      <TableCell className="px-1 text-center">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 hover:bg-transparent"
+                          className="h-6 w-6 hover:bg-transparent"
                           onClick={() =>
                             handleEngagedToggle(post.id, post.engaged !== 1)
                           }
                         >
                           {post.engaged === 1 ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-500 fill-green-500/20" />
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
                           ) : (
-                            <Circle className="h-5 w-5 text-muted-foreground/30" />
+                            <Circle className="h-4 w-4 text-muted-foreground/20" />
                           )}
                         </Button>
                       </TableCell>
 
-                      <TableCell className="w-[120px] px-3">
-                        <div className="flex justify-center">
-                          <Select
-                            value={post.status || "new"}
-                            onValueChange={(value) =>
-                              updateCrmData(post.id, { status: value as any })
-                            }
+                      <TableCell className="px-1 min-w-[90px]">
+                        <Select
+                          value={post.status || "new"}
+                          onValueChange={(value) =>
+                            updateCrmData(post.id, { status: value as any })
+                          }
+                        >
+                          <SelectTrigger
+                            className={`w-full h-6 text-[10px] px-2 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(
+                              post.status,
+                            )} bg-opacity-10 hover:bg-opacity-20 transition-all font-bold rounded-md`}
                           >
-                            <SelectTrigger
-                              className={`w-full flex justify-center  h-7 text-xs px-2 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(post.status)} bg-opacity-20 hover:bg-opacity-30 transition-colors font-medium rounded-full text-center`}
-                            >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="text-center flex justify-center">
-                              <SelectItem
-                                className="text-center w-full flex justify-center"
-                                value="new"
-                              >
-                                New
-                              </SelectItem>
-                              <SelectItem value="investigating">
-                                Investigating
-                              </SelectItem>
-                              <SelectItem value="replied">Replied</SelectItem>
-                              <SelectItem value="closed">Closed</SelectItem>
-                              <SelectItem value="ignored">Ignored</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="text-[11px]">
+                            <SelectItem value="new">New</SelectItem>
+                            <SelectItem value="investigating">
+                              Research
+                            </SelectItem>
+                            <SelectItem value="replied">Replied</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                            <SelectItem value="ignored">Ignored</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </TableCell>
 
-                      <TableCell className="w-[100px] px-3">
-                        <div className="flex justify-center">
-                          <Select
-                            value={post.assignee || "unassigned"}
-                            onValueChange={(value) =>
-                              handleAssign(post.id, value)
-                            }
-                          >
-                            <SelectTrigger className="w-8 h-8 rounded-full p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden flex items-center justify-center">
-                              <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
-                                {post.assignee &&
+                      <TableCell className="px-1 text-center">
+                        <Select
+                          value={post.assignee || "unassigned"}
+                          onValueChange={(value) =>
+                            handleAssign(post.id, value)
+                          }
+                        >
+                          <SelectTrigger className="w-6 h-6 rounded-full mx-auto p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden transition-transform active:scale-95">
+                            <Avatar className="h-5 w-5 border border-muted-foreground/10">
+                              {post.assignee &&
                                 post.assignee !== "unassigned" ? (
-                                  <>
-                                    <AvatarImage
-                                      src={`https://avatar.vercel.sh/${post.assignee}`}
-                                      alt={post.assignee}
-                                    />
-                                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                                      {post.assignee.slice(0, 2).toUpperCase()}
-                                    </AvatarFallback>
-                                  </>
-                                ) : (
-                                  <AvatarFallback className="bg-transparent border border-dashed border-muted-foreground/50 hover:border-muted-foreground hover:bg-muted/50 transition-colors">
-                                    <UserPlus className="h-4 w-4 text-muted-foreground" />
+                                <>
+                                  <AvatarImage
+                                    src={`https://avatar.vercel.sh/${post.assignee}`}
+                                    alt={post.assignee}
+                                  />
+                                  <AvatarFallback className="bg-primary/5 text-primary text-[8px] font-bold">
+                                    {post.assignee.slice(0, 1).toUpperCase()}
                                   </AvatarFallback>
-                                )}
-                              </Avatar>
-                            </SelectTrigger>
-                            <SelectContent align="center">
-                              <SelectItem
-                                className="text-xs"
-                                value="unassigned"
-                              >
-                                Unassigned
+                                </>
+                              ) : (
+                                <AvatarFallback className="bg-transparent opacity-30 group-hover:opacity-70">
+                                  <UserPlus className="h-3 w-3" />
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                          </SelectTrigger>
+                          <SelectContent align="center" className="text-[11px]">
+                            <SelectItem value="unassigned">None</SelectItem>
+                            {teamMembers.map((member) => (
+                              <SelectItem key={member.id} value={member.name}>
+                                {member.name}
                               </SelectItem>
-                              {teamMembers.map((member) => (
-                                <SelectItem
-                                  className="text-xs"
-                                  key={member.id}
-                                  value={member.name}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <Avatar className="h-5 w-5">
-                                      <AvatarImage
-                                        src={`https://avatar.vercel.sh/${member.name}`}
-                                      />
-                                      <AvatarFallback className="text-[10px]">
-                                        {member.name.slice(0, 2).toUpperCase()}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    {member.name}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
-                      <TableCell className="w-[70px] px-3 text-center">
+                      <TableCell className="px-1 text-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-6 w-6 opacity-40 group-hover:opacity-100"
                             >
-                              <MoreVertical className="h-4 w-4" />
+                              <MoreVertical className="h-3 w-3" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
+                          <DropdownMenuContent align="end" className="text-xs">
                             <DropdownMenuItem
                               onClick={() =>
                                 handleGetComments(post, post.sort_type)
                               }
                             >
-                              <MessageCircle className="h-4 w-4" />
-                              Get Comments
+                              <MessageCircle className="h-3 w-3 mr-2" />{" "}
+                              Comments
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleEditNote(post)}
                             >
-                              <Pencil className="h-4 w-4" />
-                              Add/Edit Note
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setSelectedPost(post)}
-                            >
-                              <Info className="h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <a
-                                href={post.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                                Open Link
-                              </a>
+                              <Pencil className="h-3 w-3 mr-2" /> Notes
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => setDeleteId(post.id)}
-                              className="text-destructive focus:text-destructive"
+                              className="text-destructive focus:bg-destructive/10"
                             >
-                              <Trash2 className="h-4 w-4" />
-                              Delete
+                              <Trash2 className="h-3 w-3 mr-2" /> Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                    {expandedRows.has(post.id) && (
-                      <TableRow>
-                        <TableCell colSpan={11} className="p-0">
-                          {" "}
-                          {/* Updated colSpan */}
-                          <div className="p-4 bg-muted/30 border-x border-b rounded-b-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <Card className="bg-background/50">
-                                <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
-                                  <CardTitle className="text-sm font-medium">
+                    {expandedRows.has(post.id.toString()) && (
+                      <TableRow className="bg-muted/10">
+                        <TableCell colSpan={10} className="p-0 border-b">
+                          <div className="p-3 bg-muted/20 border-x">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <Card className="shadow-none border-border/40 bg-background/60">
+                                <CardHeader className="py-2 px-3 flex flex-row items-center justify-between space-y-0">
+                                  <CardTitle className="text-[10px] font-bold uppercase tracking-wider opacity-60">
                                     Post Content
                                   </CardTitle>
                                   {post.permalink && (
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-6 w-6"
+                                      className="h-5 w-5"
                                       onClick={() => openUrl(post.permalink)}
                                     >
                                       <ExternalLink className="h-3 w-3" />
                                     </Button>
                                   )}
                                 </CardHeader>
-                                <CardContent className="py-0 px-4 pb-4">
-                                  <ScrollArea className="h-[120px] w-full pr-4">
-                                    <div className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                <CardContent className="py-0 px-3 pb-3">
+                                  <ScrollArea className="h-[100px] w-full pr-2">
+                                    <div className="text-[11px] leading-relaxed text-foreground/80 whitespace-pre-wrap">
                                       {post.selftext ||
                                         (post.is_self
                                           ? "No content."
@@ -1176,28 +1203,28 @@ export function RedditTable({
                                 </CardContent>
                               </Card>
 
-                              <Card className="bg-background/50">
-                                <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
-                                  <CardTitle className="text-sm font-medium">
+                              <Card className="shadow-none border-border/40 bg-background/60">
+                                <CardHeader className="py-2 px-3 flex flex-row items-center justify-between space-y-0">
+                                  <CardTitle className="text-[10px] font-bold uppercase tracking-wider opacity-60">
                                     Internal Notes
                                   </CardTitle>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6"
+                                    className="h-5 w-5"
                                     onClick={() => handleEditNote(post)}
                                   >
                                     <Pencil className="h-3 w-3" />
                                   </Button>
                                 </CardHeader>
-                                <CardContent className="py-0 px-4 pb-4">
-                                  <ScrollArea className="h-[120px] w-full pr-4">
-                                    <div className="text-xs">
+                                <CardContent className="py-0 px-3 pb-3">
+                                  <ScrollArea className="h-[100px] w-full pr-2">
+                                    <div className="text-[11px] leading-relaxed">
                                       {post.notes ? (
                                         <p>{post.notes}</p>
                                       ) : (
-                                        <p className="text-muted-foreground italic">
-                                          No notes for this post yet.
+                                        <p className="text-muted-foreground italic opacity-60">
+                                          No notes available.
                                         </p>
                                       )}
                                     </div>
@@ -1216,71 +1243,91 @@ export function RedditTable({
           </Table>
         </div>
 
-        {/* Pagination Section */}
-        {filteredAndSortedData.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t flex-none">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Rows per page:
-              </span>
-              <Select
-                value={rowsPerPage.toString()}
-                onValueChange={(v) => {
-                  setRowsPerPage(Number(v));
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[80px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Footer - Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t backdrop-blur-md">
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+                  Display:
+                </span>
+                <select
+                  className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
+                  value={rowsPerPage}
+                  onChange={(e) => {
+                    setRowsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  <ChevronLeft className="h-4 w-4 -ml-3" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                  <ChevronRight className="h-4 w-4 -ml-3" />
-                </Button>
+                  {[10, 25, 50, 100].map((v) => (
+                    <option key={v} value={v}>
+                      {v} / Page
+                    </option>
+                  ))}
+                </select>
               </div>
+              <div className="text-[10px] font-mono text-muted-foreground uppercase">
+                Batch: {startIndex + 1}—
+                {Math.min(endIndex, filteredAndSortedData.length)} of{" "}
+                {filteredAndSortedData.length}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary/5 border border-primary/20">
+                <span className="text-[10px] font-bold text-primary opacity-60">
+                  PAGE
+                </span>
+                <span className="text-[11px] font-bold text-primary font-mono">
+                  {currentPage}
+                </span>
+                <span className="text-[10px] font-bold text-primary opacity-40">
+                  /
+                </span>
+                <span className="text-[11px] font-bold text-primary font-mono">
+                  {totalPages}
+                </span>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         )}
@@ -1455,6 +1502,6 @@ export function RedditTable({
         sortType={sortTypeForComments}
         onSortTypeChange={handleSortTypeForCommentsChange}
       />
-    </>
+    </div>
   );
 }

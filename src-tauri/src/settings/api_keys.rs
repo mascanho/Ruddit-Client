@@ -178,7 +178,7 @@ impl ConfigDirs {
         let config_dir = base_dirs.config_dir();
 
         // Create app-specific config directory
-        let app_config_dir = config_dir.join("ruddit");
+        let app_config_dir = config_dir.join("atalaia");
 
         println!("Creating config directory: {}", app_config_dir.display());
         fs::create_dir_all(&app_config_dir)?;
@@ -202,10 +202,31 @@ impl ConfigDirs {
         let config_dir = base_dirs.config_dir();
 
         // Path to the config file
-        let config_path = config_dir.join("ruddit/settings.toml");
+        let config_path = config_dir.join("atalaia/settings.toml");
+        let old_config_path = config_dir.join("farol/settings.toml");
 
         if !config_path.exists() {
-            Self::create_default_config()?;
+            // Check for old Farol config to migrate
+            if old_config_path.exists() {
+                println!("Migrating settings from Farol to Atalaia (new install)...");
+                let app_config_dir = config_dir.join("atalaia");
+                fs::create_dir_all(&app_config_dir)?;
+                fs::copy(&old_config_path, &config_path)?;
+                println!("Migration successful.");
+            } else {
+                println!("No old config found. Creating default Atalaia config.");
+                Self::create_default_config()?;
+            }
+        } else if old_config_path.exists() {
+            // If Atalaia config exists but is default, and Farol config exists, migrate
+            let toml_content = fs::read_to_string(&config_path)?;
+            if let Ok(current_config) = toml::from_str::<AppConfig>(&toml_content) {
+                if current_config.api_keys.reddit_api_id == "CHANGE_ME" {
+                    println!("Atalaia settings are default. Migrating from Farol (overwrite)...");
+                    fs::copy(&old_config_path, &config_path)?;
+                    println!("Migration successful.");
+                }
+            }
         }
 
         println!("Reading config file: {:#?}", config_path);
@@ -222,7 +243,7 @@ impl ConfigDirs {
     pub fn save_config(config: &AppConfig) -> Result<(), Box<dyn std::error::Error>> {
         let base_dirs = BaseDirs::new().ok_or("Failed to get base directories")?;
         let config_dir = base_dirs.config_dir();
-        let config_path = config_dir.join("ruddit/settings.toml");
+        let config_path = config_dir.join("atalaia/settings.toml");
 
         let toml_content = toml::to_string_pretty(config)?;
         fs::write(config_path, toml_content)?;
@@ -234,7 +255,7 @@ impl ConfigDirs {
         // get the config file path and edit natively.
         let base_dirs = BaseDirs::new().ok_or("Failed to get base directories")?;
         let config_dir = base_dirs.config_dir();
-        let config_path = config_dir.join("ruddit/settings.toml");
+        let config_path = config_dir.join("atalaia/settings.toml");
 
         #[cfg(target_os = "windows")]
         {

@@ -58,7 +58,27 @@ impl DB {
             "Failed to get base directories",
         )))?;
 
-        let app_dir = base_dirs.data_dir().join("ruddit");
+        let app_dir = base_dirs.data_dir().join("atalaia");
+        let db_path = app_dir.join("atalaia.db");
+
+        if !db_path.exists() {
+            let old_db_path = base_dirs.data_dir().join("farol/farol.db");
+            if old_db_path.exists() {
+                println!("Migrating database from Farol to Atalaia...");
+                std::fs::create_dir_all(&app_dir).map_err(|e| {
+                    rusqlite::Error::InvalidPath(PathBuf::from(format!(
+                        "Failed to create directory: {}",
+                        e
+                    )))
+                })?;
+                std::fs::copy(&old_db_path, &db_path).map_err(|e| {
+                    rusqlite::Error::InvalidPath(PathBuf::from(format!(
+                        "Failed to migrate database: {}",
+                        e
+                    )))
+                })?;
+            }
+        }
 
         if !app_dir.exists() {
             std::fs::create_dir_all(&app_dir).map_err(|e| {
@@ -69,8 +89,7 @@ impl DB {
             })?;
         }
 
-        let db_path = app_dir.join("ruddit.db");
-        let conn = Connection::open(db_path)?;
+        let conn = Connection::open(&db_path)?;
 
         let db_instance = DB { conn };
         db_instance.create_tables()?;
