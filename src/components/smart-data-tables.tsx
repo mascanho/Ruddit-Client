@@ -1,6 +1,6 @@
 // @ts-nocheck
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -78,6 +78,7 @@ export function SmartDataTables() {
     messagesSearch: "",
   });
   const [activeTab, setActiveTab] = useState("reddit");
+  const aiChatScrollRef = useRef<(() => void) | null>(null);
 
   const { subRedditsSaved, setSingleSubreddit } = useAddSingleSubReddit();
 
@@ -138,6 +139,12 @@ export function SmartDataTables() {
     if (value === "reddit" && (subredditsModified || newPostsCount > 0)) {
       setSubredditsModified(false);
       setNewPostsCount(0);
+    }
+    // Auto-scroll to bottom when switching to AI Assistant tab
+    if (value === "ai" && aiChatScrollRef.current) {
+      setTimeout(() => {
+        aiChatScrollRef.current?.();
+      }, 100); // Small delay to ensure the tab content is rendered
     }
   };
 
@@ -364,7 +371,7 @@ export function SmartDataTables() {
         </TabsContent>
 
         <TabsContent value="ai" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
-          <AIDataChat dataStats={dataStats} />
+          <AIDataChat dataStats={dataStats} scrollRef={aiChatScrollRef} />
         </TabsContent>
       </Tabs>
 

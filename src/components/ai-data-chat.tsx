@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Send, Bot, User } from "lucide-react";
+import { Sparkles, Send, Bot, User, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -23,11 +23,12 @@ type DataStats = {
   averageRelevance: number;
 };
 
-export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
+export function AIDataChat({ dataStats, scrollRef }: { dataStats: DataStats; scrollRef?: React.RefObject<() => void> }) {
   const { messages, isLoading, addMessage, setIsLoading } = useAIChatStore();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -36,6 +37,13 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  // Expose scrollToBottom to parent
+  useEffect(() => {
+    if (scrollRef && scrollRef.current) {
+      scrollRef.current = scrollToBottom;
+    }
+  }, [scrollRef]);
 
   const generateResponse = async (userQuery: string): Promise<string> => {
     try {
@@ -47,6 +55,23 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
     } catch (error) {
       console.error("Gemini Error:", error);
       return "Sorry, I encountered an error while communicating with the AI. Please check your API key in settings.";
+    }
+  };
+
+  const handleCopy = async (content: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedIndex(index);
+      toast({
+        description: "Message copied to clipboard",
+        duration: 2000,
+      });
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch (err) {
+      toast({
+        description: "Failed to copy message",
+        variant: "destructive",
+      });
     }
   };
 
@@ -138,7 +163,7 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
               )}
 
               <div
-                className={`max-w-[100%] rounded-xl p-2.5 shadow-sm ${message.role === "user"
+                className={`max-w-[100%] rounded-xl p-2.5 shadow-sm relative group ${message.role === "user"
                   ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
                   : "bg-muted/50 border border-border/50 rounded-tl-none"
                   }`}
@@ -232,17 +257,31 @@ export function AIDataChat({ dataStats }: { dataStats: DataStats }) {
                     <p className="whitespace-pre-wrap">{message.content}</p>
                   )}
                 </div>
-                <p
-                  className={`text-[10px] mt-2 font-medium ${message.role === "user"
-                    ? "text-white/60"
-                    : "text-muted-foreground"
-                    }`}
-                >
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <p
+                    className={`text-[10px] font-medium ${message.role === "user"
+                      ? "text-white/60"
+                      : "text-muted-foreground"
+                      }`}
+                  >
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                  <button
+                    onClick={() => handleCopy(message.content, index)}
+                    className={`opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-md hover:bg-black/10 ${message.role === "user" ? "hover:bg-white/20" : "hover:bg-black/10"
+                      }`}
+                    title="Copy message"
+                  >
+                    {copiedIndex === index ? (
+                      <Check className={`h-3 w-3 ${message.role === "user" ? "text-white/80" : "text-muted-foreground"}`} />
+                    ) : (
+                      <Copy className={`h-3 w-3 ${message.role === "user" ? "text-white/60" : "text-muted-foreground"}`} />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {message.role === "user" && (
