@@ -547,24 +547,24 @@ export function AutomationTab() {
                   <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] opacity-10 pt-16">
                     AWAITING TELEMETRY
                   </div>
-                ) : (
-                  logs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex gap-2 items-start opacity-80 hover:opacity-100 transition-opacity"
-                    >
-                      <span className="text-muted-foreground/40 shrink-0">
-                        [{moment(log.timestamp).format("HH:mm:ss")}]
-                      </span>
-                      <span
-                        className={`flex-1 leading-relaxed ${log.type === "error" ? "text-red-500 font-bold" : log.type === "success" ? "text-green-500" : log.type === "warning" ? "text-yellow-500" : "text-foreground/70"}`}
-                      >
-                        <span className="opacity-40 mr-1">{">"}</span>
-                        {log.message}
-                      </span>
-                    </div>
-                  ))
-                )}
+                 ) : (
+                   [...logs].reverse().map((log) => (
+                     <div
+                       key={log.id}
+                       className="flex gap-2 items-start opacity-80 hover:opacity-100 transition-opacity"
+                     >
+                       <span className="text-muted-foreground/40 shrink-0">
+                         [{moment(log.timestamp).format("HH:mm:ss")}]
+                       </span>
+                       <span
+                         className={`flex-1 leading-relaxed ${log.type === "error" ? "text-red-500 font-bold" : log.type === "success" ? "text-green-500" : log.type === "warning" ? "text-yellow-500" : "text-foreground/70"}`}
+                       >
+                         <span className="opacity-40 mr-1">{">"}</span>
+                         {log.message}
+                       </span>
+                     </div>
+                   ))
+                 )}
               </div>
             </div>
           </div>
