@@ -16,8 +16,17 @@ import {
   ArrowUp,
   ArrowDown,
   Search,
-  MessageCircle, // Added MessageCircle icon
+  MessageCircle,
+  Eye,
+  X,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { RedditCommentsView } from "./reddit-comments-view";
 import type { Message } from "./smart-data-tables";
 import moment from "moment";
@@ -221,6 +230,7 @@ export function AutomationTab() {
   const [comments, setComments] = useState<Message[]>([]);
   const [sortTypeForComments, setSortTypeForComments] = useState("best");
   const [selectedPostIds, setSelectedPostIds] = useState<Set<number>>(new Set());
+  const [isSelectedModalOpen, setIsSelectedModalOpen] = useState(false);
 
   const trackedPostIds = useMemo(
     () => new Set(subRedditsSaved.map((p) => p.id)),
@@ -768,13 +778,22 @@ export function AutomationTab() {
             </div>
             <div className="flex items-center gap-2">
               {selectedPostIds.size > 0 && (
-                <button
-                  onClick={handleBulkAddToTracking}
-                  className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
-                >
-                  <Plus className="h-3 w-3" />
-                  Track Selected ({selectedPostIds.size})
-                </button>
+                <>
+                  <button
+                    onClick={() => setIsSelectedModalOpen(true)}
+                    className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-primary/20 text-primary hover:bg-primary/10 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
+                  >
+                    <Eye className="h-3 w-3" />
+                    View ({selectedPostIds.size})
+                  </button>
+                  <button
+                    onClick={handleBulkAddToTracking}
+                    className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Track Selected ({selectedPostIds.size})
+                  </button>
+                </>
               )}
               <button
                 onClick={clearFoundPosts}
@@ -975,6 +994,80 @@ export function AutomationTab() {
         sortType={sortTypeForComments}
         onSortTypeChange={handleSortTypeForCommentsChange}
       />
+
+      <Dialog open={isSelectedModalOpen} onOpenChange={setIsSelectedModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Selected Items ({selectedPostIds.size})</DialogTitle>
+            <DialogDescription>
+              Review the items you have selected for tracking.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto custom-scroll border rounded-md">
+            {selectedPostIds.size === 0 ? (
+              <div className="p-8 text-center text-muted-foreground text-sm">
+                No items selected.
+              </div>
+            ) : (
+              <div className="divide-y">
+                {foundPosts
+                  .filter(p => selectedPostIds.has(p.id))
+                  .map(post => (
+                    <div key={post.id} className="p-3 flex items-start justify-between gap-3 hover:bg-muted/50 group">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span
+                            className={`text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}
+                          >
+                            {post.intent}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            r/{post.subreddit}
+                          </span>
+                        </div>
+                        <a
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            post.url && openUrl(post.url);
+                          }}
+                          className="text-sm font-medium hover:underline block truncate"
+                        >
+                          {post.title}
+                        </a>
+                      </div>
+                      <button
+                        onClick={() => togglePostSelection(post.id)}
+                        className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                        title="Remove from selection"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={() => setSelectedPostIds(new Set())}
+              className="mr-auto text-xs text-destructive hover:underline"
+            >
+              Clear Selection
+            </button>
+            <button
+              onClick={() => {
+                setIsSelectedModalOpen(false);
+                handleBulkAddToTracking();
+              }}
+              disabled={selectedPostIds.size === 0}
+              className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest rounded-md hover:bg-primary/90"
+            >
+              Track All ({selectedPostIds.size})
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   );
 }
