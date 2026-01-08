@@ -109,7 +109,9 @@ const HighlightedText = ({
 
   const allKeywords = categories
     .flatMap((c) => c.keywords)
-    .filter((kw) => kw && kw.trim() !== "");
+    .filter((kw) => kw && kw.trim() !== "")
+    // Sort by length (longer phrases first) to avoid partial matches
+    .sort((a, b) => b.length - a.length);
 
   if (allKeywords.length === 0) return <>{text}</>;
 
@@ -122,33 +124,68 @@ const HighlightedText = ({
     });
   });
 
-  const escapedKeywords = allKeywords.map((kw) =>
-    kw.replace(/[.*+?^${}()|[\\]/g, "\\$&"),
-  );
+  // Create regex that matches whole phrases, sorted by length to prioritize longer matches
+  const escapeRegexString = (str: string) => {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  };
+  const escapedKeywords = allKeywords.map((kw) => escapeRegexString(kw));
   const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
-  const parts = text.split(regex);
+  
+  let highlightedText = text;
+  const matches = [];
+  let match;
 
-  return (
-    <>
-      {parts.map((part, i) => {
-        if (!part) return null;
-        const lowerPart = part.toLowerCase();
-        if (keywordStyleMap.has(lowerPart)) {
-          return (
-            <mark
-              key={i}
-              className={`${keywordStyleMap.get(
-                lowerPart,
-              )} text-current px-0.5 rounded-sm`}
-            >
-              {part}
-            </mark>
-          );
-        }
-        return <React.Fragment key={i}>{part}</React.Fragment>;
-      })}
-    </>
-  );
+  // Find all matches with their positions
+  while ((match = regex.exec(text)) !== null) {
+    matches.push({
+      keyword: match[0].toLowerCase(),
+      start: match.index,
+      end: match.index + match[0].length
+    });
+    regex.lastIndex = match.index + 1; // Prevent infinite loops with overlapping matches
+  }
+
+  // Sort matches by start position and then by length (longer first)
+  matches.sort((a, b) => {
+    if (a.start !== b.start) return a.start - b.start;
+    return b.end - b.end; // Longer matches first
+  });
+
+  // Build highlighted text
+  const parts = [];
+  let lastIndex = 0;
+
+  for (const match of matches) {
+    // Add text before match
+    if (match.start > lastIndex) {
+      parts.push(text.slice(lastIndex, match.start));
+    }
+    
+    // Add highlighted match
+    const matchedText = text.slice(match.start, match.end);
+    const className = keywordStyleMap.get(match.keyword);
+    if (className) {
+      parts.push(
+        <mark
+          key={match.start}
+          className={`${className} text-current px-0.5 rounded-sm`}
+        >
+          {matchedText}
+        </mark>
+      );
+    } else {
+      parts.push(matchedText);
+    }
+    
+    lastIndex = match.end;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return <>{parts}</>;
 };
 
 export function AutomationTab() {
@@ -205,6 +242,11 @@ export function AutomationTab() {
     { keywords: settings.monitoredKeywords || [], className: "bg-gray-500/30" },
   ];
 
+  // Function to escape special regex characters and handle multi-word keywords properly
+  const escapeRegexString = (str: string) => {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  };
+
   // Function to check if post should be filtered out by blacklist
   const isPostBlacklisted = (post: any) => {
     const blacklistKeywords = settings.blacklistKeywords || [];
@@ -241,12 +283,40 @@ export function AutomationTab() {
     postsToProcess = postsToProcess.filter(post => !isPostBlacklisted(post));
 
     if (searchQuery.trim() !== "") {
-      const fuse = new Fuse(postsToProcess, {
-        keys: ["title", "subreddit", "author", "selftext", "intent"],
-        threshold: 0.4,
-        includeScore: true,
-      });
-      postsToProcess = fuse.search(searchQuery).map((result) => result.item);
+      // Check if search query matches any monitored keywords exactly
+      const allMonitoringKeywords = [
+        ...(settings.monitoredKeywords || []),
+        ...(settings.brandKeywords || []),
+        ...(settings.competitorKeywords || []),
+        ...(settings.monitoredSubreddits || []),
+        ...(settings.monitoredUsernames || [])
+      ];
+      
+      const isExactKeywordMatch = allMonitoringKeywords.some(
+        keyword => searchQuery.toLowerCase() === keyword.toLowerCase()
+      );
+      
+      if (isExactKeywordMatch) {
+        // For exact keyword matches, filter posts that contain this exact keyword/phrase
+        postsToProcess = postsToProcess.filter(post => {
+          const searchText = [
+            post.title || "",
+            post.selftext || "",
+            post.subreddit || "",
+            post.author || ""
+          ].join(" ").toLowerCase();
+          
+          return searchText.includes(searchQuery.toLowerCase());
+        });
+      } else {
+        // For general search, use Fuse.js
+        const fuse = new Fuse(postsToProcess, {
+          keys: ["title", "subreddit", "author", "selftext", "intent"],
+          threshold: 0.4,
+          includeScore: true,
+        });
+        postsToProcess = fuse.search(searchQuery).map((result) => result.item);
+      }
       
       // Apply blacklist filter again to search results
       postsToProcess = postsToProcess.filter(post => !isPostBlacklisted(post));
