@@ -19,6 +19,8 @@ import {
   ChevronsRight,
   ArrowUpDown,
   Radar,
+  MessageSquare,
+  ExternalLink,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,6 +28,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAppSettings } from "@/store/settings-store";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -156,7 +164,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
+            (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -197,7 +205,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
+            (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -264,7 +272,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
+            (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -656,7 +664,7 @@ export function RedditSearch({
   function isColoredRelevance(sortType: string) {
     // Renamed parameter
     switch (
-    sortType // Use new parameter
+      sortType // Use new parameter
     ) {
       case "hot":
         return "bg-red-500";
@@ -694,10 +702,11 @@ export function RedditSearch({
                   size="sm"
                   onClick={() => toggleSort(sort)}
                   disabled={isSearching}
-                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${selectedSorts.includes(sort)
-                    ? "shadow-sm"
-                    : "opacity-60 hover:opacity-100 hover:bg-background/80"
-                    }`}
+                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${
+                    selectedSorts.includes(sort)
+                      ? "shadow-sm"
+                      : "opacity-60 hover:opacity-100 hover:bg-background/80"
+                  }`}
                 >
                   {sort === "hot" && <Flame className="h-3 w-3 mr-1.5" />}
                   {sort === "top" && <TrendingUp className="h-3 w-3 mr-1.5" />}
@@ -779,14 +788,15 @@ export function RedditSearch({
                   <button
                     key={filter}
                     onClick={() => toggleViewFilter(filter)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewFilters.includes(filter)
-                      ? filter === "hot"
-                        ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                        : filter === "top"
-                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                          : "bg-green-500/10 text-green-600 dark:text-green-400"
-                      : "opacity-30 hover:opacity-100"
-                      }`}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
+                      viewFilters.includes(filter)
+                        ? filter === "hot"
+                          ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                          : filter === "top"
+                            ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                            : "bg-green-500/10 text-green-600 dark:text-green-400"
+                        : "opacity-30 hover:opacity-100"
+                    }`}
                   >
                     {filter}
                   </button>
@@ -803,10 +813,11 @@ export function RedditSearch({
                   <button
                     key={intent}
                     onClick={() => toggleViewIntentFilter(intent)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewIntentFilters.includes(intent)
-                      ? "bg-primary/10 text-primary"
-                      : "opacity-30 hover:opacity-100"
-                      }`}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
+                      viewIntentFilters.includes(intent)
+                        ? "bg-primary/10 text-primary"
+                        : "opacity-30 hover:opacity-100"
+                    }`}
                   >
                     {intent}
                   </button>
@@ -831,140 +842,176 @@ export function RedditSearch({
           </div>
 
           {/* Results List - Redesigned to be dense and sleek */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden bg-background/30 p-2 space-y-0.5 scrollbar-thin scrollbar-thumb-border/20 scrollbar-track-transparent">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden bg-background/30 p-3 scrollbar-thin scrollbar-thumb-border/20 scrollbar-track-transparent">
             {paginatedResults.length > 0 ? (
-              paginatedResults.map((result) => (
-                <div
-                  key={result.id}
-                  className="group relative p-2.5 rounded-lg border border-border/40 bg-background/50 hover:bg-background hover:border-border/80 transition-all duration-200 first:mt-0 mt-0.5"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Badge
-                              variant="outline"
-                              className="font-mono text-[9px] py-0 h-4 px-1.5 cursor-pointer hover:bg-accent/50 selection:bg-transparent bg-background/50 border-muted-foreground/10"
-                            >
-                              r/{result.subreddit}
-                            </Badge>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start">
-                            <DropdownMenuItem
-                              className="text-xs"
-                              onClick={() =>
-                                addSubredditToMonitoring(result.subreddit)
-                              }
-                            >
-                              <Radar className="h-4 w-4 mr-2" />
-                              Monitor r/{result.subreddit}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+              <div className="grid grid-cols-1 xl:grid-cols-4 gap-3">
+                {paginatedResults.map((result) => (
+                  <div
+                    key={result.id}
+                    className="group relative p-3 rounded-lg border border-border/40 bg-background/50 hover:bg-background hover:border-border/80 transition-all duration-200 h-full"
+                  >
+                    <div className="flex flex-col h-full">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Badge
+                                variant="outline"
+                                className="font-mono text-[9px] py-0 h-4 px-1.5 cursor-pointer hover:bg-accent/50 selection:bg-transparent bg-background/50 border-muted-foreground/10"
+                              >
+                                r/{result.subreddit}
+                              </Badge>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem
+                                className="text-xs"
+                                onClick={() =>
+                                  addSubredditToMonitoring(result.subreddit)
+                                }
+                              >
+                                <Radar className="h-4 w-4 mr-2" />
+                                Monitor r/{result.subreddit}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
 
-                        <div className="flex gap-1">
-                          {result.sort_type?.split(",").map((type) => (
-                            <span
-                              key={type}
-                              className={`text-[9px] font-bold uppercase px-1 rounded-sm text-white ${type === "hot"
-                                ? "bg-red-500/80"
-                                : type === "top"
-                                  ? "bg-blue-500/80"
-                                  : "bg-green-500/80"
+                          <div className="flex gap-1">
+                            {result.sort_type?.split(",").map((type) => (
+                              <div
+                                key={type}
+                                className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider text-white ${
+                                  type === "hot"
+                                    ? "bg-gradient-to-r from-red-500 to-red-600"
+                                    : type === "top"
+                                      ? "bg-gradient-to-r from-blue-500 to-blue-600"
+                                      : "bg-gradient-to-r from-green-500 to-green-600"
                                 }`}
-                            >
-                              {type}
-                            </span>
-                          ))}
+                              >
+                                {type}
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center gap-1.5 ml-auto">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+                                    onClick={() =>
+                                      handleGetComments(
+                                        result,
+                                        sortTypeForComments,
+                                      )
+                                    }
+                                  >
+                                    <MessageSquare className="h-3.5 w-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>View Comments</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+                                    onClick={() =>
+                                      handleOpenInBrowser(result.url)
+                                    }
+                                  >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Open in Browser</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+                                    onClick={() => addToTable(result)}
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Add to Tracking</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <div className="text-[10px] text-muted-foreground/50 font-mono">
+                              {moment(result.formatted_date).fromNow()}
+                            </div>
+                          </div>
                         </div>
 
-                        <span className="text-[10px] text-muted-foreground opacity-40 font-mono">
-                          {moment(result.formatted_date).fromNow()}
-                        </span>
-                      </div>
+                        <h4
+                          className="font-bold text-sm leading-tight group-hover:text-primary transition-colors cursor-pointer line-clamp-3"
+                          onClick={() => handleOpenInBrowser(result.url)}
+                        >
+                          <KeywordHighlighter
+                            text={result.title}
+                            searchQuery={query}
+                            brandKeywords={settings.brandKeywords}
+                            competitorKeywords={settings.competitorKeywords}
+                            generalKeywords={settings.monitoredKeywords}
+                          />
+                        </h4>
 
-                      <h4
-                        className="font-bold text-sm leading-snug group-hover:text-primary transition-colors cursor-pointer"
-                        onClick={() => handleOpenInBrowser(result.url)}
-                      >
-                        <KeywordHighlighter
-                          text={result.title}
-                          searchQuery={query}
-                          brandKeywords={settings.brandKeywords}
-                          competitorKeywords={settings.competitorKeywords}
-                          generalKeywords={settings.monitoredKeywords}
-                        />
-                      </h4>
-
-                      {result.snippet && (
-                        <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5 opacity-70 italic">
-                          {result.snippet}
-                        </p>
-                      )}
-
-                      <div className="flex items-center gap-2.5 mt-1.5">
-                        {result.intent && (
-                          <Badge
-                            className={`${getIntentColor(
-                              result.intent.toLowerCase(),
-                            )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
-                          >
-                            {result.intent.toUpperCase()}
-                          </Badge>
+                        {result.snippet && (
+                          <p className="text-[11px] text-muted-foreground/70 line-clamp-2 mb-2 leading-relaxed">
+                            {result.snippet}
+                          </p>
                         )}
 
-                        <div className="flex items-center gap-3 text-[10px] font-medium text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full border border-border/30">
-                          <div className="flex items-center gap-1">
-                            <ArrowUpDown className="h-2.5 w-2.5" />
-                            <span>{result.score}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Plus className="h-2.5 w-2.5 opacity-50" />
-                            <span>{result.num_comments}</span>
-                          </div>
-                          <div className="flex items-center gap-1 border-l pl-2 border-border/40">
-                            <span className="opacity-50">BY:</span>
-                            <span className="text-foreground/80">
-                              {result.author}
-                            </span>
+                        <div className="flex items-center gap-2.5 mt-1.5">
+                          {result.intent && (
+                            <Badge
+                              className={`${getIntentColor(
+                                result.intent.toLowerCase(),
+                              )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
+                            >
+                              {result.intent.toUpperCase()}
+                            </Badge>
+                          )}
+
+                          <div className="flex items-center gap-3 text-[10px] font-medium text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full border border-border/30">
+                            <div className="flex items-center gap-1">
+                              <ArrowUpDown className="h-2.5 w-2.5" />
+                              <span>{result.score}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Plus className="h-2.5 w-2.5 opacity-50" />
+                              <span>{result.num_comments}</span>
+                            </div>
+                            <div className="flex items-center gap-1 border-l pl-2 border-border/40">
+                              <span className="opacity-50">BY:</span>
+                              <span className="text-foreground/80">
+                                {result.author}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 w-20 text-[9px] font-bold uppercase transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                        onClick={() =>
-                          handleGetComments(result, sortTypeForComments)
-                        }
-                      >
-                        Comments
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 w-20 text-[9px] font-bold uppercase transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                        onClick={() => handleOpenInBrowser(result.url)}
-                      >
-                        Open
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="h-6 w-20 text-[9px] font-bold uppercase transition-all"
-                        onClick={() => addToTable(result)}
-                      >
-                        <Plus className="h-2.5 w-2.5 mr-1" />
-                        Add
-                      </Button>
-                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 opacity-30">
                 <Search className="h-10 w-10 mb-2" />
@@ -977,7 +1024,7 @@ export function RedditSearch({
 
           {/* Footer - Redesigned Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-1.5 bg-muted/10 border-t backdrop-blur-md">
+            <div className="flex items-center justify-between px-4 py-1.5 bg-muted/10 border-t backdrop-blur-md relative z-10">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
@@ -1004,64 +1051,64 @@ export function RedditSearch({
                 </div>
               </div>
 
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronsLeft className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronsLeft className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </Button>
 
-                  <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/5 border border-primary/20">
-                    <span className="text-[9px] font-bold text-primary opacity-60">
-                      PAGE
-                    </span>
-                    <span className="text-[10px] font-bold text-primary font-mono">
-                      {currentPage}
-                    </span>
-                    <span className="text-[9px] font-bold text-primary opacity-40">
-                      /
-                    </span>
-                    <span className="text-[10px] font-bold text-primary font-mono">
-                      {totalPages}
-                    </span>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronsRight className="h-3.5 w-3.5" />
-                  </Button>
+                <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/5 border border-primary/20">
+                  <span className="text-[9px] font-bold text-primary opacity-60">
+                    PAGE
+                  </span>
+                  <span className="text-[10px] font-bold text-primary font-mono">
+                    {currentPage}
+                  </span>
+                  <span className="text-[9px] font-bold text-primary opacity-40">
+                    /
+                  </span>
+                  <span className="text-[10px] font-bold text-primary font-mono">
+                    {totalPages}
+                  </span>
                 </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
           )}
         </Card>
@@ -1085,11 +1132,11 @@ export function RedditSearch({
         post={
           commentsPost
             ? {
-              id: commentsPost.name || commentsPost.id,
-              title: commentsPost.title,
-              url: commentsPost.url,
-              subreddit: commentsPost.subreddit,
-            }
+                id: commentsPost.name || commentsPost.id,
+                title: commentsPost.title,
+                url: commentsPost.url,
+                subreddit: commentsPost.subreddit,
+              }
             : null
         }
         comments={comments}
