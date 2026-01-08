@@ -431,7 +431,7 @@ export function RedditCommentsView({
             <div className="flex-shrink-0 border-t bg-background p-2 md:px-4 shadow-sm">
               <div className="max-w-4xl mx-auto">
                 <ReplySection
-                  parentId={`t3_${post.id}`}
+                  parentId={`t3_${post.id.toString(36)}`}
                   onSuccess={() => {
                     onSortTypeChange(sortType); // Trigger refresh
                   }}
