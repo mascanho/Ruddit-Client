@@ -855,9 +855,9 @@ export function RedditTable({
             <colgroup>
               <col className="w-[32px]" />
               <col className="w-[30px]" />
-              <col className="w-[85px]" />
+              <col className="w-[75px]" />
               <col />
-              <col className="w-[140px]" />
+              <col className="w-[160px]" />
               <col className="w-[60px]" />
               <col className="w-[40px]" />
               <col className="w-[95px]" />
@@ -1017,7 +1017,7 @@ export function RedditTable({
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="px-1 text-center overflow-hidden">
+                      <TableCell className="px-0.5 text-center overflow-hidden">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Badge
@@ -1211,7 +1211,7 @@ export function RedditTable({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-5 w-5"
+                                    className="h-5 w-5 rounded-full shadow-none flex items-center justify-center"
                                     onClick={() => handleEditNote(post)}
                                   >
                                     <Pencil className="h-3 w-3" />

@@ -723,13 +723,13 @@ export function AutomationTab() {
                       {["Intent", "Title", "Subreddit"].map((h) => (
                         <th
                           key={h}
-                          className={`p-1.5 font-bold text-xs  text-muted-foreground ${h === "Subreddit" ? "w-36" : h === "Intent" ? "w-20" : h === "Title" ? "w-[60%]" : ""}`}
+                          className={`p-1.5 font-bold text-xs  text-muted-foreground ${h === "Subreddit" ? "w-44" : h === "Intent" ? "w-20" : h === "Title" ? "w-[50%]" : ""}`}
                         >
                           {h}
                         </th>
                       ))}
                       <th
-                        className="p-1.5 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground w-32"
+                        className="p-1.5 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground w-28"
                         onClick={handleDateSort}
                       >
                         <div className="flex items-center gap-1 font-bold">
@@ -816,7 +816,7 @@ export function AutomationTab() {
                             </TooltipContent>
                           </Tooltip>
                         </td>
-                        <td className="p-1.5 text-muted-foreground text-xs w-36">
+                        <td className="p-1.5 text-muted-foreground text-xs w-44">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <span className="inline-block border px-2 rounded-sm  cursor-pointer hover:bg-gray-100 hover:text-black">
@@ -836,7 +836,7 @@ export function AutomationTab() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
-                        <td className="p-1.5 text-muted-foreground text-xs w-32 whitespace-nowrap">
+                        <td className="p-1.5 text-muted-foreground text-xs w-28 whitespace-nowrap">
                           {formatElapsedTime(post.timestamp)}
                         </td>
                         <td className="p-1.5 text-right w-12">
