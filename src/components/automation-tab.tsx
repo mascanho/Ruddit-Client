@@ -44,6 +44,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getIntentColor } from "@/lib/marketing-utils";
 import { toast } from "sonner";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Custom-styled native HTML components
 interface CustomButtonProps {
@@ -130,7 +131,7 @@ const HighlightedText = ({
   };
   const escapedKeywords = allKeywords.map((kw) => escapeRegexString(kw));
   const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
-  
+
   let highlightedText = text;
   const matches = [];
   let match;
@@ -160,7 +161,7 @@ const HighlightedText = ({
     if (match.start > lastIndex) {
       parts.push(text.slice(lastIndex, match.start));
     }
-    
+
     // Add highlighted match
     const matchedText = text.slice(match.start, match.end);
     const className = keywordStyleMap.get(match.keyword);
@@ -176,7 +177,7 @@ const HighlightedText = ({
     } else {
       parts.push(matchedText);
     }
-    
+
     lastIndex = match.end;
   }
 
@@ -219,6 +220,7 @@ export function AutomationTab() {
   );
   const [comments, setComments] = useState<Message[]>([]);
   const [sortTypeForComments, setSortTypeForComments] = useState("best");
+  const [selectedPostIds, setSelectedPostIds] = useState<Set<number>>(new Set());
 
   const trackedPostIds = useMemo(
     () => new Set(subRedditsSaved.map((p) => p.id)),
@@ -262,12 +264,12 @@ export function AutomationTab() {
       .toLowerCase();
 
     const wordsToCheck = textToCheck.split(/\s+/); // Split into individual words
-    
+
     // Check for exact keyword matches in the full text
     const exactMatch = blacklistKeywords.some((keyword) =>
       textToCheck.includes(keyword.toLowerCase()),
     );
-    
+
     // Check for individual word matches
     const wordMatch = blacklistKeywords.some((keyword) =>
       wordsToCheck.some(word => word === keyword.toLowerCase()),
@@ -291,11 +293,11 @@ export function AutomationTab() {
         ...(settings.monitoredSubreddits || []),
         ...(settings.monitoredUsernames || [])
       ];
-      
+
       const isExactKeywordMatch = allMonitoringKeywords.some(
         keyword => searchQuery.toLowerCase() === keyword.toLowerCase()
       );
-      
+
       if (isExactKeywordMatch) {
         // For exact keyword matches, filter posts that contain this exact keyword/phrase
         postsToProcess = postsToProcess.filter(post => {
@@ -305,7 +307,7 @@ export function AutomationTab() {
             post.subreddit || "",
             post.author || ""
           ].join(" ").toLowerCase();
-          
+
           return searchText.includes(searchQuery.toLowerCase());
         });
       } else {
@@ -317,7 +319,7 @@ export function AutomationTab() {
         });
         postsToProcess = fuse.search(searchQuery).map((result) => result.item);
       }
-      
+
       // Apply blacklist filter again to search results
       postsToProcess = postsToProcess.filter(post => !isPostBlacklisted(post));
     }
@@ -368,13 +370,11 @@ export function AutomationTab() {
     toast.success(`Now monitoring r/${cleaned}`);
   };
 
-  const handleAddToTracking = async (post: PostDataWrapper) => {
+  const savePostToDb = async (post: PostDataWrapper) => {
     try {
       const isDuplicate = subRedditsSaved.some((p) => p.id === post.id);
-      if (isDuplicate) {
-        toast.info("Already tracking this post");
-        return;
-      }
+      if (isDuplicate) return "duplicate"; // Distinct from error
+
       const isInserted: boolean = await invoke("save_single_reddit_command", {
         post: {
           ...post,
@@ -395,8 +395,10 @@ export function AutomationTab() {
           date_added: post.date_added || 0,
         },
       });
+
       if (isInserted) {
         addSingleSubreddit(post);
+        // Start fetching comments in background
         if (post.url && post.title && post.sort_type && post.subreddit) {
           invoke("get_post_comments_command", {
             url: post.url,
@@ -405,13 +407,80 @@ export function AutomationTab() {
             subreddit: post.subreddit,
           }).catch(console.error);
         }
-        toast.success("Added to tracking");
+        return "success";
       } else {
-        toast.error("Failed to save to database");
+        return "failed";
       }
-    } catch (e: any) {
-      toast.error(`Error: ${e.message || e}`);
+    } catch (e) {
+      console.error(e);
+      return "error";
     }
+  };
+
+  const handleAddToTracking = async (post: PostDataWrapper) => {
+    const result = await savePostToDb(post);
+    if (result === "duplicate") {
+      toast.info("Already tracking this post");
+    } else if (result === "success") {
+      toast.success("Added to tracking");
+    } else {
+      toast.error("Failed to save to database");
+    }
+  };
+
+  const togglePostSelection = (postId: number) => {
+    const newSelected = new Set(selectedPostIds);
+    if (newSelected.has(postId)) {
+      newSelected.delete(postId);
+    } else {
+      newSelected.add(postId);
+    }
+    setSelectedPostIds(newSelected);
+  };
+
+  const toggleAllPosts = () => {
+    // If all currently visible are selected, deselect all. Otherwise select all visible.
+    const allVisibleIds = filteredAndSortedPosts.map((p) => p.id);
+    const allSelected = allVisibleIds.every((id) => selectedPostIds.has(id));
+
+    if (allSelected) {
+      // Deselect all visible
+      const newSelected = new Set(selectedPostIds);
+      allVisibleIds.forEach(id => newSelected.delete(id));
+      setSelectedPostIds(newSelected);
+    } else {
+      // Select all visible
+      const newSelected = new Set(selectedPostIds);
+      allVisibleIds.forEach(id => newSelected.add(id));
+      setSelectedPostIds(newSelected);
+    }
+  };
+
+  const handleBulkAddToTracking = async () => {
+    const postsToProcess = filteredAndSortedPosts.filter((p) =>
+      selectedPostIds.has(p.id)
+    );
+    if (postsToProcess.length === 0) return;
+
+    let addedCount = 0;
+    let duplicateCount = 0;
+
+    for (const post of postsToProcess) {
+      const result = await savePostToDb(post);
+      if (result === "success") addedCount++;
+      if (result === "duplicate") duplicateCount++;
+    }
+
+    if (addedCount > 0) {
+      toast.success(`Added ${addedCount} posts to tracking`);
+    } else if (duplicateCount > 0) {
+      toast.info("Selected posts are already being tracked");
+    }
+
+    // Optional: Clear selection after action? 
+    // setSelectedPostIds(new Set()); 
+    // Keeping selection might be better UX if user wants to do something else, but here logic implies done.
+    setSelectedPostIds(new Set());
   };
 
   const handleGetComments = async (
@@ -697,14 +766,25 @@ export function AutomationTab() {
                 />
               </div>
             </div>
-            <button
-              onClick={clearFoundPosts}
-              disabled={foundPosts.length === 0}
-              className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-destructive/20 text-destructive/60 hover:bg-destructive hover:text-white transition-all rounded-md flex items-center gap-2"
-            >
-              <Trash2 className="h-3 w-3" />
-              Reset Feed
-            </button>
+            <div className="flex items-center gap-2">
+              {selectedPostIds.size > 0 && (
+                <button
+                  onClick={handleBulkAddToTracking}
+                  className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
+                >
+                  <Plus className="h-3 w-3" />
+                  Track Selected ({selectedPostIds.size})
+                </button>
+              )}
+              <button
+                onClick={clearFoundPosts}
+                disabled={foundPosts.length === 0}
+                className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-destructive/20 text-destructive/60 hover:bg-destructive hover:text-white transition-all rounded-md flex items-center gap-2"
+              >
+                <Trash2 className="h-3 w-3" />
+                Reset Feed
+              </button>
+            </div>
           </div>
           <div className="p-0 flex-1 min-h-0 relative overflow-hidden rounded-none flex flex-col">
             {foundPosts.length === 0 ? (
@@ -720,6 +800,17 @@ export function AutomationTab() {
                 <table className="w-full text-xs text-left table-fixed rounded-none">
                   <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
                     <tr className="border-b font-bold">
+                      <th className="w-8 pl-3 pr-1">
+                        <Checkbox
+                          checked={
+                            filteredAndSortedPosts.length > 0 &&
+                            filteredAndSortedPosts.every((p) => selectedPostIds.has(p.id))
+                          }
+                          onCheckedChange={toggleAllPosts}
+                          aria-label="Select all"
+                          className="translate-y-[1px]"
+                        />
+                      </th>
                       {["Intent", "Title", "Subreddit"].map((h) => (
                         <th
                           key={h}
@@ -747,6 +838,14 @@ export function AutomationTab() {
                   <tbody>
                     {filteredAndSortedPosts.map((post) => (
                       <tr key={post.id} className="border-b hover:bg-muted/50">
+                        <td className="w-8 pl-3 pr-1">
+                          <Checkbox
+                            checked={selectedPostIds.has(post.id)}
+                            onCheckedChange={() => togglePostSelection(post.id)}
+                            aria-label={`Select ${post.title}`}
+                            className="translate-y-[2px]"
+                          />
+                        </td>
                         <td className="px-1 w-20">
                           <div className="flex flex-col gap-0.5">
                             <span
