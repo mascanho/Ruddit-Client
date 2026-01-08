@@ -23,27 +23,50 @@ type DataStats = {
   averageRelevance: number;
 };
 
-export function AIDataChat({ dataStats, scrollRef }: { dataStats: DataStats; scrollRef?: React.RefObject<() => void> }) {
+export function AIDataChat({ dataStats, shouldScroll }: { dataStats: DataStats; shouldScroll?: boolean }) {
   const { messages, isLoading, addMessage, setIsLoading } = useAIChatStore();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => {
+      const scrollViewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollViewport) {
+        scrollViewport.scrollTop = scrollViewport.scrollHeight;
+      } else {
+        // Fallback to original method
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 150);
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages, isLoading, shouldScroll]);
 
-  // Expose scrollToBottom to parent
+  // Additional effect to handle tab changes more reliably
   useEffect(() => {
-    if (scrollRef && scrollRef.current) {
-      scrollRef.current = scrollToBottom;
+    if (shouldScroll) {
+      const immediateScroll = () => {
+        const scrollViewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+        if (scrollViewport) {
+          scrollViewport.scrollTop = scrollViewport.scrollHeight;
+        }
+      };
+      
+      immediateScroll();
+      const timeoutId = setTimeout(immediateScroll, 50);
+      const timeoutId2 = setTimeout(immediateScroll, 200);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        clearTimeout(timeoutId2);
+      };
     }
-  }, [scrollRef]);
+  }, [shouldScroll]);
 
   const generateResponse = async (userQuery: string): Promise<string> => {
     try {
@@ -149,7 +172,7 @@ export function AIDataChat({ dataStats, scrollRef }: { dataStats: DataStats; scr
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4 h-20 overflow-auto max-h-[calc(100vh-200px)]">
+      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 h-20 overflow-auto max-h-[calc(100vh-200px)]">
         <div className="space-y-6 max-w-3xl mx-auto">
           {messages.map((message, index) => (
             <div
@@ -187,14 +210,22 @@ export function AIDataChat({ dataStats, scrollRef }: { dataStats: DataStats; scr
                         li: ({ node, ...props }) => (
                           <li className="mb-1" {...props} />
                         ),
-                        a: ({ node, ...props }) => (
-                          <a
-                            className="text-primary underline hover:text-primary/80"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            {...props}
-                          />
-                        ),
+                        a: ({ node, href, ...props }) => {
+                          // Convert Reddit relative URLs to absolute URLs
+                          let processedHref = href;
+                          if (href && href.startsWith('/r/')) {
+                            processedHref = `https://reddit.com${href}`;
+                          }
+                          return (
+                            <a
+                              href={processedHref}
+                              className="text-primary underline hover:text-primary/80"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              {...props}
+                            />
+                          );
+                        },
                         code: ({
                           node,
                           inline,

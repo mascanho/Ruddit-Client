@@ -78,7 +78,7 @@ export function SmartDataTables() {
     messagesSearch: "",
   });
   const [activeTab, setActiveTab] = useState("reddit");
-  const aiChatScrollRef = useRef<(() => void) | null>(null);
+  const [shouldScrollAI, setShouldScrollAI] = useState(false);
 
   const { subRedditsSaved, setSingleSubreddit } = useAddSingleSubReddit();
 
@@ -141,10 +141,13 @@ export function SmartDataTables() {
       setNewPostsCount(0);
     }
     // Auto-scroll to bottom when switching to AI Assistant tab
-    if (value === "ai" && aiChatScrollRef.current) {
+    if (value === "ai") {
+      // Reset and trigger scroll
+      setShouldScrollAI(false);
       setTimeout(() => {
-        aiChatScrollRef.current?.();
-      }, 100); // Small delay to ensure the tab content is rendered
+        setShouldScrollAI(true);
+        setTimeout(() => setShouldScrollAI(false), 300);
+      }, 50);
     }
   };
 
@@ -371,7 +374,7 @@ export function SmartDataTables() {
         </TabsContent>
 
         <TabsContent value="ai" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
-          <AIDataChat dataStats={dataStats} scrollRef={aiChatScrollRef} />
+          <AIDataChat dataStats={dataStats} shouldScroll={shouldScrollAI} />
         </TabsContent>
       </Tabs>
 

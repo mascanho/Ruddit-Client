@@ -145,6 +145,12 @@ const useAutomationStore = create<AutomationStore>()(
     }),
     {
       name: "ruddit-automation-storage",
+      partialize: (state) => ({
+        intervalMinutes: state.intervalMinutes,
+        lastRun: state.lastRun,
+        logs: state.logs,
+        foundPosts: state.foundPosts,
+      }),
     }
   )
 );

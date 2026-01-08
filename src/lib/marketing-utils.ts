@@ -2,18 +2,40 @@ export type IntentLevel = "high" | "medium" | "low";
 export type KeywordCategory = "brand" | "competitor" | "general";
 
 const HIGH_INTENT_PATTERNS = [
+  // Explicit buying intent
   /looking for/i,
+  /need (a|an|some)?/i,
+  /seeking/i,
+  /in the market for/i,
+  /shortlist/i,
+
+  // Evaluation & comparison
   /recommend/i,
-  // /suggestion/i,
-  // /alternative to/i,
-  // /vs/i,
-  // /comparison/i,
-  // /review/i,
-  // /best/i,
-  // /help with/i,
-  // /how to/i,
-  // /pricing/i,
-  // /cost/i,
+  /suggest/i,
+  /alternative(s)? to/i,
+  /\bvs\b|\bversus\b/i,
+  /comparison/i,
+  /review(s)?/i,
+  /best/i,
+  /top\s?\d+/i,
+
+  // Commercial intent
+  /pricing/i,
+  /price(s)?/i,
+  /cost/i,
+  /budget/i,
+  /licen[cs]e/i,
+  /subscription/i,
+  /SaaS/i,
+
+  // Sales process signals
+  /demo/i,
+  /trial/i,
+  /RFP/i,
+  /RFQ/i,
+  /business case/i,
+  /vendor(s)?/i,
+  /provider(s)?/i,
 ];
 
 const MEDIUM_INTENT_PATTERNS = [
@@ -41,8 +63,8 @@ export function calculateIntent(text: string): IntentLevel {
 }
 
 export function matchesKeyword(text: string, keyword: string): boolean {
-  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`\\b${escaped}\\b`, "i");
   return regex.test(text);
 }
 
