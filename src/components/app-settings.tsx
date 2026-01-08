@@ -1414,9 +1414,9 @@ function RedditAuthConfig() {
         <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
         <AlertTitle className="text-blue-700 dark:text-blue-400 mb-2">Configuration Update</AlertTitle>
         <AlertDescription>
-          For desktop capability (OAuth2), please ensure your Reddit App is set to <strong>"installed app"</strong> type.
+          For optimal compatibility, please ensure your Reddit App is set to <strong>"web app"</strong> type.
           <br />
-          Set Redirect URI to: <code className="bg-muted px-1 rounded">http://localhost:8080</code>
+          Set Redirect URI to: <code className="bg-muted px-1 rounded">http://localhost:8989</code>
         </AlertDescription>
       </Alert>
 
@@ -1497,7 +1497,8 @@ function RedditAuthConfig() {
                   toast({ title: "Opening Browser...", description: "Please log in on Reddit." });
                   await invoke("start_reddit_auth_flow_command");
                   toast({ title: "Success", description: "Account connected successfully!" });
-                  loadConfig(); // Reload to see connected status
+                  await loadConfig(); // Reload to see connected status
+                  setConfig((prev: any) => ({ ...prev, reddit_refresh_token: "CONNECTED" })); // Force optimistic UI update
                 } catch (e: any) {
                   toast({ title: "Authentication Failed", description: e.toString(), variant: "destructive" });
                 }

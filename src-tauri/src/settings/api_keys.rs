@@ -244,6 +244,7 @@ impl ConfigDirs {
         let toml_content = fs::read_to_string(config_path)?;
 
         // Try parsing; on failure, return the error instead of panicking
+        println!("TOML content read: {}", toml_content);
         let app_config: AppConfig = toml::from_str(&toml_content)?;
 
         Ok(app_config)
