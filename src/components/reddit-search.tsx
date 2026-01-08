@@ -883,7 +883,13 @@ export function RedditSearch({
           {/* Results List - Redesigned to be dense and sleek */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden bg-background/30 p-3 scrollbar-thin scrollbar-thumb-border/20 scrollbar-track-transparent">
             {paginatedResults.length > 0 ? (
-              <div className={`grid grid-cols-${gridColumns} gap-3`}>
+              <div className={`grid gap-3 ${
+                gridColumns === 1 ? 'grid-cols-1' :
+                gridColumns === 2 ? 'grid-cols-1 md:grid-cols-2' :
+                gridColumns === 3 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
+                gridColumns === 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
+                'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
+              }`}>
                 {paginatedResults.map((result) => (
                   <div
                     key={result.id}
