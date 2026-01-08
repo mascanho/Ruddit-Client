@@ -140,7 +140,7 @@ const HighlightedText = ({
 
   // Create regex that matches whole phrases, sorted by length to prioritize longer matches
   const escapeRegexString = (str: string) => {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   };
   const escapedKeywords = allKeywords.map((kw) => escapeRegexString(kw));
   const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
@@ -154,7 +154,7 @@ const HighlightedText = ({
     matches.push({
       keyword: match[0].toLowerCase(),
       start: match.index,
-      end: match.index + match[0].length
+      end: match.index + match[0].length,
     });
     regex.lastIndex = match.index + 1; // Prevent infinite loops with overlapping matches
   }
@@ -185,7 +185,7 @@ const HighlightedText = ({
           className={`${className} text-current px-0.5 rounded-sm`}
         >
           {matchedText}
-        </mark>
+        </mark>,
       );
     } else {
       parts.push(matchedText);
@@ -233,9 +233,13 @@ export function AutomationTab() {
   );
   const [comments, setComments] = useState<Message[]>([]);
   const [sortTypeForComments, setSortTypeForComments] = useState("best");
-  const [selectedPostIds, setSelectedPostIds] = useState<Set<number>>(new Set());
+  const [selectedPostIds, setSelectedPostIds] = useState<Set<number>>(
+    new Set(),
+  );
   const [isSelectedModalOpen, setIsSelectedModalOpen] = useState(false);
-  const [generatedReplies, setGeneratedReplies] = useState<Map<number, string>>(new Map());
+  const [generatedReplies, setGeneratedReplies] = useState<Map<number, string>>(
+    new Map(),
+  );
   const [generatingForId, setGeneratingForId] = useState<number | null>(null);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
   const [bulkProgress, setBulkProgress] = useState(0);
@@ -264,7 +268,7 @@ export function AutomationTab() {
 
   // Function to escape special regex characters and handle multi-word keywords properly
   const escapeRegexString = (str: string) => {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   };
 
   // Function to check if post should be filtered out by blacklist
@@ -290,7 +294,7 @@ export function AutomationTab() {
 
     // Check for individual word matches
     const wordMatch = blacklistKeywords.some((keyword) =>
-      wordsToCheck.some(word => word === keyword.toLowerCase()),
+      wordsToCheck.some((word) => word === keyword.toLowerCase()),
     );
 
     return exactMatch || wordMatch;
@@ -300,7 +304,7 @@ export function AutomationTab() {
     let postsToProcess = [...foundPosts];
 
     // Filter out blacklisted posts
-    postsToProcess = postsToProcess.filter(post => !isPostBlacklisted(post));
+    postsToProcess = postsToProcess.filter((post) => !isPostBlacklisted(post));
 
     if (searchQuery.trim() !== "") {
       // Check if search query matches any monitored keywords exactly
@@ -309,22 +313,24 @@ export function AutomationTab() {
         ...(settings.brandKeywords || []),
         ...(settings.competitorKeywords || []),
         ...(settings.monitoredSubreddits || []),
-        ...(settings.monitoredUsernames || [])
+        ...(settings.monitoredUsernames || []),
       ];
 
       const isExactKeywordMatch = allMonitoringKeywords.some(
-        keyword => searchQuery.toLowerCase() === keyword.toLowerCase()
+        (keyword) => searchQuery.toLowerCase() === keyword.toLowerCase(),
       );
 
       if (isExactKeywordMatch) {
         // For exact keyword matches, filter posts that contain this exact keyword/phrase
-        postsToProcess = postsToProcess.filter(post => {
+        postsToProcess = postsToProcess.filter((post) => {
           const searchText = [
             post.title || "",
             post.selftext || "",
             post.subreddit || "",
-            post.author || ""
-          ].join(" ").toLowerCase();
+            post.author || "",
+          ]
+            .join(" ")
+            .toLowerCase();
 
           return searchText.includes(searchQuery.toLowerCase());
         });
@@ -339,7 +345,9 @@ export function AutomationTab() {
       }
 
       // Apply blacklist filter again to search results
-      postsToProcess = postsToProcess.filter(post => !isPostBlacklisted(post));
+      postsToProcess = postsToProcess.filter(
+        (post) => !isPostBlacklisted(post),
+      );
     }
 
     postsToProcess.sort((a, b) => {
@@ -464,19 +472,19 @@ export function AutomationTab() {
     if (allSelected) {
       // Deselect all visible
       const newSelected = new Set(selectedPostIds);
-      allVisibleIds.forEach(id => newSelected.delete(id));
+      allVisibleIds.forEach((id) => newSelected.delete(id));
       setSelectedPostIds(newSelected);
     } else {
       // Select all visible
       const newSelected = new Set(selectedPostIds);
-      allVisibleIds.forEach(id => newSelected.add(id));
+      allVisibleIds.forEach((id) => newSelected.add(id));
       setSelectedPostIds(newSelected);
     }
   };
 
   const handleBulkAddToTracking = async () => {
     const postsToProcess = filteredAndSortedPosts.filter((p) =>
-      selectedPostIds.has(p.id)
+      selectedPostIds.has(p.id),
     );
     if (postsToProcess.length === 0) return;
 
@@ -495,8 +503,8 @@ export function AutomationTab() {
       toast.info("Selected posts are already being tracked");
     }
 
-    // Optional: Clear selection after action? 
-    // setSelectedPostIds(new Set()); 
+    // Optional: Clear selection after action?
+    // setSelectedPostIds(new Set());
     // Keeping selection might be better UX if user wants to do something else, but here logic implies done.
     setSelectedPostIds(new Set());
   };
@@ -508,7 +516,7 @@ export function AutomationTab() {
         postTitle: post.title,
         postBody: post.selftext || "",
       });
-      setGeneratedReplies(prev => new Map(prev).set(post.id, reply));
+      setGeneratedReplies((prev) => new Map(prev).set(post.id, reply));
       toast.success("Reply generated");
     } catch (e: any) {
       toast.error(`Failed to generate reply: ${e}`);
@@ -518,7 +526,7 @@ export function AutomationTab() {
   };
 
   const handleBulkGenerateReplies = async () => {
-    const postsToGenerate = foundPosts.filter(p => selectedPostIds.has(p.id));
+    const postsToGenerate = foundPosts.filter((p) => selectedPostIds.has(p.id));
     if (postsToGenerate.length === 0) return;
 
     setIsBulkGenerating(true);
@@ -535,7 +543,7 @@ export function AutomationTab() {
           postTitle: post.title,
           postBody: post.selftext || "",
         });
-        setGeneratedReplies(prev => new Map(prev).set(post.id, reply));
+        setGeneratedReplies((prev) => new Map(prev).set(post.id, reply));
         successCount++;
       } catch (e: any) {
         console.error(`Failed to generate reply for post ${post.id}:`, e);
@@ -544,7 +552,7 @@ export function AutomationTab() {
 
       // Small delay to avoid rate limiting
       if (i < postsToGenerate.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
 
@@ -589,10 +597,10 @@ export function AutomationTab() {
 
   const noKeywords =
     (settings.brandKeywords?.length || 0) +
-    (settings.competitorKeywords?.length || 0) +
-    (settings.monitoredKeywords?.length || 0) +
-    (settings.monitoredSubreddits?.length || 0) +
-    (settings.blacklistKeywords?.length || 0) ===
+      (settings.competitorKeywords?.length || 0) +
+      (settings.monitoredKeywords?.length || 0) +
+      (settings.monitoredSubreddits?.length || 0) +
+      (settings.blacklistKeywords?.length || 0) ===
     0;
 
   const keywordCategories = [
@@ -889,7 +897,9 @@ export function AutomationTab() {
                         <Checkbox
                           checked={
                             filteredAndSortedPosts.length > 0 &&
-                            filteredAndSortedPosts.every((p) => selectedPostIds.has(p.id))
+                            filteredAndSortedPosts.every((p) =>
+                              selectedPostIds.has(p.id),
+                            )
                           }
                           onCheckedChange={toggleAllPosts}
                           aria-label="Select all"
@@ -1063,8 +1073,17 @@ export function AutomationTab() {
 
       <Dialog open={isSelectedModalOpen} onOpenChange={setIsSelectedModalOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Selected Items ({selectedPostIds.size})</DialogTitle>
+          <DialogHeader className="flex">
+            <div className="flex space-x-3">
+              <DialogTitle>Selected Items ({selectedPostIds.size})</DialogTitle>
+              <DialogTitle>
+                {generatedReplies.size > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    {generatedReplies.size} / {selectedPostIds.size} generated
+                  </span>
+                )}
+              </DialogTitle>
+            </div>
             <DialogDescription>
               Review the items you have selected for tracking.
             </DialogDescription>
@@ -1076,7 +1095,7 @@ export function AutomationTab() {
               <button
                 onClick={handleBulkGenerateReplies}
                 disabled={isBulkGenerating || selectedPostIds.size === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                className="w-full text-center justify-center flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
               >
                 {isBulkGenerating ? (
                   <>
@@ -1090,11 +1109,23 @@ export function AutomationTab() {
                   </>
                 )}
               </button>
-              {generatedReplies.size > 0 && (
-                <span className="text-sm text-muted-foreground">
-                  {generatedReplies.size} / {selectedPostIds.size} generated
-                </span>
-              )}
+              <button
+                onClick={handleBulkGenerateReplies}
+                disabled={isBulkGenerating || selectedPostIds.size === 0}
+                className="w-full flex text-center justify-center items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+              >
+                {isBulkGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Generate All Replies and post
+                  </>
+                )}
+              </button>
             </div>
 
             {/* Progress Bar */}
@@ -1116,9 +1147,12 @@ export function AutomationTab() {
             ) : (
               <div className="divide-y">
                 {foundPosts
-                  .filter(p => selectedPostIds.has(p.id))
-                  .map(post => (
-                    <div key={post.id} className="p-3 flex items-start justify-between gap-3 hover:bg-muted/50 group">
+                  .filter((p) => selectedPostIds.has(p.id))
+                  .map((post) => (
+                    <div
+                      key={post.id}
+                      className="p-3 flex items-start justify-between gap-3 hover:bg-muted/50 group"
+                    >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span
@@ -1144,7 +1178,9 @@ export function AutomationTab() {
                           <div className="mt-2 p-2 bg-muted/30 rounded border border-border/40">
                             <div className="flex items-center gap-2 mb-1">
                               <Sparkles className="h-3 w-3 text-primary" />
-                              <span className="text-[10px] font-bold text-primary uppercase tracking-wider">AI Generated Reply</span>
+                              <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                                AI Generated Reply
+                              </span>
                             </div>
                             <Textarea
                               value={generatedReplies.get(post.id) || ""}
@@ -1159,7 +1195,9 @@ export function AutomationTab() {
                             <button
                               onClick={() => {
                                 // TODO: Implement publish to Reddit
-                                toast.info("Publishing to Reddit (not yet implemented)");
+                                toast.info(
+                                  "Publishing to Reddit (not yet implemented)",
+                                );
                               }}
                               className="mt-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground rounded hover:bg-primary/90"
                             >
