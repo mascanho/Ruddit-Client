@@ -133,6 +133,10 @@ radix-_r_5l_ {
     height: 6px;
 }
 
+.scrollbar-stable {
+    scrollbar-gutter: stable;
+}
+
 .custom-scroll::-webkit-scrollbar-track {
     background: transparent;
 }

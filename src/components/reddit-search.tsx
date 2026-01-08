@@ -831,7 +831,7 @@ export function RedditSearch({
           </div>
 
           {/* Results List - Redesigned to be dense and sleek */}
-          <div className="flex-1 overflow-y-auto custom-scroll bg-background/30 p-2 space-y-1.5">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden bg-background/30 p-2 space-y-0.5 scrollbar-thin scrollbar-thumb-border/20 scrollbar-track-transparent">
             {paginatedResults.length > 0 ? (
               paginatedResults.map((result) => (
                 <div
@@ -933,7 +933,7 @@ export function RedditSearch({
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex flex-col gap-1 shrink-0">
                       <Button
                         variant="outline"
                         size="sm"
