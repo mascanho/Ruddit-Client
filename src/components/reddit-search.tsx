@@ -579,6 +579,11 @@ export function RedditSearch({
     return saved ? JSON.parse(saved) : ["High", "Medium", "Low"];
   });
 
+  const [gridColumns, setGridColumns] = useState<number>(() => {
+    const saved = localStorage.getItem("lastRedditSearchGridColumns");
+    return saved ? parseInt(saved, 10) : 4;
+  });
+
   useEffect(() => {
     localStorage.setItem("lastRedditSearchViewSort", viewSort);
   }, [viewSort]);
@@ -596,6 +601,10 @@ export function RedditSearch({
       JSON.stringify(viewIntentFilters),
     );
   }, [viewIntentFilters]);
+
+  useEffect(() => {
+    localStorage.setItem("lastRedditSearchGridColumns", gridColumns.toString());
+  }, [gridColumns]);
 
   // Filter local results based on viewSort and viewFilters
   const sortedSubreddits = [...subreddits]
@@ -805,24 +814,54 @@ export function RedditSearch({
 
               <div className="w-px h-3 bg-border/60" />
 
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40 mr-1">
-                  Intent:
-                </span>
-                {["High", "Medium", "Low"].map((intent) => (
-                  <button
-                    key={intent}
-                    onClick={() => toggleViewIntentFilter(intent)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
-                      viewIntentFilters.includes(intent)
-                        ? "bg-primary/10 text-primary"
-                        : "opacity-30 hover:opacity-100"
-                    }`}
-                  >
-                    {intent}
-                  </button>
-                ))}
-              </div>
+               <div className="flex items-center gap-1">
+                 <span className="text-[10px] uppercase font-bold tracking-widest opacity-40 mr-1">
+                   Intent:
+                 </span>
+                 {["High", "Medium", "Low"].map((intent) => (
+                   <button
+                     key={intent}
+                     onClick={() => toggleViewIntentFilter(intent)}
+                     className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
+                       viewIntentFilters.includes(intent)
+                         ? "bg-primary/10 text-primary"
+                         : "opacity-30 hover:opacity-100"
+                     }`}
+                   >
+                     {intent}
+                   </button>
+                 ))}
+               </div>
+
+               <div className="w-px h-3 bg-border/60" />
+
+               <div className="flex items-center gap-1">
+                 <span className="text-[10px] uppercase font-bold tracking-widest opacity-40 mr-1">
+                   Layout:
+                 </span>
+                 <DropdownMenu>
+                   <DropdownMenuTrigger asChild>
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       className="h-6 px-2 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10 transition-all border border-primary/20"
+                     >
+                       {gridColumns} Columns
+                     </Button>
+                   </DropdownMenuTrigger>
+                   <DropdownMenuContent align="end">
+                     {[1, 2, 3, 4, 5].map((cols) => (
+                       <DropdownMenuItem
+                         key={cols}
+                         className="text-xs"
+                         onClick={() => setGridColumns(cols)}
+                       >
+                         {cols} {cols === 1 ? 'Column' : 'Columns'}
+                       </DropdownMenuItem>
+                     ))}
+                   </DropdownMenuContent>
+                 </DropdownMenu>
+               </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -844,7 +883,7 @@ export function RedditSearch({
           {/* Results List - Redesigned to be dense and sleek */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden bg-background/30 p-3 scrollbar-thin scrollbar-thumb-border/20 scrollbar-track-transparent">
             {paginatedResults.length > 0 ? (
-              <div className="grid grid-cols-1 xl:grid-cols-4 gap-3">
+              <div className={`grid grid-cols-${gridColumns} gap-3`}>
                 {paginatedResults.map((result) => (
                   <div
                     key={result.id}
