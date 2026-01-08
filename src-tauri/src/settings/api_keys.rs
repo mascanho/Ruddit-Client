@@ -67,6 +67,13 @@ pub struct ApiKeys {
     #[serde(default)]
     #[serde(alias = "REDDIT_PASSWORD")]
     pub reddit_password: String,
+
+    #[serde(default)]
+    #[serde(alias = "REDDIT_REFRESH_TOKEN")]
+    pub reddit_refresh_token: String,
+    #[serde(default)]
+    #[serde(alias = "REDDIT_ACCESS_TOKEN")]
+    pub reddit_access_token: String,
 }
 
 #[derive(Debug)]
@@ -103,6 +110,8 @@ impl Default for ApiKeys {
             match_keyword: "".to_string(),
             reddit_username: "".to_string(),
             reddit_password: "".to_string(),
+            reddit_refresh_token: "".to_string(),
+            reddit_access_token: "".to_string(),
         }
     }
 }

@@ -32,6 +32,7 @@ import {
   Radar,
   UserCog,
   Sparkles,
+  AlertCircle,
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +40,7 @@ import { toast as sonnerToast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAppSettings } from "@/store/settings-store";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function AppSettingsDialog({
   open,
@@ -1045,63 +1047,63 @@ export function AppSettingsDialog({
                           No usernames added yet
                         </p>
                       )}
-                     </div>
-                   </div>
+                    </div>
+                  </div>
 
-                   {/* Blacklist Keywords */}
-                   <div>
-                     <Label className="text-base font-semibold text-red-500">
-                       Blacklist Keywords
-                     </Label>
-                     <p className="text-sm text-muted-foreground mb-3">
-                       Filter out posts containing these keywords from automation results
-                     </p>
-                     <div className="flex gap-2 mb-3">
-                       <Input
-                         placeholder="e.g., spam, nsfw, off-topic"
-                         value={newBlacklistKeyword}
-                         onChange={(e) =>
-                           setNewBlacklistKeyword(e.target.value)
-                         }
-                         onKeyDown={(e) =>
-                           e.key === "Enter" && addBlacklistKeyword()
-                         }
-                       />
-                       <Button
-                         onClick={addBlacklistKeyword}
-                         size="icon"
-                         variant="default"
-                         className="bg-red-600 hover:bg-red-700"
-                       >
-                         <Plus className="h-4 w-4" />
-                       </Button>
-                     </div>
-                     <div className="flex flex-wrap gap-2">
-                       {(settings.blacklistKeywords || []).map((keyword) => (
-                         <Badge
-                           key={keyword}
-                           className="px-3 py-1.5 bg-red-100 text-red-800 hover:bg-red-200"
-                         >
-                           {keyword}
-                           <Button
-                             variant="ghost"
-                             size="icon"
-                             className="h-4 w-4 ml-2 hover:bg-transparent text-red-800"
-                             onClick={() => removeBlacklistKeyword(keyword)}
-                           >
-                             <X className="h-3 w-3" />
-                           </Button>
-                         </Badge>
-                       ))}
-                       {(settings.blacklistKeywords || []).length === 0 && (
-                         <p className="text-sm text-muted-foreground">
-                           No blacklist keywords added yet
-                         </p>
-                       )}
-                     </div>
-                   </div>
+                  {/* Blacklist Keywords */}
+                  <div>
+                    <Label className="text-base font-semibold text-red-500">
+                      Blacklist Keywords
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Filter out posts containing these keywords from automation results
+                    </p>
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        placeholder="e.g., spam, nsfw, off-topic"
+                        value={newBlacklistKeyword}
+                        onChange={(e) =>
+                          setNewBlacklistKeyword(e.target.value)
+                        }
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && addBlacklistKeyword()
+                        }
+                      />
+                      <Button
+                        onClick={addBlacklistKeyword}
+                        size="icon"
+                        variant="default"
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(settings.blacklistKeywords || []).map((keyword) => (
+                        <Badge
+                          key={keyword}
+                          className="px-3 py-1.5 bg-red-100 text-red-800 hover:bg-red-200"
+                        >
+                          {keyword}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 ml-2 hover:bg-transparent text-red-800"
+                            onClick={() => removeBlacklistKeyword(keyword)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ))}
+                      {(settings.blacklistKeywords || []).length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No blacklist keywords added yet
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-                   <div className="bg-muted/50 p-4 rounded-lg">
+                  <div className="bg-muted/50 p-4 rounded-lg">
                     <p className="text-sm text-muted-foreground">
                       💡 <strong>Tip:</strong> Use the search feature on the
                       main page to discover new subreddits and keywords based on
@@ -1390,7 +1392,7 @@ function RedditAuthConfig() {
       console.error("Failed to save Reddit config:", error);
       toast({
         title: "Error",
-        description: "Failed to save Reddit configuration.",
+        description: "Failed to save Reddit configuration. Check your inputs.",
         variant: "destructive",
       });
     } finally {
@@ -1408,13 +1410,23 @@ function RedditAuthConfig() {
 
   return (
     <Card className="p-4 space-y-4">
+      <Alert className="bg-blue-500/15 border-blue-500/20 text-blue-700 dark:text-blue-400">
+        <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <AlertTitle className="text-blue-700 dark:text-blue-400 mb-2">Configuration Update</AlertTitle>
+        <AlertDescription>
+          For desktop capability (OAuth2), please ensure your Reddit App is set to <strong>"installed app"</strong> type.
+          <br />
+          Set Redirect URI to: <code className="bg-muted px-1 rounded">http://localhost:8080</code>
+        </AlertDescription>
+      </Alert>
+
       <div className="space-y-4">
         <div>
           <Label className="text-base font-semibold">
             Reddit API Credentials
           </Label>
           <p className="text-sm text-muted-foreground mb-3">
-            Your Reddit App (Script) credentials from{" "}
+            Your Reddit App credentials from{" "}
             <a
               href="https://www.reddit.com/prefs/apps"
               target="_blank"
@@ -1434,7 +1446,7 @@ function RedditAuthConfig() {
                 onChange={(e) =>
                   setConfig({ ...config, reddit_api_id: e.target.value })
                 }
-                placeholder="Client ID (the string under 'personal use script')"
+                placeholder="Client ID"
               />
             </div>
             <div className="space-y-1">
@@ -1446,57 +1458,64 @@ function RedditAuthConfig() {
                 onChange={(e) =>
                   setConfig({ ...config, reddit_api_secret: e.target.value })
                 }
-                placeholder="Client Secret"
+                placeholder="Client Secret (Empty for installed apps if not provided)"
               />
             </div>
+            {/* Save basic credentials first before auth flow */}
+            <Button onClick={handleSave} disabled={isSaving} className="w-full" variant="secondary">
+              {isSaving ? "Saving..." : "Update Credentials"}
+            </Button>
           </div>
         </div>
 
         <div>
           <Label className="text-base font-semibold">
-            User Account (for Commenting)
+            Account Authorization
           </Label>
           <p className="text-sm text-muted-foreground mb-3">
-            Necessary if you want to reply to threads directly from Atalaia.
+            Authorize Atalaia to access your Reddit account for commenting.
           </p>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="reddit_user">Username</Label>
-              <Input
-                id="reddit_user"
-                value={config?.reddit_username || ""}
-                onChange={(e) =>
-                  setConfig({ ...config, reddit_username: e.target.value })
+
+          <div className="flex flex-col gap-2">
+            {config?.reddit_refresh_token ? (
+              <div className="flex items-center gap-2 p-2 bg-green-500/10 text-green-600 rounded-md border border-green-500/20">
+                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                <span className="text-sm font-medium">Account Connected</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 p-2 bg-yellow-500/10 text-yellow-600 rounded-md border border-yellow-500/20">
+                <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                <span className="text-sm font-medium">Not Connected</span>
+              </div>
+            )}
+
+            <Button
+              onClick={async () => {
+                // Save first to ensure backend has latest ID/Secret
+                await handleSave();
+                try {
+                  toast({ title: "Opening Browser...", description: "Please log in on Reddit." });
+                  await invoke("start_reddit_auth_flow_command");
+                  toast({ title: "Success", description: "Account connected successfully!" });
+                  loadConfig(); // Reload to see connected status
+                } catch (e: any) {
+                  toast({ title: "Authentication Failed", description: e.toString(), variant: "destructive" });
                 }
-                placeholder="Reddit Username"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="reddit_pass">Password</Label>
-              <Input
-                id="reddit_pass"
-                type="password"
-                value={config?.reddit_password || ""}
-                onChange={(e) =>
-                  setConfig({ ...config, reddit_password: e.target.value })
-                }
-                placeholder="Reddit Password"
-              />
-            </div>
+              }}
+              className="w-full"
+            >
+              {config?.reddit_refresh_token ? "Reconnect Account" : "Login with Reddit"}
+            </Button>
           </div>
         </div>
 
-        <Button onClick={handleSave} disabled={isSaving} className="w-full">
-          {isSaving ? "Saving..." : "Save Credentials"}
-        </Button>
-
         <div className="bg-muted/50 p-4 rounded-lg">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Note: These credentials are saved locally in your `settings.toml`
-            and are used to obtain an OAuth token for commenting.
+            Note: This uses OAuth2 Authorization Code flow. Your password is never stored in this app.
           </p>
         </div>
       </div>
     </Card>
   );
 }
+

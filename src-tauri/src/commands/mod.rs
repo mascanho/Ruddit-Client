@@ -317,14 +317,18 @@ pub async fn submit_reddit_comment_command(
     let config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
     let api_keys = config.api_keys;
 
-    let token = search::get_user_access_token(
-        &api_keys.reddit_api_id,
-        &api_keys.reddit_api_secret,
-        &api_keys.reddit_username,
-        &api_keys.reddit_password,
-    )
-    .await
-    .map_err(|e| e.to_string())?;
+    let token = if !api_keys.reddit_refresh_token.is_empty() {
+        crate::models::auth::refresh_access_token(
+            &api_keys.reddit_api_id,
+            &api_keys.reddit_api_secret,
+            &api_keys.reddit_refresh_token,
+        )
+        .await
+        .map_err(|e| e.to_string())?
+    } else {
+        // Fallback or Error
+        return Err("Please login with Reddit in Settings first.".to_string());
+    };
 
     search::post_comment(&token, &parent_id, &text)
         .await
@@ -338,4 +342,14 @@ pub async fn ask_gemini_command(question: String) -> Result<String, String> {
     crate::ai::adapter::ask_ai(&question)
         .await
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn start_reddit_auth_flow_command() -> Result<String, String> {
+    let config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
+    crate::models::auth::start_auth_flow(
+        config.api_keys.reddit_api_id,
+        config.api_keys.reddit_api_secret,
+    )
+    .await
 }

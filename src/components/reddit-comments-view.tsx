@@ -318,9 +318,10 @@ export function RedditCommentsView({
           config.reddit_api_id && config.reddit_api_id !== "CHANGE_ME";
         const hasSecret =
           config.reddit_api_secret && config.reddit_api_secret !== "CHANGE_ME";
-        const hasUser = config.reddit_username && config.reddit_username !== "";
-        const hasPass = config.reddit_password && config.reddit_password !== "";
-        setIsConfigured(Boolean(hasId && hasSecret && hasUser && hasPass));
+        const hasRefreshtoken =
+          config.reddit_refresh_token && config.reddit_refresh_token !== "";
+        // We no longer strictly need username/password for the OAuth flow, just the token and client ID
+        setIsConfigured(Boolean(hasId && hasRefreshtoken));
       } catch (e) {
         console.error("Failed to check reddit config:", e);
         setIsConfigured(false);

@@ -50,7 +50,8 @@ async fn main() {
             commands::update_reddit_config_command,
             commands::submit_reddit_comment_command,
             commands::ask_gemini_command,
-            commands::get_gemini_models_command
+            commands::get_gemini_models_command,
+            commands::start_reddit_auth_flow_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
