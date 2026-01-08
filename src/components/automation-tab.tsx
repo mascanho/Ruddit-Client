@@ -20,7 +20,9 @@ import {
   Eye,
   X,
   Sparkles,
+  Loader2,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +58,6 @@ import { toast } from "sonner";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { BulkReplyGenerator } from "./bulk-reply-generator";
 
 // Custom-styled native HTML components
 interface CustomButtonProps {
@@ -236,6 +237,8 @@ export function AutomationTab() {
   const [isSelectedModalOpen, setIsSelectedModalOpen] = useState(false);
   const [generatedReplies, setGeneratedReplies] = useState<Map<number, string>>(new Map());
   const [generatingForId, setGeneratingForId] = useState<number | null>(null);
+  const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState(0);
 
   const trackedPostIds = useMemo(
     () => new Set(subRedditsSaved.map((p) => p.id)),
@@ -511,6 +514,48 @@ export function AutomationTab() {
       toast.error(`Failed to generate reply: ${e}`);
     } finally {
       setGeneratingForId(null);
+    }
+  };
+
+  const handleBulkGenerateReplies = async () => {
+    const postsToGenerate = foundPosts.filter(p => selectedPostIds.has(p.id));
+    if (postsToGenerate.length === 0) return;
+
+    setIsBulkGenerating(true);
+    setBulkProgress(0);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < postsToGenerate.length; i++) {
+      const post = postsToGenerate[i];
+      setBulkProgress(((i + 1) / postsToGenerate.length) * 100);
+
+      try {
+        const reply = await invoke<string>("generate_reply_command", {
+          postTitle: post.title,
+          postBody: post.selftext || "",
+        });
+        setGeneratedReplies(prev => new Map(prev).set(post.id, reply));
+        successCount++;
+      } catch (e: any) {
+        console.error(`Failed to generate reply for post ${post.id}:`, e);
+        failCount++;
+      }
+
+      // Small delay to avoid rate limiting
+      if (i < postsToGenerate.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    setIsBulkGenerating(false);
+    setBulkProgress(100);
+
+    if (successCount > 0) {
+      toast.success(`Generated ${successCount} replies`);
+    }
+    if (failCount > 0) {
+      toast.error(`Failed to generate ${failCount} replies`);
     }
   };
 
@@ -807,18 +852,6 @@ export function AutomationTab() {
                     <Eye className="h-3 w-3" />
                     View ({selectedPostIds.size})
                   </button>
-                  <BulkReplyGenerator
-                    posts={filteredAndSortedPosts.filter(p => selectedPostIds.has(p.id))}
-                    onRepliesGenerated={(replies) => {
-                      setGeneratedReplies(replies);
-                    }}
-                    trigger={
-                      <button className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-purple-500/20 text-purple-500 hover:bg-purple-500/10 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4">
-                        <Sparkles className="h-3 w-3" />
-                        Generate Replies ({selectedPostIds.size})
-                      </button>
-                    }
-                  />
                   <button
                     onClick={handleBulkAddToTracking}
                     className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
@@ -1036,6 +1069,45 @@ export function AutomationTab() {
               Review the items you have selected for tracking.
             </DialogDescription>
           </DialogHeader>
+
+          {/* Bulk Actions */}
+          <div className="space-y-3 pb-3 border-b">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleBulkGenerateReplies}
+                disabled={isBulkGenerating || selectedPostIds.size === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+              >
+                {isBulkGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Generate All Replies
+                  </>
+                )}
+              </button>
+              {generatedReplies.size > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {generatedReplies.size} / {selectedPostIds.size} generated
+                </span>
+              )}
+            </div>
+
+            {/* Progress Bar */}
+            {isBulkGenerating && (
+              <div className="space-y-1">
+                <Progress value={bulkProgress} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                  Processing {Math.round(bulkProgress)}%
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="flex-1 overflow-y-auto custom-scroll border rounded-md">
             {selectedPostIds.size === 0 ? (
               <div className="p-8 text-center text-muted-foreground text-sm">
