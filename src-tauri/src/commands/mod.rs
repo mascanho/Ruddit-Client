@@ -302,8 +302,22 @@ pub async fn get_gemini_models_command(api_key: String) -> Result<Vec<String>, S
 }
 
 #[tauri::command]
-pub fn update_reddit_config_command(new_api_keys: api_keys::ApiKeys) -> Result<(), String> {
+pub fn update_reddit_config_command(mut new_api_keys: api_keys::ApiKeys) -> Result<(), String> {
     let mut config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
+
+    // Trim whitespace from credentials
+    new_api_keys.reddit_api_id = new_api_keys.reddit_api_id.trim().to_string();
+    new_api_keys.reddit_api_secret = new_api_keys.reddit_api_secret.trim().to_string();
+
+    // Check if critical credentials changed
+    if config.api_keys.reddit_api_id != new_api_keys.reddit_api_id
+        || config.api_keys.reddit_api_secret != new_api_keys.reddit_api_secret
+    {
+        println!("Reddit App Credentials changed, clearing old auth tokens.");
+        new_api_keys.reddit_access_token = String::new();
+        new_api_keys.reddit_refresh_token = String::new();
+    }
+
     config.api_keys = new_api_keys;
     api_keys::ConfigDirs::save_config(&config).map_err(|e| e.to_string())?;
     Ok(())

@@ -857,7 +857,7 @@ export function RedditTable({
               <col className="w-[30px]" />
               <col className="w-[85px]" />
               <col />
-              <col className="w-[100px]" />
+              <col className="w-[140px]" />
               <col className="w-[60px]" />
               <col className="w-[40px]" />
               <col className="w-[95px]" />
@@ -915,7 +915,7 @@ export function RedditTable({
                   Status
                 </TableHead>
                 <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  Own
+                  Owner
                 </TableHead>
                 <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   Op
@@ -954,7 +954,7 @@ export function RedditTable({
                           variant="ghost"
                           size="icon"
                           onClick={() => toggleRowExpansion(post.id.toString())}
-                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-none flex items-center justify-center"
                         >
                           <ChevronDown
                             className={`h-3 w-3 transition-transform duration-300 ${expandedRows.has(post.id.toString())
@@ -1022,7 +1022,7 @@ export function RedditTable({
                           <DropdownMenuTrigger asChild>
                             <Badge
                               variant="outline"
-                              className="font-mono text-[9px] py-0 h-4 px-1.5 cursor-pointer hover:bg-accent/50 selection:bg-transparent bg-background/50 border-muted-foreground/10 truncate max-w-full block"
+                              className="font-mono text-[9px] py-0 h-4 px-2 cursor-pointer hover:bg-accent/50 selection:bg-transparent bg-background/50 border-muted-foreground/10 truncate max-w-full block"
                               title={`r/${post.subreddit}`}
                             >
                               r/{post.subreddit}
@@ -1058,7 +1058,7 @@ export function RedditTable({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 hover:bg-transparent"
+                          className="h-6 w-6 rounded-full hover:bg-transparent shadow-none flex items-center justify-center"
                           onClick={() =>
                             handleEngagedToggle(post.id, post.engaged !== 1)
                           }
@@ -1140,7 +1140,7 @@ export function RedditTable({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 opacity-40 group-hover:opacity-100"
+                              className="h-6 w-6 rounded-full opacity-40 group-hover:opacity-100 shadow-none flex items-center justify-center"
                             >
                               <MoreVertical className="h-3 w-3" />
                             </Button>
@@ -1184,7 +1184,7 @@ export function RedditTable({
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-5 w-5"
+                                      className="h-5 w-5 rounded-full shadow-none flex items-center justify-center"
                                       onClick={() => openUrl(post.permalink)}
                                     >
                                       <ExternalLink className="h-3 w-3" />

@@ -159,7 +159,7 @@ async fn exchange_code_for_token(client_id: &str, client_secret: &str, code: &st
 
 pub async fn refresh_access_token(client_id: &str, client_secret: &str, refresh_token: &str) -> Result<String, String> {
     let client = Client::new();
-    let credentials = format!("{}:{}", client_id, client_secret);
+    let credentials = format!("{}:{}", client_id.trim(), client_secret.trim());
     let encoded = general_purpose::STANDARD.encode(credentials);
 
     let params = [
@@ -176,8 +176,20 @@ pub async fn refresh_access_token(client_id: &str, client_secret: &str, refresh_
         .map_err(|e| e.to_string())?;
 
     if !response.status().is_success() {
+        let status = response.status();
         let error_text = response.text().await.unwrap_or_default();
-        return Err(format!("Token refresh failed: {}", error_text));
+        
+        // If Unauthorized (401), it means the refresh token is invalid or credentials changed.
+        // We should clear the tokens to force a re-login.
+        if status == reqwest::StatusCode::UNAUTHORIZED {
+            let mut config = ConfigDirs::read_config().map_err(|e| e.to_string())?;
+            config.api_keys.reddit_access_token = String::new();
+            config.api_keys.reddit_refresh_token = String::new();
+            ConfigDirs::save_config(&config).map_err(|e| e.to_string())?;
+            return Err("Session expired or credentials changed. Please reconnect your Reddit account in Settings.".to_string());
+        }
+
+        return Err(format!("Token refresh failed ({}): {}", status, error_text));
     }
 
     let token_res: TokenResponse = response.json().await.map_err(|e| e.to_string())?;
