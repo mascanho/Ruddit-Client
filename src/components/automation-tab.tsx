@@ -219,16 +219,26 @@ export function AutomationTab() {
       .join(" ")
       .toLowerCase();
 
-    return blacklistKeywords.some((keyword) =>
+    const wordsToCheck = textToCheck.split(/\s+/); // Split into individual words
+    
+    // Check for exact keyword matches in the full text
+    const exactMatch = blacklistKeywords.some((keyword) =>
       textToCheck.includes(keyword.toLowerCase()),
     );
+    
+    // Check for individual word matches
+    const wordMatch = blacklistKeywords.some((keyword) =>
+      wordsToCheck.some(word => word === keyword.toLowerCase()),
+    );
+
+    return exactMatch || wordMatch;
   };
 
   const filteredAndSortedPosts = useMemo(() => {
     let postsToProcess = [...foundPosts];
 
     // Filter out blacklisted posts
-    postsToProcess = postsToProcess.filter((post) => !isPostBlacklisted(post));
+    postsToProcess = postsToProcess.filter(post => !isPostBlacklisted(post));
 
     if (searchQuery.trim() !== "") {
       const fuse = new Fuse(postsToProcess, {
@@ -237,6 +247,9 @@ export function AutomationTab() {
         includeScore: true,
       });
       postsToProcess = fuse.search(searchQuery).map((result) => result.item);
+      
+      // Apply blacklist filter again to search results
+      postsToProcess = postsToProcess.filter(post => !isPostBlacklisted(post));
     }
 
     postsToProcess.sort((a, b) => {
