@@ -209,16 +209,18 @@ export function AutomationTab() {
   const isPostBlacklisted = (post: any) => {
     const blacklistKeywords = settings.blacklistKeywords || [];
     if (blacklistKeywords.length === 0) return false;
-    
+
     const textToCheck = [
       post.title || "",
       post.selftext || "",
       post.subreddit || "",
-      post.author || ""
-    ].join(" ").toLowerCase();
-    
-    return blacklistKeywords.some(keyword => 
-      textToCheck.includes(keyword.toLowerCase())
+      post.author || "",
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return blacklistKeywords.some((keyword) =>
+      textToCheck.includes(keyword.toLowerCase()),
     );
   };
 
@@ -226,7 +228,7 @@ export function AutomationTab() {
     let postsToProcess = [...foundPosts];
 
     // Filter out blacklisted posts
-    postsToProcess = postsToProcess.filter(post => !isPostBlacklisted(post));
+    postsToProcess = postsToProcess.filter((post) => !isPostBlacklisted(post));
 
     if (searchQuery.trim() !== "") {
       const fuse = new Fuse(postsToProcess, {
@@ -361,7 +363,8 @@ export function AutomationTab() {
     (settings.brandKeywords?.length || 0) +
     (settings.competitorKeywords?.length || 0) +
     (settings.monitoredKeywords?.length || 0) +
-    (settings.monitoredSubreddits?.length || 0) ===
+    (settings.monitoredSubreddits?.length || 0) +
+    (settings.blacklistKeywords?.length || 0) ===
     0;
 
   const keywordCategories = [
@@ -385,6 +388,11 @@ export function AutomationTab() {
       title: "Monitored Subreddits",
       keywords: settings.monitoredSubreddits.map((s) => `r/${s}`),
       className: "bg-purple-500/10 text-purple-400 border border-purple-500/20",
+    },
+    {
+      title: "Blacklist",
+      keywords: settings.blacklistKeywords,
+      className: "bg-red-500/10 text-red-400 border border-red-500/20",
     },
   ];
 
@@ -425,8 +433,6 @@ export function AutomationTab() {
   return (
     <TooltipProvider>
       <div className="p-1 space-y-1.5 bg-background text-foreground flex-1 min-h-0 flex flex-col">
-
-
         {/* === Main Control Panel === */}
         <div className="bg-card rounded-lg border border-border/60 shadow-sm overflow-hidden">
           <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-muted/20">
@@ -567,24 +573,24 @@ export function AutomationTab() {
                   <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] opacity-10 pt-16">
                     AWAITING TELEMETRY
                   </div>
-                 ) : (
-                   [...logs].reverse().map((log) => (
-                     <div
-                       key={log.id}
-                       className="flex gap-2 items-start opacity-80 hover:opacity-100 transition-opacity"
-                     >
-                       <span className="text-muted-foreground/40 shrink-0">
-                         [{moment(log.timestamp).format("HH:mm:ss")}]
-                       </span>
-                       <span
-                         className={`flex-1 leading-relaxed ${log.type === "error" ? "text-red-500 font-bold" : log.type === "success" ? "text-green-500" : log.type === "warning" ? "text-yellow-500" : "text-foreground/70"}`}
-                       >
-                         <span className="opacity-40 mr-1">{">"}</span>
-                         {log.message}
-                       </span>
-                     </div>
-                   ))
-                 )}
+                ) : (
+                  [...logs].reverse().map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex gap-2 items-start opacity-80 hover:opacity-100 transition-opacity"
+                    >
+                      <span className="text-muted-foreground/40 shrink-0">
+                        [{moment(log.timestamp).format("HH:mm:ss")}]
+                      </span>
+                      <span
+                        className={`flex-1 leading-relaxed ${log.type === "error" ? "text-red-500 font-bold" : log.type === "success" ? "text-green-500" : log.type === "warning" ? "text-yellow-500" : "text-foreground/70"}`}
+                      >
+                        <span className="opacity-40 mr-1">{">"}</span>
+                        {log.message}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -630,11 +636,11 @@ export function AutomationTab() {
               <div className="overflow-y-auto flex-1 flex flex-col custom-scroll border rounded-none">
                 <table className="w-full text-xs text-left table-fixed rounded-none">
                   <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
-                    <tr className="border-b">
+                    <tr className="border-b font-bold">
                       {["Intent", "Title", "Subreddit"].map((h) => (
                         <th
                           key={h}
-                          className={`p-1.5 text-xs font-medium text-muted-foreground ${h === "Subreddit" ? "w-36" : h === "Intent" ? "w-20" : h === "Title" ? "w-[60%]" : ""}`}
+                          className={`p-1.5 font-bold text-xs  text-muted-foreground ${h === "Subreddit" ? "w-36" : h === "Intent" ? "w-20" : h === "Title" ? "w-[60%]" : ""}`}
                         >
                           {h}
                         </th>
@@ -643,7 +649,7 @@ export function AutomationTab() {
                         className="p-1.5 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground w-32"
                         onClick={handleDateSort}
                       >
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 font-bold">
                           Date
                           {sortConfig.direction === "asc" ? (
                             <ArrowUp className="h-3 w-3" />
