@@ -56,6 +56,7 @@ import { toast } from "sonner";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { BulkReplyGenerator } from "./bulk-reply-generator";
 
 // Custom-styled native HTML components
 interface CustomButtonProps {
@@ -806,6 +807,18 @@ export function AutomationTab() {
                     <Eye className="h-3 w-3" />
                     View ({selectedPostIds.size})
                   </button>
+                  <BulkReplyGenerator
+                    posts={filteredAndSortedPosts.filter(p => selectedPostIds.has(p.id))}
+                    onRepliesGenerated={(replies) => {
+                      setGeneratedReplies(replies);
+                    }}
+                    trigger={
+                      <button className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-purple-500/20 text-purple-500 hover:bg-purple-500/10 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4">
+                        <Sparkles className="h-3 w-3" />
+                        Generate Replies ({selectedPostIds.size})
+                      </button>
+                    }
+                  />
                   <button
                     onClick={handleBulkAddToTracking}
                     className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
