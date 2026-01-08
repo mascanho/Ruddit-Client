@@ -32,6 +32,7 @@ export type AppSettings = {
   brandKeywords: string[];
   competitorKeywords: string[];
   monitoredUsernames: string[];
+  blacklistKeywords: string[];
 };
 
 const defaultSettings: AppSettings = {
@@ -54,6 +55,7 @@ const defaultSettings: AppSettings = {
   brandKeywords: ["ruddit", "myproduct"],
   competitorKeywords: ["competitor1", "competitor2"],
   monitoredUsernames: [],
+  blacklistKeywords: [],
 };
 
 const SETTINGS_STORAGE_KEY = "app-settings";

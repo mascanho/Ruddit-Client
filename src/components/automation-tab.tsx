@@ -205,8 +205,28 @@ export function AutomationTab() {
     { keywords: settings.monitoredKeywords || [], className: "bg-gray-500/30" },
   ];
 
+  // Function to check if post should be filtered out by blacklist
+  const isPostBlacklisted = (post: any) => {
+    const blacklistKeywords = settings.blacklistKeywords || [];
+    if (blacklistKeywords.length === 0) return false;
+    
+    const textToCheck = [
+      post.title || "",
+      post.selftext || "",
+      post.subreddit || "",
+      post.author || ""
+    ].join(" ").toLowerCase();
+    
+    return blacklistKeywords.some(keyword => 
+      textToCheck.includes(keyword.toLowerCase())
+    );
+  };
+
   const filteredAndSortedPosts = useMemo(() => {
     let postsToProcess = [...foundPosts];
+
+    // Filter out blacklisted posts
+    postsToProcess = postsToProcess.filter(post => !isPostBlacklisted(post));
 
     if (searchQuery.trim() !== "") {
       const fuse = new Fuse(postsToProcess, {
@@ -230,7 +250,7 @@ export function AutomationTab() {
     });
 
     return postsToProcess;
-  }, [foundPosts, sortConfig, searchQuery]);
+  }, [foundPosts, sortConfig, searchQuery, settings.blacklistKeywords]);
 
   const handleDateSort = () => {
     setSortConfig((currentConfig) => ({

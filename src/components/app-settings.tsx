@@ -56,6 +56,7 @@ export function AppSettingsDialog({
   const [newBrandKeyword, setNewBrandKeyword] = useState("");
   const [newCompetitorKeyword, setNewCompetitorKeyword] = useState("");
   const [newUsername, setNewUsername] = useState("");
+  const [newBlacklistKeyword, setNewBlacklistKeyword] = useState("");
 
   const handleReset = () => {
     resetSettings();
@@ -231,6 +232,38 @@ export function AppSettingsDialog({
     toast({
       title: "User removed",
       description: `Stopped monitoring user "${username}"`,
+    });
+  };
+
+  const addBlacklistKeyword = () => {
+    if (!newBlacklistKeyword.trim()) return;
+    const cleaned = newBlacklistKeyword.trim().toLowerCase();
+    if ((settings.blacklistKeywords || []).includes(cleaned)) {
+      toast({
+        title: "Already blacklisted",
+        description: `"${cleaned}" is already in your blacklist.`,
+      });
+      return;
+    }
+    updateSettings({
+      blacklistKeywords: [...(settings.blacklistKeywords || []), cleaned],
+    });
+    setNewBlacklistKeyword("");
+    toast({
+      title: "Blacklist keyword added",
+      description: `Posts containing "${cleaned}" will be filtered out`,
+    });
+  };
+
+  const removeBlacklistKeyword = (keyword: string) => {
+    updateSettings({
+      blacklistKeywords: (settings.blacklistKeywords || []).filter(
+        (k) => k !== keyword,
+      ),
+    });
+    toast({
+      title: "Blacklist keyword removed",
+      description: `"${keyword}" removed from blacklist`,
     });
   };
 
@@ -1012,10 +1045,63 @@ export function AppSettingsDialog({
                           No usernames added yet
                         </p>
                       )}
-                    </div>
-                  </div>
+                     </div>
+                   </div>
 
-                  <div className="bg-muted/50 p-4 rounded-lg">
+                   {/* Blacklist Keywords */}
+                   <div>
+                     <Label className="text-base font-semibold text-red-500">
+                       Blacklist Keywords
+                     </Label>
+                     <p className="text-sm text-muted-foreground mb-3">
+                       Filter out posts containing these keywords from automation results
+                     </p>
+                     <div className="flex gap-2 mb-3">
+                       <Input
+                         placeholder="e.g., spam, nsfw, off-topic"
+                         value={newBlacklistKeyword}
+                         onChange={(e) =>
+                           setNewBlacklistKeyword(e.target.value)
+                         }
+                         onKeyDown={(e) =>
+                           e.key === "Enter" && addBlacklistKeyword()
+                         }
+                       />
+                       <Button
+                         onClick={addBlacklistKeyword}
+                         size="icon"
+                         variant="default"
+                         className="bg-red-600 hover:bg-red-700"
+                       >
+                         <Plus className="h-4 w-4" />
+                       </Button>
+                     </div>
+                     <div className="flex flex-wrap gap-2">
+                       {(settings.blacklistKeywords || []).map((keyword) => (
+                         <Badge
+                           key={keyword}
+                           className="px-3 py-1.5 bg-red-100 text-red-800 hover:bg-red-200"
+                         >
+                           {keyword}
+                           <Button
+                             variant="ghost"
+                             size="icon"
+                             className="h-4 w-4 ml-2 hover:bg-transparent text-red-800"
+                             onClick={() => removeBlacklistKeyword(keyword)}
+                           >
+                             <X className="h-3 w-3" />
+                           </Button>
+                         </Badge>
+                       ))}
+                       {(settings.blacklistKeywords || []).length === 0 && (
+                         <p className="text-sm text-muted-foreground">
+                           No blacklist keywords added yet
+                         </p>
+                       )}
+                     </div>
+                   </div>
+
+                   <div className="bg-muted/50 p-4 rounded-lg">
                     <p className="text-sm text-muted-foreground">
                       💡 <strong>Tip:</strong> Use the search feature on the
                       main page to discover new subreddits and keywords based on
