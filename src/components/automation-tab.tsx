@@ -19,6 +19,7 @@ import {
   MessageCircle,
   Eye,
   X,
+  Sparkles,
 } from "lucide-react";
 import {
   Dialog,
@@ -54,6 +55,7 @@ import { getIntentColor } from "@/lib/marketing-utils";
 import { toast } from "sonner";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 
 // Custom-styled native HTML components
 interface CustomButtonProps {
@@ -231,6 +233,8 @@ export function AutomationTab() {
   const [sortTypeForComments, setSortTypeForComments] = useState("best");
   const [selectedPostIds, setSelectedPostIds] = useState<Set<number>>(new Set());
   const [isSelectedModalOpen, setIsSelectedModalOpen] = useState(false);
+  const [generatedReplies, setGeneratedReplies] = useState<Map<number, string>>(new Map());
+  const [generatingForId, setGeneratingForId] = useState<number | null>(null);
 
   const trackedPostIds = useMemo(
     () => new Set(subRedditsSaved.map((p) => p.id)),
@@ -491,6 +495,22 @@ export function AutomationTab() {
     // setSelectedPostIds(new Set()); 
     // Keeping selection might be better UX if user wants to do something else, but here logic implies done.
     setSelectedPostIds(new Set());
+  };
+
+  const handleGenerateReply = async (post: PostDataWrapper) => {
+    setGeneratingForId(post.id);
+    try {
+      const reply = await invoke<string>("generate_reply_command", {
+        postTitle: post.title,
+        postBody: post.selftext || "",
+      });
+      setGeneratedReplies(prev => new Map(prev).set(post.id, reply));
+      toast.success("Reply generated");
+    } catch (e: any) {
+      toast.error(`Failed to generate reply: ${e}`);
+    } finally {
+      setGeneratingForId(null);
+    }
   };
 
   const handleGetComments = async (
@@ -1035,14 +1055,55 @@ export function AutomationTab() {
                         >
                           {post.title}
                         </a>
+                        {generatedReplies.has(post.id) && (
+                          <div className="mt-2 p-2 bg-muted/30 rounded border border-border/40">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Sparkles className="h-3 w-3 text-primary" />
+                              <span className="text-[10px] font-bold text-primary uppercase tracking-wider">AI Generated Reply</span>
+                            </div>
+                            <Textarea
+                              value={generatedReplies.get(post.id) || ""}
+                              onChange={(e) => {
+                                const newReplies = new Map(generatedReplies);
+                                newReplies.set(post.id, e.target.value);
+                                setGeneratedReplies(newReplies);
+                              }}
+                              rows={3}
+                              className="text-xs mt-1 bg-background"
+                            />
+                            <button
+                              onClick={() => {
+                                // TODO: Implement publish to Reddit
+                                toast.info("Publishing to Reddit (not yet implemented)");
+                              }}
+                              className="mt-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground rounded hover:bg-primary/90"
+                            >
+                              Publish Reply
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      <button
-                        onClick={() => togglePostSelection(post.id)}
-                        className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                        title="Remove from selection"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => handleGenerateReply(post)}
+                          disabled={generatingForId === post.id}
+                          className="text-primary hover:text-primary/80 p-1 disabled:opacity-50"
+                          title="Generate AI reply"
+                        >
+                          {generatingForId === post.id ? (
+                            <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => togglePostSelection(post.id)}
+                          className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                          title="Remove from selection"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>

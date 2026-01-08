@@ -367,3 +367,22 @@ pub async fn start_reddit_auth_flow_command() -> Result<String, String> {
     )
     .await
 }
+
+#[tauri::command]
+pub async fn generate_reply_command(post_title: String, post_body: String) -> Result<String, String> {
+    let config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
+    let preamble = if config.api_keys.reply_preamble.trim().is_empty() {
+        "You are a helpful and knowledgeable assistant. Draft a helpful, relevant, and polite reply to the following Reddit post.".to_string()
+    } else {
+        config.api_keys.reply_preamble
+    };
+
+    let full_prompt = format!(
+        "{}\n\nTitle: {}\n\nContent:\n{}",
+        preamble, post_title, post_body
+    );
+
+    crate::ai::adapter::ask_ai(&full_prompt)
+        .await
+        .map_err(|e| e.to_string())
+}

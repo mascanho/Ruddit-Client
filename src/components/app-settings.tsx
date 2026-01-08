@@ -38,6 +38,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAppSettings } from "@/store/settings-store";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -278,6 +279,7 @@ export function AppSettingsDialog({
     ai_provider: "gemini",
     openai_api_key: "",
     openai_model: "gpt-4o",
+    reply_preamble: "",
   });
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
@@ -1138,7 +1140,7 @@ export function AppSettingsDialog({
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select Provider" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="!z-[10000]">
                         <SelectItem value="gemini">Google Gemini</SelectItem>
                         <SelectItem value="openai">OpenAI</SelectItem>
                       </SelectContent>
@@ -1212,7 +1214,7 @@ export function AppSettingsDialog({
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select Model" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent position="popper" className="!z-[10000]">
                             {availableModels.map((model) => (
                               <SelectItem key={model} value={model}>
                                 {model}
@@ -1294,7 +1296,7 @@ export function AppSettingsDialog({
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select Model" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent position="popper" className="!z-[10000]">
                             {availableModels.map((model) => (
                               <SelectItem key={model} value={model}>
                                 {model}
@@ -1310,6 +1312,27 @@ export function AppSettingsDialog({
                       </div>
                     </>
                   )}
+
+                  <div className="mt-6 pt-6 border-t">
+                    <Label className="text-base font-semibold">
+                      Reply Preamble
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      System instruction used when generating replies to Reddit posts. This guides the AI's tone and approach.
+                    </p>
+                    <Textarea
+                      placeholder="You are a helpful and knowledgeable assistant..."
+                      value={apiKeys.reply_preamble}
+                      onChange={(e) =>
+                        setApiKeys({
+                          ...apiKeys,
+                          reply_preamble: e.target.value,
+                        })
+                      }
+                      rows={4}
+                      className="font-mono text-sm"
+                    />
+                  </div>
 
                   <div className="flex gap-2 mt-4 justify-end">
                     <Button
