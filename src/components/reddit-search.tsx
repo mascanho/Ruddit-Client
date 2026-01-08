@@ -749,8 +749,8 @@ export function RedditSearch({
       {subreddits.length > 0 ? (
         <Card className="p-0 border-border/60 overflow-hidden flex flex-col flex-1 min-h-0">
           {/* View Contol Bar */}
-          <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/20 backdrop-blur-md sticky top-0 z-10 transition-colors">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between px-4 py-1.5 border-b bg-muted/20 backdrop-blur-md sticky top-0 z-10 transition-colors">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
                   Sort:
@@ -836,11 +836,11 @@ export function RedditSearch({
               paginatedResults.map((result) => (
                 <div
                   key={result.id}
-                  className="group relative p-3 rounded-lg border border-border/40 bg-background/50 hover:bg-background hover:shadow-md hover:border-border/80 transition-all duration-200"
+                  className="group relative p-2.5 rounded-lg border border-border/40 bg-background/50 hover:bg-background hover:border-border/80 transition-all duration-200 first:mt-0 mt-0.5"
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-0.5">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Badge
@@ -898,12 +898,12 @@ export function RedditSearch({
                       </h4>
 
                       {result.snippet && (
-                        <p className="text-[11px] text-muted-foreground line-clamp-1 mt-1 opacity-70 italic">
+                        <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5 opacity-70 italic">
                           {result.snippet}
                         </p>
                       )}
 
-                      <div className="flex items-center gap-3 mt-2.5">
+                      <div className="flex items-center gap-2.5 mt-1.5">
                         {result.intent && (
                           <Badge
                             className={`${getIntentColor(
@@ -933,11 +933,11 @@ export function RedditSearch({
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-1 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
+                    <div className="flex flex-col gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 w-24 text-[10px] font-bold uppercase transition-all hover:bg-blue-600 hover:text-white hover:border-blue-600"
+                        className="h-6 w-20 text-[9px] font-bold uppercase transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
                         onClick={() =>
                           handleGetComments(result, sortTypeForComments)
                         }
@@ -947,19 +947,19 @@ export function RedditSearch({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 w-24 text-[10px] font-bold uppercase transition-all hover:bg-blue-600 hover:text-white hover:border-blue-600"
+                        className="h-6 w-20 text-[9px] font-bold uppercase transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
                         onClick={() => handleOpenInBrowser(result.url)}
                       >
-                        Browse
+                        Open
                       </Button>
                       <Button
                         variant="default"
                         size="sm"
-                        className="h-7 w-24 text-[10px] font-bold uppercase transition-all shadow-sm active:scale-95"
+                        className="h-6 w-20 text-[9px] font-bold uppercase transition-all"
                         onClick={() => addToTable(result)}
                       >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Import
+                        <Plus className="h-2.5 w-2.5 mr-1" />
+                        Add
                       </Button>
                     </div>
                   </div>
@@ -977,8 +977,8 @@ export function RedditSearch({
 
           {/* Footer - Redesigned Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t backdrop-blur-md">
-              <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between px-4 py-1.5 bg-muted/10 border-t backdrop-blur-md">
+              <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
                     Display:
@@ -1004,64 +1004,64 @@ export function RedditSearch({
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(1, prev - 1))
-                  }
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronsLeft className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </Button>
 
-                <div className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary/5 border border-primary/20">
-                  <span className="text-[10px] font-bold text-primary opacity-60">
-                    PAGE
-                  </span>
-                  <span className="text-[11px] font-bold text-primary font-mono">
-                    {currentPage}
-                  </span>
-                  <span className="text-[10px] font-bold text-primary opacity-40">
-                    /
-                  </span>
-                  <span className="text-[11px] font-bold text-primary font-mono">
-                    {totalPages}
-                  </span>
+                  <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/5 border border-primary/20">
+                    <span className="text-[9px] font-bold text-primary opacity-60">
+                      PAGE
+                    </span>
+                    <span className="text-[10px] font-bold text-primary font-mono">
+                      {currentPage}
+                    </span>
+                    <span className="text-[9px] font-bold text-primary opacity-40">
+                      /
+                    </span>
+                    <span className="text-[10px] font-bold text-primary font-mono">
+                      {totalPages}
+                    </span>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronsRight className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
             </div>
           )}
         </Card>
