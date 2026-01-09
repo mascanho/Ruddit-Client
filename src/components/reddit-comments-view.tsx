@@ -80,7 +80,7 @@ const CommentItem = ({
 }: {
   comment: CommentTree;
   depth?: number;
-  onReplySuccess: () => void;
+  onReplySuccess: (comment?: Message) => void;
   isConfigured?: boolean;
 }) => {
   const [isReplying, setIsReplying] = useState(false);
@@ -178,9 +178,9 @@ const CommentItem = ({
               <div className="mt-3">
                 <ReplySection
                   parentId={`t1_${comment.id}`}
-                  onSuccess={() => {
+                  onSuccess={(newComment) => {
                     setIsReplying(false);
-                    onReplySuccess();
+                    onReplySuccess(newComment);
                   }}
                   onCancel={() => setIsReplying(false)}
                   placeholder={`Replying to ${comment.author}...`}
@@ -213,7 +213,7 @@ function ReplySection({
   compact = false,
 }: {
   parentId: string;
-  onSuccess: () => void;
+  onSuccess: (comment: Message) => void;
   onCancel?: () => void;
   placeholder?: string;
   autoFocus?: boolean;
@@ -226,12 +226,12 @@ function ReplySection({
     if (!text.trim()) return;
     setIsSubmitting(true);
     try {
-      await invoke("submit_reddit_comment_command", { parentId, text });
+      const newComment = (await invoke("submit_reddit_comment_command", { parentId, text })) as Message;
       toast.success("Comment posted", {
         description: "Your reply has been submitted to Reddit.",
       });
       setText("");
-      onSuccess();
+      onSuccess(newComment);
     } catch (error) {
       console.error("Failed to post comment:", error);
       toast.error("Failed to post", {
@@ -294,6 +294,7 @@ interface RedditCommentsViewProps {
   comments: Message[];
   sortType: string;
   onSortTypeChange: (sortType: string) => void;
+  onCommentAdded?: (comment: Message) => void;
 }
 
 export function RedditCommentsView({
@@ -303,6 +304,7 @@ export function RedditCommentsView({
   comments,
   sortType,
   onSortTypeChange,
+  onCommentAdded,
 }: RedditCommentsViewProps) {
   const [isConfigured, setIsConfigured] = useState(false);
   const commentTree = useMemo(() => buildCommentTree(comments), [comments]);
@@ -393,7 +395,7 @@ export function RedditCommentsView({
                         <SelectTrigger className="w-[110px] h-7 text-[11px] bg-background">
                           <SelectValue placeholder="Sort by" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[10000]">
                           <SelectItem value="best">Best</SelectItem>
                           <SelectItem value="top">Top</SelectItem>
                           <SelectItem value="new">New</SelectItem>
@@ -418,7 +420,13 @@ export function RedditCommentsView({
                 <CommentItem
                   key={rootComment.id}
                   comment={rootComment}
-                  onReplySuccess={() => onSortTypeChange(sortType)}
+                  onReplySuccess={(comment) => {
+                    if (comment && onCommentAdded) {
+                      onCommentAdded(comment);
+                    } else {
+                      onSortTypeChange(sortType);
+                    }
+                  }}
                   isConfigured={isConfigured}
                 />
               ))}
@@ -436,8 +444,12 @@ export function RedditCommentsView({
               <div className="max-w-4xl mx-auto">
                 <ReplySection
                   parentId={`t3_${post.id.toString(36)}`}
-                  onSuccess={() => {
-                    onSortTypeChange(sortType); // Trigger refresh
+                  onSuccess={(comment) => {
+                    if (comment && onCommentAdded) {
+                      onCommentAdded(comment);
+                    } else {
+                      onSortTypeChange(sortType); // Fallback trigger refresh
+                    }
                   }}
                   placeholder="Transmit new signal..."
                   autoFocus={false}

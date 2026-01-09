@@ -164,7 +164,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -205,7 +205,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -272,7 +272,7 @@ export function RedditSearch({
         sort_type: post.sort_type,
         snippet: post.selftext
           ? post.selftext.slice(0, 200) +
-            (post.selftext.length > 200 ? "..." : "")
+          (post.selftext.length > 200 ? "..." : "")
           : "",
         timestamp: post.timestamp,
         formatted_date: post.formatted_date,
@@ -673,7 +673,7 @@ export function RedditSearch({
   function isColoredRelevance(sortType: string) {
     // Renamed parameter
     switch (
-      sortType // Use new parameter
+    sortType // Use new parameter
     ) {
       case "hot":
         return "bg-red-500";
@@ -711,11 +711,10 @@ export function RedditSearch({
                   size="sm"
                   onClick={() => toggleSort(sort)}
                   disabled={isSearching}
-                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${
-                    selectedSorts.includes(sort)
+                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${selectedSorts.includes(sort)
                       ? "shadow-sm"
                       : "opacity-60 hover:opacity-100 hover:bg-background/80"
-                  }`}
+                    }`}
                 >
                   {sort === "hot" && <Flame className="h-3 w-3 mr-1.5" />}
                   {sort === "top" && <TrendingUp className="h-3 w-3 mr-1.5" />}
@@ -797,15 +796,14 @@ export function RedditSearch({
                   <button
                     key={filter}
                     onClick={() => toggleViewFilter(filter)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
-                      viewFilters.includes(filter)
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewFilters.includes(filter)
                         ? filter === "hot"
                           ? "bg-red-500/10 text-red-600 dark:text-red-400"
                           : filter === "top"
                             ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                             : "bg-green-500/10 text-green-600 dark:text-green-400"
                         : "opacity-30 hover:opacity-100"
-                    }`}
+                      }`}
                   >
                     {filter}
                   </button>
@@ -822,11 +820,10 @@ export function RedditSearch({
                   <button
                     key={intent}
                     onClick={() => toggleViewIntentFilter(intent)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
-                      viewIntentFilters.includes(intent)
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewIntentFilters.includes(intent)
                         ? "bg-primary/10 text-primary"
                         : "opacity-30 hover:opacity-100"
-                    }`}
+                      }`}
                   >
                     {intent}
                   </button>
@@ -883,8 +880,7 @@ export function RedditSearch({
           <div className="flex-1 overflow-y-auto overflow-x-hidden bg-background/30 p-3 scrollbar-thin scrollbar-thumb-border/20 scrollbar-track-transparent -mt-6">
             {paginatedResults.length > 0 ? (
               <div
-                className={`grid gap-3 ${
-                  gridColumns === 1
+                className={`grid gap-3 ${gridColumns === 1
                     ? "grid-cols-1"
                     : gridColumns === 2
                       ? "grid-cols-1 md:grid-cols-2"
@@ -893,7 +889,7 @@ export function RedditSearch({
                         : gridColumns === 4
                           ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
                           : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
-                }`}
+                  }`}
               >
                 {paginatedResults.map((result) => (
                   <div
@@ -929,13 +925,12 @@ export function RedditSearch({
                             {result.sort_type?.split(",").map((type) => (
                               <div
                                 key={type}
-                                className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider text-white ${
-                                  type === "hot"
+                                className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider text-white ${type === "hot"
                                     ? "bg-gradient-to-r from-red-500 to-red-600"
                                     : type === "top"
                                       ? "bg-gradient-to-r from-blue-500 to-blue-600"
                                       : "bg-gradient-to-r from-green-500 to-green-600"
-                                }`}
+                                  }`}
                               >
                                 {type}
                               </div>
@@ -1182,16 +1177,19 @@ export function RedditSearch({
         post={
           commentsPost
             ? {
-                id: commentsPost.name || commentsPost.id,
-                title: commentsPost.title,
-                url: commentsPost.url,
-                subreddit: commentsPost.subreddit,
-              }
+              id: commentsPost.name || commentsPost.id,
+              title: commentsPost.title,
+              url: commentsPost.url,
+              subreddit: commentsPost.subreddit,
+            }
             : null
         }
         comments={comments}
         sortType={sortTypeForComments}
         onSortTypeChange={handleSortTypeForCommentsChange}
+        onCommentAdded={(newComment) => {
+          setComments((prev) => [newComment, ...prev]);
+        }}
       />
     </div>
   );

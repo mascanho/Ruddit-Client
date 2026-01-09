@@ -597,10 +597,10 @@ export function AutomationTab() {
 
   const noKeywords =
     (settings.brandKeywords?.length || 0) +
-      (settings.competitorKeywords?.length || 0) +
-      (settings.monitoredKeywords?.length || 0) +
-      (settings.monitoredSubreddits?.length || 0) +
-      (settings.blacklistKeywords?.length || 0) ===
+    (settings.competitorKeywords?.length || 0) +
+    (settings.monitoredKeywords?.length || 0) +
+    (settings.monitoredSubreddits?.length || 0) +
+    (settings.blacklistKeywords?.length || 0) ===
     0;
 
   const keywordCategories = [
@@ -1069,6 +1069,9 @@ export function AutomationTab() {
         comments={comments}
         sortType={sortTypeForComments}
         onSortTypeChange={handleSortTypeForCommentsChange}
+        onCommentAdded={(newComment) => {
+          setComments((prev) => [newComment, ...prev]);
+        }}
       />
 
       <Dialog open={isSelectedModalOpen} onOpenChange={setIsSelectedModalOpen}>

@@ -327,7 +327,7 @@ pub fn update_reddit_config_command(mut new_api_keys: api_keys::ApiKeys) -> Resu
 pub async fn submit_reddit_comment_command(
     parent_id: String,
     text: String,
-) -> Result<(), String> {
+) -> Result<CommentDataWrapper, String> {
     let config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
     let api_keys = config.api_keys;
 
@@ -344,11 +344,11 @@ pub async fn submit_reddit_comment_command(
         return Err("Please login with Reddit in Settings first.".to_string());
     };
 
-    search::post_comment(&token, &parent_id, &text)
+    let comment = search::post_comment(&token, &parent_id, &text)
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(())
+    Ok(comment)
 }
 #[tauri::command]
 pub async fn ask_gemini_command(question: String) -> Result<String, String> {

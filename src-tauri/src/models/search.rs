@@ -630,7 +630,7 @@ pub async fn post_comment(
     access_token: &str,
     parent_id: &str,
     text: &str,
-) -> Result<(), RedditError> {
+) -> Result<CommentDataWrapper, RedditError> {
     let client = Client::new();
     let response = client
         .post("https://oauth.reddit.com/api/comment")
@@ -648,6 +648,8 @@ pub async fn post_comment(
     }
 
     let json: serde_json::Value = response.json().await?;
+    
+    // Check for errors in the reddit response
     if let Some(errors) = json["json"]["errors"].as_array() {
         if !errors.is_empty() {
             return Err(RedditError::HttpError(
@@ -657,5 +659,33 @@ pub async fn post_comment(
         }
     }
 
-    Ok(())
+    // Extract the comment data
+    // json.json.data.things[0].data
+    if let Some(things) = json["json"]["data"]["things"].as_array() {
+        if let Some(thing) = things.first() {
+             if let Some(data) = thing.get("data") {
+                 let comment_data: CommentData = serde_json::from_value(data.clone()).map_err(|e| RedditError::ParseError(e.to_string()))?;
+                 
+                 // Convert to CommentDataWrapper
+                 let wrapper = CommentDataWrapper {
+                    id: comment_data.id,
+                    post_id: "".to_string(), // Not returned directly, but we don't strictly need it for UI display initially
+                    body: comment_data.body,
+                    author: comment_data.author,
+                    timestamp: comment_data.created_utc as i64,
+                    formatted_date: database::adding::DB::format_timestamp(comment_data.created_utc as i64).unwrap_or_default(),
+                    score: comment_data.score,
+                    permalink: comment_data.permalink,
+                    parent_id: comment_data.parent_id,
+                    subreddit: "".to_string(), // can optionally fill if we knew it
+                    post_title: "".to_string(),
+                    engaged: 0,
+                    assignee: "".to_string(),
+                 };
+                 return Ok(wrapper);
+             }
+        }
+    }
+
+    Err(RedditError::ParseError("Failed to extract comment data from response".to_string()))
 }
