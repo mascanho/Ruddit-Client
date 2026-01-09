@@ -110,86 +110,137 @@ const CommentItem = ({
   };
 
   return (
-    <div
-      style={{ marginLeft: depth > 0 ? `${Math.min(depth * 12, 48)}px` : "0" }}
-    >
-      <Card
-        className={`p-2 mb-2 ${depth > 0 ? "border-l border-l-primary/20" : "border-border/60"} shadow-sm bg-background/50 backdrop-blur-sm`}
-        style={isMonitoredUser ? { backgroundColor: "rgba(59, 130, 246, 0.1)" } : {}}
+    <div className="relative group/comment">
+      {/* Thread Line */}
+      {depth > 0 && (
+        <div
+          className="absolute left-[-18px] top-0 bottom-0 w-px bg-border/40 group-hover/comment:bg-border/80 transition-colors"
+          style={{ height: 'calc(100% - 10px)' }}
+        />
+      )}
+
+      <div
+        className={`
+          relative flex gap-3 p-3 rounded-xl transition-all duration-200 border
+          ${isMonitoredUser
+            ? "bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800"
+            : "bg-background/40 hover:bg-background/60 border-border/40 hover:border-border/60"
+          }
+          ${depth > 0 ? "mt-2" : "mb-2"}
+        `}
+        style={{ marginLeft: depth > 0 ? `${Math.min(depth * 16, 64)}px` : "0" }}
       >
-        <div className="flex items-start gap-2">
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-medium text-primary">
-              {comment?.author?.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <span className="font-medium text-sm truncate max-w-[150px] cursor-pointer hover:underline">
-                    {comment?.author}
-                  </span>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      openUrl(`https://www.reddit.com/user/${comment.author}/`)
-                    }
-                  >
-                    <Link className="mr-2 h-4 w-4" />
-                    <span>View Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleMonitorUser}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    <span>Monitor User</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <span className="text-xs text-muted-foreground">•</span>
-              <span className="text-xs text-muted-foreground">
-                {comment?.formatted_date?.slice(0, 10)}
-              </span>
-              <span className="text-xs text-primary">
-                {moment(comment?.formatted_date, "YYYY-MM-DD").fromNow()}
-              </span>
-            </div>
-            <KeywordHighlighter
-              text={comment?.body || ""}
-              className="text-sm leading-relaxed break-words whitespace-pre-wrap mb-2 block"
-              brandKeywords={settings.brandKeywords}
-              competitorKeywords={settings.competitorKeywords}
-              generalKeywords={settings.monitoredKeywords}
-            />
-
-            {isConfigured && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs text-muted-foreground hover:text-primary"
-                onClick={() => setIsReplying(!isReplying)}
-              >
-                <Reply className="h-3.5 w-3.5 mr-1.5" />
-                Reply
-              </Button>
-            )}
-
-            {isReplying && (
-              <div className="mt-3">
-                <ReplySection
-                  parentId={`t1_${comment.id}`}
-                  onSuccess={(newComment) => {
-                    setIsReplying(false);
-                    onReplySuccess(newComment);
-                  }}
-                  onCancel={() => setIsReplying(false)}
-                  placeholder={`Replying to ${comment.author}...`}
-                />
-              </div>
-            )}
+        {/* Avatar Area */}
+        <div className="flex-shrink-0 pt-0.5">
+          <div
+            className={`
+              h-6 w-6 rounded-md flex items-center justify-center 
+              text-[10px] font-bold uppercase select-none
+              transition-all duration-300
+              ${isMonitoredUser
+                ? "bg-blue-500/20 text-blue-600 ring-1 ring-blue-500/40"
+                : "bg-muted text-muted-foreground/70 ring-1 ring-border/40"}
+            `}
+          >
+            {comment?.author?.charAt(0).toUpperCase() || "?"}
           </div>
         </div>
-      </Card>
+
+        {/* Content Area */}
+        <div className="flex-1 min-w-0">
+          {/* Header Metadata */}
+          <div className="flex items-center gap-2 mb-1.5 text-xs">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <span
+                  className={`
+                    font-bold cursor-pointer hover:underline truncate max-w-[150px]
+                    ${isMonitoredUser ? "text-blue-600" : "text-foreground/90"}
+                  `}
+                >
+                  {comment?.author || "[deleted]"}
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem
+                  onClick={() =>
+                    openUrl(`https://www.reddit.com/user/${comment.author}/`)
+                  }
+                >
+                  <Link className="mr-2 h-4 w-4" />
+                  <span>View Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleMonitorUser}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  <span>Monitor User</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <span className="text-muted-foreground/30 font-light">•</span>
+
+            {comment.score !== undefined && (
+              <>
+                <span className="font-mono text-muted-foreground/60 text-[10px]">
+                  {comment.score} pts
+                </span>
+                <span className="text-muted-foreground/30 font-light">•</span>
+              </>
+            )}
+
+            <span
+              className="text-muted-foreground/50 text-[10px]"
+              title={moment(comment?.formatted_date).format("LLL")}
+            >
+              {moment(comment?.formatted_date, "YYYY-MM-DD").fromNow()}
+            </span>
+          </div>
+
+          {/* Comment Body */}
+          <KeywordHighlighter
+            text={comment?.body || ""}
+            className="text-sm leading-relaxed text-foreground/80 break-words whitespace-pre-wrap mb-1 block"
+            brandKeywords={settings.brandKeywords}
+            competitorKeywords={settings.competitorKeywords}
+            generalKeywords={settings.monitoredKeywords}
+          />
+
+          {/* Action Footer */}
+          {isConfigured && (
+            <div className="h-6 flex items-center mt-1">
+              <button
+                className={`
+                  flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider
+                  text-muted-foreground/50 hover:text-primary transition-colors
+                  ${isReplying ? "text-primary" : ""}
+                `}
+                onClick={() => setIsReplying(!isReplying)}
+              >
+                <Reply className="h-3 w-3" />
+                Reply
+              </button>
+            </div>
+          )}
+
+          {/* Inline Reply Form */}
+          {isReplying && (
+            <div className="mt-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-200">
+              <ReplySection
+                parentId={`t1_${comment.id}`}
+                onSuccess={(newComment) => {
+                  setIsReplying(false);
+                  onReplySuccess(newComment);
+                }}
+                onCancel={() => setIsReplying(false)}
+                placeholder={`Replying to ${comment.author}...`}
+                compact={true}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recursive Children */}
       {comment.children.length > 0 &&
         comment.children.map((child) => (
           <CommentItem
@@ -221,20 +272,21 @@ function ReplySection({
 }) {
   const [text, setText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
     setIsSubmitting(true);
     try {
       const newComment = (await invoke("submit_reddit_comment_command", { parentId, text })) as Message;
-      toast.success("Comment posted", {
-        description: "Your reply has been submitted to Reddit.",
+      toast.success("Signal transmitted", {
+        description: "Your response has been propagated to the network.",
       });
       setText("");
       onSuccess(newComment);
     } catch (error) {
       console.error("Failed to post comment:", error);
-      toast.error("Failed to post", {
+      toast.error("Transmission failed", {
         description:
           typeof error === "string" ? error : "An unexpected error occurred.",
       });
@@ -244,44 +296,82 @@ function ReplySection({
   };
 
   return (
-    <div className="space-y-2">
-      <Textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={placeholder}
-        className={`${compact ? "min-h-[60px]" : "min-h-[100px]"} text-sm resize-none focus-visible:ring-1 bg-muted/20`}
-        autoFocus={autoFocus}
-      />
-      <div className="flex justify-end gap-2">
-        {onCancel && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-        )}
-        <Button
-          size="sm"
-          className="h-8 text-xs px-3"
-          onClick={handleSubmit}
-          disabled={isSubmitting || !text.trim()}
+    <div className={`relative group transition-all duration-300 ${isFocused ? "opacity-100" : "opacity-80 hover:opacity-100"}`}>
+      <div
+        className={`
+          flex flex-col 
+          border border-border/40 
+          bg-background/40 backdrop-blur-md 
+          rounded-xl overflow-hidden
+          transition-all duration-200
+          ${isFocused ? "ring-1 ring-primary/20 bg-background/60 shadow-lg" : "shadow-sm"}
+        `}
+      >
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => !text && setIsFocused(false)}
+          placeholder={placeholder}
+          className={`
+            border-none shadow-none resize-none 
+            bg-transparent focus-visible:ring-0 
+            text-sm px-4 py-3
+            placeholder:text-muted-foreground/40
+            ${compact && !isFocused && !text ? "min-h-[44px] h-[44px] py-2.5" : "min-h-[80px]"}
+            transition-all duration-200
+          `}
+          autoFocus={autoFocus}
+          rows={compact && !isFocused && !text ? 1 : 3}
+        />
+
+        {/* Actions Bar - Collapsible */}
+        <div
+          className={`
+            flex items-center justify-between px-2 pb-2
+            transition-all duration-200 overflow-hidden
+            ${(isFocused || text) ? "opacity-100 max-h-[40px] mt-1" : "opacity-0 max-h-0"}
+          `}
         >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-              Posting...
-            </>
-          ) : (
-            <>
-              <Send className="h-3 w-3 mr-2" />
-              Post
-            </>
-          )}
-        </Button>
+          <div className="text-[10px] text-muted-foreground/40 ml-2 font-mono uppercase tracking-widest">
+            {text.length > 0 ? `${text.length} chars` : ""}
+          </div>
+          <div className="flex gap-2">
+            {onCancel && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setText("");
+                  setIsFocused(false);
+                  onCancel();
+                }}
+                disabled={isSubmitting}
+              >
+                Discard
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="h-7 px-4 text-[10px] font-bold uppercase tracking-wider bg-primary/90 hover:bg-primary shadow-sm"
+              onClick={handleSubmit}
+              disabled={isSubmitting || !text.trim()}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-3 w-3 mr-2" />
+                  Transmit
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

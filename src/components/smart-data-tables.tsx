@@ -41,6 +41,7 @@ export type Message = {
   parent_id?: string;
   post_title?: string;
   subreddit?: string;
+  score?: number;
 };
 
 export type RedditPost = {
