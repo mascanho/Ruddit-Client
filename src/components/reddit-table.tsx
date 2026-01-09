@@ -937,14 +937,16 @@ export function RedditTable({
                   <Fragment key={post.id}>
                     <TableRow
                       key={post.id}
-                      className={`group hover:z-10 relative text-[11px] h-8 transition-all border-l-[3px] border-b-[0.5px] border-b-border/50 ${post.date_added > lastVisitTimestamp
-                          ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.5)]"
-                          : "border-l-transparent hover:bg-muted/30"
-                        } ${settings.tableDensity === "compact"
-                          ? "h-[30px]"
+                      className={`group hover:z-10 relative text-[11px] transition-all border-b border-border/40 
+                        ${post.date_added > lastVisitTimestamp
+                          ? "bg-blue-500/10 dark:bg-blue-500/20 border-l-[3px] border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.3)]"
+                          : `border-l-[3px] border-l-transparent hover:bg-accent/40 ${index % 2 === 0 ? "bg-background/20" : "bg-muted/10"}`
+                        } 
+                        ${settings.tableDensity === "compact"
+                          ? "h-[32px]"
                           : settings.tableDensity === "spacious"
-                            ? "h-12"
-                            : "h-9"
+                            ? "h-14"
+                            : "h-10"
                         }`}
                     >
                       <TableCell className="px-1 text-center">
@@ -956,8 +958,8 @@ export function RedditTable({
                         >
                           <ChevronDown
                             className={`h-3 w-3 transition-transform duration-300 ${expandedRows.has(post.id.toString())
-                                ? "rotate-180"
-                                : ""
+                              ? "rotate-180"
+                              : ""
                               }`}
                           />
                         </Button>
