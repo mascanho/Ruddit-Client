@@ -545,9 +545,7 @@ export function RedditTable({
 
     await invoke("remove_single_reddit_command", { post: id });
     toast.info("Post deleted successfully");
-    setData((prevData) =>
-      prevData.filter((post) => post.id !== id),
-    );
+    setData((prevData) => prevData.filter((post) => post.id !== id));
     removeSingleSubreddit(id); // Update store
     // No need to reload the window, UI updates via state change
   };
@@ -939,15 +937,17 @@ export function RedditTable({
                   <Fragment key={post.id}>
                     <TableRow
                       key={post.id}
-                      className={`group hover:z-10 relative text-[11px] h-8 transition-all border-l-[3px] border-b-[0.5px] border-b-border/50 ${post.date_added > lastVisitTimestamp
-                        ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.5)]"
-                        : "border-l-transparent hover:bg-muted/30"
-                        } ${settings.tableDensity === "compact"
+                      className={`group hover:z-10 relative text-[11px] h-8 transition-all border-l-[3px] border-b-[0.5px] border-b-border/50 ${
+                        post.date_added > lastVisitTimestamp
+                          ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.5)]"
+                          : "border-l-transparent hover:bg-muted/30"
+                      } ${
+                        settings.tableDensity === "compact"
                           ? "h-[30px]"
                           : settings.tableDensity === "spacious"
                             ? "h-12"
                             : "h-9"
-                        }`}
+                      }`}
                     >
                       <TableCell className="px-1 text-center">
                         <Button
@@ -957,10 +957,11 @@ export function RedditTable({
                           className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-none flex items-center justify-center"
                         >
                           <ChevronDown
-                            className={`h-3 w-3 transition-transform duration-300 ${expandedRows.has(post.id.toString())
-                              ? "rotate-180"
-                              : ""
-                              }`}
+                            className={`h-3 w-3 transition-transform duration-300 ${
+                              expandedRows.has(post.id.toString())
+                                ? "rotate-180"
+                                : ""
+                            }`}
                           />
                         </Button>
                       </TableCell>
@@ -997,7 +998,9 @@ export function RedditTable({
                           <div className="flex items-center gap-2 mt-0.5 opacity-60 text-[9px]">
                             <div
                               className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
-                              onClick={() => handleGetComments(post, post.sort_type)}
+                              onClick={() =>
+                                handleGetComments(post, post.sort_type)
+                              }
                             >
                               <MessageCircle className="h-2.5 w-2.5" />
                               <span>{post.num_comments ?? 0}</span>
@@ -1049,7 +1052,7 @@ export function RedditTable({
                               post.intent.toLowerCase(),
                             )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
                           >
-                            {post.intent.slice(0, 3).toUpperCase()}
+                            {post.intent.slice(0, 4).toUpperCase()}
                           </Badge>
                         )}
                       </TableCell>
@@ -1107,7 +1110,7 @@ export function RedditTable({
                           <SelectTrigger className="w-6 h-6 rounded-full mx-auto p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden transition-transform active:scale-95">
                             <Avatar className="h-5 w-5 border border-muted-foreground/10">
                               {post.assignee &&
-                                post.assignee !== "unassigned" ? (
+                              post.assignee !== "unassigned" ? (
                                 <>
                                   <AvatarImage
                                     src={`https://avatar.vercel.sh/${post.assignee}`}
