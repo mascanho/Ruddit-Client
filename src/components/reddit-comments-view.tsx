@@ -161,7 +161,7 @@ const CommentItem = ({
                   {comment?.author || "[deleted]"}
                 </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
+              <DropdownMenuContent align="start" className="z-[10000]">
                 <DropdownMenuItem
                   onClick={() =>
                     openUrl(`https://www.reddit.com/user/${comment.author}/`)
