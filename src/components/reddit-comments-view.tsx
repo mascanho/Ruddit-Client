@@ -431,6 +431,7 @@ interface RedditCommentsViewProps {
   onOpenChange: (open: boolean) => void;
   post: RedditPost | null;
   comments: Message[];
+  isLoading?: boolean;
   sortType: string;
   onSortTypeChange: (sortType: string) => void;
   onCommentAdded?: (comment: Message) => void;
@@ -441,6 +442,7 @@ export function RedditCommentsView({
   onOpenChange,
   post,
   comments,
+  isLoading = false,
   sortType,
   onSortTypeChange,
   onCommentAdded,
@@ -555,24 +557,39 @@ export function RedditCommentsView({
           {/* Comments: Scrollable */}
           <div className="flex-1 overflow-y-auto custom-scrollbar bg-muted/5">
             <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-3">
-              {commentTree.map((rootComment) => (
-                <CommentItem
-                  key={rootComment.id}
-                  comment={rootComment}
-                  onReplySuccess={(comment) => {
-                    if (comment && onCommentAdded) {
-                      onCommentAdded(comment);
-                    } else {
-                      onSortTypeChange(sortType);
-                    }
-                  }}
-                  isConfigured={isConfigured}
-                />
-              ))}
-              {comments.length === 0 && (
-                <div className="text-center py-16 text-muted-foreground bg-muted/20 border-2 border-dashed rounded-xl">
-                  No comments found for this post.
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-24 space-y-4 animate-in fade-in duration-500">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                    <Loader2 className="h-10 w-10 text-primary animate-spin relative z-10" />
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <p className="text-sm font-bold tracking-widest uppercase text-primary/80">Synchronizing Signals</p>
+                    <p className="text-[10px] text-muted-foreground font-mono uppercase opacity-50">Establishing secure connection to Reddit nodes...</p>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  {commentTree.map((rootComment) => (
+                    <CommentItem
+                      key={rootComment.id}
+                      comment={rootComment}
+                      onReplySuccess={(comment) => {
+                        if (comment && onCommentAdded) {
+                          onCommentAdded(comment);
+                        } else {
+                          onSortTypeChange(sortType);
+                        }
+                      }}
+                      isConfigured={isConfigured}
+                    />
+                  ))}
+                  {comments.length === 0 && (
+                    <div className="text-center py-16 text-muted-foreground bg-muted/20 border-2 border-dashed rounded-xl animate-in zoom-in-95 duration-300">
+                      No comments found for this post.
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
