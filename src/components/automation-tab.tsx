@@ -2,50 +2,9 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Fuse from "fuse.js";
-import {
-  Play,
-  StopCircle,
-  Activity,
-  AlertCircle,
-  CheckCircle2,
-  Plus,
-  Trash2,
-  Bot,
-  Radar,
-  User,
-  ArrowUp,
-  ArrowDown,
-  Search,
-  MessageCircle,
-  Eye,
-  X,
-  Sparkles,
-  Loader2,
-} from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { RedditCommentsView } from "./reddit-comments-view";
 import type { Message } from "./smart-data-tables";
-import moment from "moment";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAppSettings } from "@/store/settings-store";
 import {
   useAutomationStore,
@@ -53,154 +12,16 @@ import {
   PostDataWrapper,
 } from "@/store/store";
 import { invoke } from "@tauri-apps/api/core";
-import { getIntentColor } from "@/lib/marketing-utils";
 import { toast } from "sonner";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-
-// Custom-styled native HTML components
-interface CustomButtonProps {
-  onClick?: React.MouseEventHandler<HTMLButtonElement>;
-  children: React.ReactNode;
-  className?: string;
-  disabled?: boolean;
-  title?: string;
-}
-
-const CustomButton = ({
-  onClick,
-  children,
-  className = "",
-  disabled = false,
-  title = "",
-}: CustomButtonProps) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    title={title}
-    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 ${className}`}
-  >
-    {children}
-  </button>
-);
-
-interface KeywordBadgeProps {
-  children: React.ReactNode;
-  className?: string;
-  onClick?: (keyword: string) => void; // Added onClick prop
-  keyword?: string; // Added keyword prop to pass to onClick
-}
-
-const KeywordBadge = ({
-  children,
-  className = "",
-  onClick,
-  keyword,
-}: KeywordBadgeProps) => (
-  <span
-    onClick={() => onClick && keyword && onClick(keyword)}
-    className={`inline-block text-[10px] py-0.5 px-1.5 rounded-full font-medium whitespace-nowrap ${className} ${onClick ? "cursor-pointer" : ""}`}
-  >
-    {children}
-  </span>
-);
-
-type KeywordCategory = {
-  keywords: string[];
-  className: string;
-};
-
-// Keyword highlighter component
-const HighlightedText = ({
-  text,
-  categories,
-}: {
-  text: string;
-  categories: KeywordCategory[];
-}) => {
-  if (!text) return null;
-
-  const allKeywords = categories
-    .flatMap((c) => c.keywords)
-    .filter((kw) => kw && kw.trim() !== "")
-    // Sort by length (longer phrases first) to avoid partial matches
-    .sort((a, b) => b.length - a.length);
-
-  if (allKeywords.length === 0) return <>{text}</>;
-
-  const keywordStyleMap = new Map<string, string>();
-  categories.forEach((category) => {
-    (category.keywords || []).forEach((kw) => {
-      if (kw && kw.trim() !== "") {
-        keywordStyleMap.set(kw.toLowerCase(), category.className);
-      }
-    });
-  });
-
-  // Create regex that matches whole phrases, sorted by length to prioritize longer matches
-  const escapeRegexString = (str: string) => {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  };
-  const escapedKeywords = allKeywords.map((kw) => escapeRegexString(kw));
-  const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
-
-  let highlightedText = text;
-  const matches = [];
-  let match;
-
-  // Find all matches with their positions
-  while ((match = regex.exec(text)) !== null) {
-    matches.push({
-      keyword: match[0].toLowerCase(),
-      start: match.index,
-      end: match.index + match[0].length,
-    });
-    regex.lastIndex = match.index + 1; // Prevent infinite loops with overlapping matches
-  }
-
-  // Sort matches by start position and then by length (longer first)
-  matches.sort((a, b) => {
-    if (a.start !== b.start) return a.start - b.start;
-    return b.end - b.end; // Longer matches first
-  });
-
-  // Build highlighted text
-  const parts = [];
-  let lastIndex = 0;
-
-  for (const match of matches) {
-    // Add text before match
-    if (match.start > lastIndex) {
-      parts.push(text.slice(lastIndex, match.start));
-    }
-
-    // Add highlighted match
-    const matchedText = text.slice(match.start, match.end);
-    const className = keywordStyleMap.get(match.keyword);
-    if (className) {
-      parts.push(
-        <mark
-          key={match.start}
-          className={`${className} text-current px-0.5 rounded-sm`}
-        >
-          {matchedText}
-        </mark>,
-      );
-    } else {
-      parts.push(matchedText);
-    }
-
-    lastIndex = match.end;
-  }
-
-  // Add remaining text
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return <>{parts}</>;
-};
+import { KeywordCategory } from "./automation/automation-utils";
+import { AutomationControlPanel } from "./automation/automation-control-panel";
+import { AutomationSensorsPanel } from "./automation/automation-sensors-panel";
+import {
+  AutomationLogsPanel,
+  LogEntry,
+} from "./automation/automation-logs-panel";
+import { AutomationResultsTable } from "./automation/automation-results-table";
+import { AutomationSelectionDialog } from "./automation/automation-selection-dialog";
 
 export function AutomationTab() {
   const { settings, updateSettings } = useAppSettings();
@@ -241,7 +62,10 @@ export function AutomationTab() {
     new Map(),
   );
   const [generatingForId, setGeneratingForId] = useState<number | null>(null);
-  const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+  const [
+    isBulkGenerating,
+    setIsBulkGenerating,
+  ] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [manualBulkComment, setManualBulkComment] = useState("");
   const [bulkProgress, setBulkProgress] = useState(0);
@@ -268,11 +92,6 @@ export function AutomationTab() {
     },
     { keywords: settings.monitoredKeywords || [], className: "bg-gray-500/30" },
   ];
-
-  // Function to escape special regex characters and handle multi-word keywords properly
-  const escapeRegexString = (str: string) => {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  };
 
   // Function to check if post should be filtered out by blacklist
   const isPostBlacklisted = (post: any) => {
@@ -506,9 +325,6 @@ export function AutomationTab() {
       toast.info("Selected posts are already being tracked");
     }
 
-    // Optional: Clear selection after action?
-    // setSelectedPostIds(new Set());
-    // Keeping selection might be better UX if user wants to do something else, but here logic implies done.
     setSelectedPostIds(new Set());
   };
 
@@ -559,7 +375,9 @@ export function AutomationTab() {
     for (let i = 0; i < postsToGenerate.length; i++) {
       const post = postsToGenerate[i];
       console.log(`Processing ${i + 1}/${postsToGenerate.length}: ${post.id}`);
-      setProcessingStatus(`Generating for "${post.title.slice(0, 15)}..." (${i + 1}/${postsToGenerate.length})`);
+      setProcessingStatus(
+        `Generating for "${post.title.slice(0, 15)}..." (${i + 1}/${postsToGenerate.length})`,
+      );
       setBulkProgress(((i + 1) / postsToGenerate.length) * 100);
 
       try {
@@ -575,7 +393,9 @@ export function AutomationTab() {
         successCount++;
       } catch (e: any) {
         console.error(`Failed to generate reply for post ${post.id}:`, e);
-        toast.error(`Error generating for "${post.title.slice(0, 15)}...": ${e.message || e}`);
+        toast.error(
+          `Error generating for "${post.title.slice(0, 15)}...": ${e.message || e}`,
+        );
         failCount++;
       }
 
@@ -599,7 +419,10 @@ export function AutomationTab() {
     }
   };
 
-  const handlePublishReply = async (post: PostDataWrapper, replyText: string) => {
+  const handlePublishReply = async (
+    post: PostDataWrapper,
+    replyText: string,
+  ) => {
     if (!replyText.trim()) return false;
     try {
       // Ensure we have a valid fullname. post.name is best, otherwise construct t3_id(base36)
@@ -629,8 +452,17 @@ export function AutomationTab() {
     let successCount = 0;
     let failCount = 0;
 
+    console.log(
+      `Starting bulk generate & publish for ${postsToProcess.length} posts`,
+    );
+    setProcessingStatus(`Starting... (0/${postsToProcess.length})`);
+
     for (let i = 0; i < postsToProcess.length; i++) {
       const post = postsToProcess[i];
+      console.log(`Processing ${i + 1}/${postsToProcess.length}: ${post.id}`);
+      setProcessingStatus(
+        `Processing "${post.title.slice(0, 15)}..." (${i + 1}/${postsToProcess.length})`,
+      );
       setBulkProgress(((i + 1) / postsToProcess.length) * 100);
 
       try {
@@ -643,13 +475,16 @@ export function AutomationTab() {
             setGeneratedReplies((prev) => new Map(prev).set(post.id, newReply));
           } catch (genError: any) {
             console.error(`Generation failed for ${post.id}:`, genError);
-            toast.error(`Generation failed for "${post.title.slice(0, 15)}...": ${genError.message}`);
+            toast.error(
+              `Generation failed for "${post.title.slice(0, 15)}...": ${genError.message}`,
+            );
             failCount++;
             continue; // Skip publishing if generation failed
           }
         }
 
         if (reply) {
+          console.log(`Publishing reply for ${post.id}`);
           const published = await handlePublishReply(post, reply);
           if (published) successCount++;
           else failCount++;
@@ -662,11 +497,14 @@ export function AutomationTab() {
       }
 
       if (i < postsToProcess.length - 1) {
+        console.log("Waiting for delay...");
         await new Promise((resolve) => setTimeout(resolve, 3000)); // Rate limit buffer
       }
     }
 
+    console.log("Bulk generate & publish complete");
     setIsPublishing(false);
+    setProcessingStatus("Complete");
     setBulkProgress(100);
 
     if (successCount > 0) {
@@ -783,433 +621,55 @@ export function AutomationTab() {
 
   const visibleKeywords = keywordsExpanded ? Infinity : 5;
 
-  const formatElapsedTime = (timestamp: number | undefined): string => {
-    if (timestamp === undefined || timestamp === null) return "N/A";
-
-    const timeInMilliseconds =
-      timestamp < 4_100_000_000 ? timestamp * 1000 : timestamp;
-
-    const postDate = new Date(timeInMilliseconds);
-    const now = new Date();
-    const diffSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
-
-    if (diffSeconds < 60)
-      return `${diffSeconds} second${diffSeconds === 1 ? "" : "s"} ago`;
-
-    const diffMinutes = Math.floor(diffSeconds / 60);
-    if (diffMinutes < 60)
-      return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
-
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24)
-      return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 30) return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
-
-    const diffMonths = Math.floor(diffDays / 30);
-    if (diffMonths < 12)
-      return `${diffMonths} month${diffMonths === 1 ? "" : "s"} ago`;
-
-    const diffYears = Math.floor(diffMonths / 12);
-    return `${diffYears} year${diffYears === 1 ? "" : "s"} ago`;
-  };
-
   return (
     <TooltipProvider>
       <div className="p-1 space-y-1.5 bg-background text-foreground flex-1 min-h-0 flex flex-col">
         {/* === Main Control Panel === */}
         <div className="bg-card rounded-lg border border-border/60 shadow-sm overflow-hidden">
-          <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-muted/20">
-            <div className="flex items-center gap-3">
-              <div className="p-1 rounded-md bg-primary/10">
-                <Bot className="h-4 w-4 text-primary" />
-              </div>
-              <h2 className="text-xs font-black uppercase tracking-widest text-foreground/80">
-                Digital Agent
-              </h2>
-              <Badge
-                variant="outline"
-                className={`flex items-center gap-1.5 text-[9px] font-black py-0 px-2 rounded-full border-none ${isRunning ? "bg-green-500/10 text-green-500" : "bg-gray-500/10 text-muted-foreground"}`}
-              >
-                <div
-                  className={`h-1.5 w-1.5 rounded-full ${isRunning ? "bg-green-500 animate-pulse" : "bg-gray-500"}`}
-                ></div>
-                {isRunning ? "ACTIVE" : "STANDBY"}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">
-                  Interval:
-                </span>
-                <select
-                  value={intervalMinutes.toString()}
-                  onChange={(e) => setIntervalMinutes(parseInt(e.target.value))}
-                  disabled={isRunning}
-                  className="bg-transparent border-none text-[10px] font-bold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
-                >
-                  <option value="5">5m</option>
-                  <option value="15">15m</option>
-                  <option value="30">30m</option>
-                  <option value="60">1h</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2 border-l border-border/50 pl-4">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">
-                  Last Run:
-                </span>
-                <span className="text-[10px] font-bold font-mono text-foreground/80">
-                  {lastRun ? moment(lastRun).format("HH:mm:ss") : "--:--:--"}
-                </span>
-              </div>
-              <button
-                onClick={() => setIsRunning(!isRunning)}
-                className={`flex items-center gap-2 px-4 h-7 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${isRunning ? "bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white" : "bg-primary text-white hover:bg-primary/90 shadow-sm"}`}
-              >
-                {isRunning ? (
-                  <>
-                    <StopCircle className="h-3.5 w-3.5" /> STop Agent
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-3.5 w-3.5" /> Initialize
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+          <AutomationControlPanel
+            isRunning={isRunning}
+            setIsRunning={setIsRunning}
+            intervalMinutes={intervalMinutes}
+            setIntervalMinutes={setIntervalMinutes}
+            lastRun={lastRun}
+          />
           <div className="p-2 grid grid-cols-1 lg:grid-cols-3 gap-2">
-            <div className="lg:col-span-1 rounded-lg border border-border/40 bg-background/30 flex flex-col h-[180px]">
-              <div className="flex justify-between items-center px-2 py-1.5 border-b border-border/40 bg-muted/10">
-                <h3 className="text-[10px] font-black uppercase tracking-widest opacity-60 flex items-center gap-1.5">
-                  <Radar className="h-3 w-3" />
-                  Sensors
-                </h3>
-                {!noKeywords && (
-                  <button
-                    onClick={() => setKeywordsExpanded(!keywordsExpanded)}
-                    className="text-[9px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 transition-opacity"
-                  >
-                    {keywordsExpanded ? "COMPRESS" : "EXPAND"}
-                  </button>
-                )}
-              </div>
-              <div className="p-2 flex-1 overflow-y-auto custom-scroll">
-                {noKeywords ? (
-                  <span className="text-[10px] text-muted-foreground italic opacity-50">
-                    No active sensor patterns.
-                  </span>
-                ) : (
-                  <div className="space-y-3">
-                    {keywordCategories.map(
-                      (category) =>
-                        category.keywords.length > 0 && (
-                          <div key={category.title}>
-                            <h4 className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground/40 mb-1 flex items-center gap-1">
-                              <span className="w-1 h-1 rounded-full bg-current opacity-30"></span>
-                              {category.title}
-                            </h4>
-                            <div className="flex flex-wrap gap-1">
-                              {category.keywords
-                                .slice(0, visibleKeywords)
-                                .map((k) => (
-                                  <KeywordBadge
-                                    key={k}
-                                    className={`${category.className} text-[9px] font-bold px-1.5 py-0 rounded transition-all hover:scale-105`}
-                                    onClick={handleKeywordClick}
-                                    keyword={k}
-                                  >
-                                    {k}
-                                  </KeywordBadge>
-                                ))}
-                              {category.keywords.length > visibleKeywords && (
-                                <span className="text-[9px] font-bold text-muted-foreground/40 p-0.5">
-                                  +{category.keywords.length - visibleKeywords}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ),
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="lg:col-span-2 rounded-lg border border-border/40 bg-background/30 flex flex-col h-[180px]">
-              <div className="px-2 py-1.5 border-b border-border/40 bg-muted/10 flex justify-between items-center">
-                <h3 className="text-[10px] font-black uppercase tracking-widest opacity-60 flex items-center gap-1.5">
-                  <Activity className="h-3 w-3" />
-                  Data Feed
-                </h3>
-                <button
-                  onClick={clearLogs}
-                  disabled={logs.length === 0}
-                  className="text-[9px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 disabled:opacity-10"
-                >
-                  FLUSH
-                </button>
-              </div>
-              <div
-                ref={scrollRef}
-                className="p-2 flex-1 overflow-y-auto custom-scroll text-[10px] font-mono space-y-1 bg-black/5"
-              >
-                {logs.length === 0 ? (
-                  <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] opacity-10 pt-16">
-                    AWAITING TELEMETRY
-                  </div>
-                ) : (
-                  [...logs].reverse().map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex gap-2 items-start opacity-80 hover:opacity-100 transition-opacity"
-                    >
-                      <span className="text-muted-foreground/40 shrink-0">
-                        [{moment(log.timestamp).format("HH:mm:ss")}]
-                      </span>
-                      <span
-                        className={`flex-1 leading-relaxed ${log.type === "error" ? "text-red-500 font-bold" : log.type === "success" ? "text-green-500" : log.type === "warning" ? "text-yellow-500" : "text-foreground/70"}`}
-                      >
-                        <span className="opacity-40 mr-1">{">"}</span>
-                        {log.message}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+            <AutomationSensorsPanel
+              noKeywords={noKeywords}
+              keywordCategories={keywordCategories}
+              visibleKeywords={visibleKeywords}
+              keywordsExpanded={keywordsExpanded}
+              setKeywordsExpanded={setKeywordsExpanded}
+              handleKeywordClick={handleKeywordClick}
+            />
+            <AutomationLogsPanel
+              logs={logs as LogEntry[]}
+              clearLogs={clearLogs}
+              scrollRef={scrollRef}
+            />
           </div>
         </div>
 
         {/* === Results Table === */}
-        <div className="bg-card rounded-lg border border-border/60 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="px-3 py-2 border-b border-border flex justify-between items-center bg-muted/10">
-            <div className="flex items-center gap-4">
-              <h2 className="text-[11px] font-black uppercase tracking-widest text-foreground/80">
-                Processed Results: {filteredAndSortedPosts.length}
-              </h2>
-              <div className="relative w-48 group">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
-                <input
-                  type="text"
-                  placeholder="Filter signals..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-background/50 border border-border/40 rounded px-7 h-7 text-[10px] w-full focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-medium"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {selectedPostIds.size > 0 && (
-                <>
-                  <button
-                    onClick={() => setIsSelectedModalOpen(true)}
-                    className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-primary/20 text-primary hover:bg-primary/10 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
-                  >
-                    <Eye className="h-3 w-3" />
-                    View ({selectedPostIds.size})
-                  </button>
-                  <button
-                    onClick={handleBulkAddToTracking}
-                    className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
-                  >
-                    <Plus className="h-3 w-3" />
-                    Track Selected ({selectedPostIds.size})
-                  </button>
-                </>
-              )}
-              <button
-                onClick={clearFoundPosts}
-                disabled={foundPosts.length === 0}
-                className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-destructive/20 text-destructive/60 hover:bg-destructive hover:text-white transition-all rounded-md flex items-center gap-2"
-              >
-                <Trash2 className="h-3 w-3" />
-                Reset Feed
-              </button>
-            </div>
-          </div>
-          <div className="p-0 flex-1 min-h-0 relative overflow-hidden rounded-none flex flex-col">
-            {foundPosts.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground flex flex-col items-center justify-center h-full">
-                <Bot className="h-8 w-8 mx-auto mb-1 opacity-20" />
-                <p className="font-semibold text-sm">No findings yet</p>
-                <p className="text-xs">
-                  Start the agent to search for relevant threads.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-y-auto flex-1 flex flex-col custom-scroll border rounded-none">
-                <table className="w-full text-xs text-left table-fixed rounded-none">
-                  <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
-                    <tr className="border-b font-bold">
-                      <th className="w-8 pl-3 pr-1">
-                        <Checkbox
-                          checked={
-                            filteredAndSortedPosts.length > 0 &&
-                            filteredAndSortedPosts.every((p) =>
-                              selectedPostIds.has(p.id),
-                            )
-                          }
-                          onCheckedChange={toggleAllPosts}
-                          aria-label="Select all"
-                          className="translate-y-[1px]"
-                        />
-                      </th>
-                      {["Intent", "Title", "Subreddit"].map((h) => (
-                        <th
-                          key={h}
-                          className={`p-1.5 font-bold text-xs  text-muted-foreground ${h === "Subreddit" ? "w-44" : h === "Intent" ? "w-20" : h === "Title" ? "w-[50%]" : ""}`}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                      <th
-                        className="p-1.5 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground w-28"
-                        onClick={handleDateSort}
-                      >
-                        <div className="flex items-center gap-1 font-bold">
-                          Date
-                          {sortConfig.direction === "asc" ? (
-                            <ArrowUp className="h-3 w-3" />
-                          ) : (
-                            <ArrowDown className="h-3 w-3" />
-                          )}
-                        </div>
-                      </th>
-                      <th className="w-12"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAndSortedPosts.map((post) => (
-                      <tr key={post.id} className="border-b hover:bg-muted/50">
-                        <td className="w-8 pl-3 pr-1">
-                          <Checkbox
-                            checked={selectedPostIds.has(post.id)}
-                            onCheckedChange={() => togglePostSelection(post.id)}
-                            aria-label={`Select ${post.title}`}
-                            className="translate-y-[2px]"
-                          />
-                        </td>
-                        <td className="px-1 w-20">
-                          <div className="flex flex-col gap-0.5">
-                            <span
-                              className={`w-fit text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}
-                            >
-                              {post.intent}
-                            </span>
-                            {post.category && post.category !== "general" && (
-                              <span className="w-fit text-[9px] py-0 px-1 rounded-full bg-secondary text-secondary-foreground">
-                                {post.category}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-1.5 font-medium w-full overflow-hidden">
-                          <Tooltip delayDuration={300}>
-                            <TooltipTrigger asChild>
-                              <a
-                                href="#"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  post.url && openUrl(post.url);
-                                }}
-                                className="hover:underline inline-block truncate"
-                              >
-                                {post.title}
-                                {trackedPostIds.has(post.id) && (
-                                  <KeywordBadge className="bg-blue-500/10 text-blue-400 border border-blue-500/20 ml-2">
-                                    Tracking
-                                  </KeywordBadge>
-                                )}
-                              </a>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              className="max-w-md p-3 bg-stone-50 border shadow"
-                              side="bottom"
-                              align="start"
-                            >
-                              <div className="text-sm font-semibold text-black ">
-                                <HighlightedText
-                                  text={post.title}
-                                  categories={keywordCategoriesForHighlighting}
-                                />
-                              </div>
-                              {post.selftext && (
-                                <div className="mt-2 border-t border-border pt-2">
-                                  <p className="text-sm text-foreground/80 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scroll">
-                                    <HighlightedText
-                                      text={post.selftext}
-                                      categories={
-                                        keywordCategoriesForHighlighting
-                                      }
-                                    />
-                                  </p>
-                                </div>
-                              )}
-                              <div className="mt-2 border-t border-border pt-2 flex justify-between items-center text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <User className="h-3 w-3" />
-                                  <span>u/{post.author || "unknown"}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Radar className="h-3 w-3" />
-                                  <span>r/{post.subreddit}</span>
-                                </div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </td>
-                        <td className="p-1.5 text-muted-foreground text-xs w-44">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <span className="inline-block border px-2 rounded-sm  cursor-pointer hover:bg-gray-100 hover:text-black">
-                                r/{post.subreddit}
-                              </span>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              <DropdownMenuItem
-                                className="text-xs"
-                                onClick={() =>
-                                  addSubredditToMonitoring(post.subreddit)
-                                }
-                              >
-                                <Radar className="h-4 w-4" />
-                                Monitor r/{post.subreddit}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                        <td className="p-1.5 text-muted-foreground text-xs w-28 whitespace-nowrap">
-                          {formatElapsedTime(post.timestamp)}
-                        </td>
-                        <td className="p-1.5 text-right w-12">
-                          <div className="flex items-center justify-end gap-1">
-                            <CustomButton
-                              onClick={() =>
-                                handleGetComments(post, post.sort_type)
-                              }
-                              title="View Comments"
-                              className="h-6 w-6 p-0 justify-center hover:bg-blue-500 hover:text-white text-muted-foreground"
-                            >
-                              <MessageCircle className="h-4 w-4" />
-                            </CustomButton>
-                            <CustomButton
-                              onClick={() => handleAddToTracking(post)}
-                              title="Add to Tracking"
-                              className="h-6 w-6 p-0 justify-center hover:bg-primary hover:text-primary-foreground text-muted-foreground"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </CustomButton>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
+        <AutomationResultsTable
+          filteredAndSortedPosts={filteredAndSortedPosts}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          selectedPostIds={selectedPostIds}
+          setIsSelectedModalOpen={setIsSelectedModalOpen}
+          handleBulkAddToTracking={handleBulkAddToTracking}
+          clearFoundPosts={clearFoundPosts}
+          foundPostsLength={foundPosts.length}
+          toggleAllPosts={toggleAllPosts}
+          togglePostSelection={togglePostSelection}
+          handleDateSort={handleDateSort}
+          sortConfig={sortConfig}
+          trackedPostIds={trackedPostIds}
+          keywordCategoriesForHighlighting={keywordCategoriesForHighlighting}
+          addSubredditToMonitoring={addSubredditToMonitoring}
+          handleGetComments={handleGetComments}
+          handleAddToTracking={handleAddToTracking}
+        />
       </div>
       <RedditCommentsView
         isOpen={commentsPost !== null}
@@ -1223,231 +683,29 @@ export function AutomationTab() {
         }}
       />
 
-      <Dialog open={isSelectedModalOpen} onOpenChange={setIsSelectedModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-          <DialogHeader className="flex">
-            <div className="flex space-x-3">
-              <DialogTitle>Selected Items ({selectedPostIds.size})</DialogTitle>
-              <DialogTitle>
-                {generatedReplies.size > 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    {generatedReplies.size} / {selectedPostIds.size} generated
-                  </span>
-                )}
-              </DialogTitle>
-            </div>
-            <DialogDescription>
-              Review the items you have selected for tracking.
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Bulk Actions */}
-          <div className="space-y-3 pb-3 border-b">
-            {/* Manual Bulk Comment */}
-            <div className="p-3 bg-muted/20 rounded-md border border-border/40">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
-                Manual Bulk Comment
-              </label>
-              <div className="flex flex-col gap-2">
-                <Textarea
-                  value={manualBulkComment}
-                  onChange={(e) => setManualBulkComment(e.target.value)}
-                  placeholder="Type a message to post to ALL selected items..."
-                  className="text-xs min-h-[60px]"
-                />
-                <button
-                  onClick={handleManualBulkPublish}
-                  disabled={
-                    isPublishing ||
-                    selectedPostIds.size === 0 ||
-                    !manualBulkComment.trim()
-                  }
-                  className="self-end px-3 py-1.5 bg-blue-600 text-white rounded text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isPublishing ? (
-                    <div className="flex items-center gap-1">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Publishing...
-                    </div>
-                  ) : (
-                    "Publish to Selection"
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleBulkGenerateReplies}
-                disabled={
-                  isBulkGenerating || isPublishing || selectedPostIds.size === 0
-                }
-                className="w-full text-center justify-center flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-              >
-                {isBulkGenerating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" />
-                    Generate All Replies
-                  </>
-                )}
-              </button>
-              <button
-                onClick={handleGenerateAndPublish}
-                disabled={
-                  isBulkGenerating || isPublishing || selectedPostIds.size === 0
-                }
-                className="w-full flex text-center justify-center items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-              >
-                {isPublishing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" />
-                    Generate & Publish All
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Progress Bar */}
-            {(isBulkGenerating || isPublishing) && (
-              <div className="space-y-1">
-                <Progress value={bulkProgress} className="h-2" />
-                <p className="text-xs text-muted-foreground font-mono">
-                  {processingStatus}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto custom-scroll border rounded-md">
-            {selectedPostIds.size === 0 ? (
-              <div className="p-8 text-center text-muted-foreground text-sm">
-                No items selected.
-              </div>
-            ) : (
-              <div className="divide-y">
-                {foundPosts
-                  .filter((p) => selectedPostIds.has(p.id))
-                  .map((post) => (
-                    <div
-                      key={post.id}
-                      className="p-3 flex items-start justify-between gap-3 hover:bg-muted/50 group"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span
-                            className={`text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}
-                          >
-                            {post.intent}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            r/{post.subreddit}
-                          </span>
-                        </div>
-                        <a
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            post.url && openUrl(post.url);
-                          }}
-                          className="text-sm font-medium hover:underline block truncate"
-                        >
-                          {post.title}
-                        </a>
-                        {generatedReplies.has(post.id) && (
-                          <div className="mt-2 p-2 bg-muted/30 rounded border border-border/40">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Sparkles className="h-3 w-3 text-primary" />
-                              <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
-                                AI Generated Reply
-                              </span>
-                            </div>
-                            <Textarea
-                              value={generatedReplies.get(post.id) || ""}
-                              onChange={(e) => {
-                                const newReplies = new Map(generatedReplies);
-                                newReplies.set(post.id, e.target.value);
-                                setGeneratedReplies(newReplies);
-                              }}
-                              rows={3}
-                              className="text-xs mt-1 bg-background"
-                            />
-                            <button
-                              onClick={async () => {
-                                const reply = generatedReplies.get(post.id);
-                                if (!reply) return;
-                                const success = await handlePublishReply(
-                                  post,
-                                  reply,
-                                );
-                                if (success) {
-                                  toast.success("Reply published");
-                                } else {
-                                  toast.error("Failed to publish reply");
-                                }
-                              }}
-                              className="mt-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground rounded hover:bg-primary/90"
-                            >
-                              Publish Reply
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <button
-                          onClick={() => handleGenerateReply(post)}
-                          disabled={generatingForId === post.id}
-                          className="text-primary hover:text-primary/80 p-1 disabled:opacity-50"
-                          title="Generate AI reply"
-                        >
-                          {generatingForId === post.id ? (
-                            <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Sparkles className="h-4 w-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => togglePostSelection(post.id)}
-                          className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                          title="Remove from selection"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end pt-2">
-            <button
-              onClick={() => setSelectedPostIds(new Set())}
-              className="mr-auto text-xs text-destructive hover:underline"
-            >
-              Clear Selection
-            </button>
-            <button
-              onClick={() => {
-                setIsSelectedModalOpen(false);
-                handleBulkAddToTracking();
-              }}
-              disabled={selectedPostIds.size === 0}
-              className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest rounded-md hover:bg-primary/90"
-            >
-              Track All ({selectedPostIds.size})
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </TooltipProvider >
+      <AutomationSelectionDialog
+        open={isSelectedModalOpen}
+        onOpenChange={setIsSelectedModalOpen}
+        selectedPostIds={selectedPostIds}
+        foundPosts={foundPosts}
+        generatedReplies={generatedReplies}
+        setGeneratedReplies={setGeneratedReplies}
+        manualBulkComment={manualBulkComment}
+        setManualBulkComment={setManualBulkComment}
+        isPublishing={isPublishing}
+        isBulkGenerating={isBulkGenerating}
+        bulkProgress={bulkProgress}
+        processingStatus={processingStatus}
+        handleManualBulkPublish={handleManualBulkPublish}
+        handleBulkGenerateReplies={handleBulkGenerateReplies}
+        handleGenerateAndPublish={handleGenerateAndPublish}
+        handlePublishReply={handlePublishReply}
+        handleGenerateReply={handleGenerateReply}
+        generatingForId={generatingForId}
+        togglePostSelection={togglePostSelection}
+        setSelectedPostIds={setSelectedPostIds}
+        handleBulkAddToTracking={handleBulkAddToTracking}
+      />
+    </TooltipProvider>
   );
 }
