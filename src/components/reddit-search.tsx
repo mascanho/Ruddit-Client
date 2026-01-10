@@ -691,74 +691,61 @@ export function RedditSearch({
   return (
     <div className="flex-1 flex flex-col gap-4 min-h-0 animate-in fade-in duration-500">
       {/* Search Bar Section */}
-      <Card className="p-4 shadow-sm border-border/60 bg-white backdrop-blur-sm">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider opacity-80 flex items-center gap-2">
-                <Search className="h-4 w-4 text-primary" />
-                Reddit Engine
-              </h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Query global subreddits and monitor specific keywords
-              </p>
-            </div>
-            <div className="flex gap-1.5 p-1 bg-muted/30 rounded-lg border border-border/40">
-              {(["hot", "top", "new"] as SortType[]).map((sort) => (
-                <Button
-                  key={sort}
-                  variant={selectedSorts.includes(sort) ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => toggleSort(sort)}
-                  disabled={isSearching}
-                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${selectedSorts.includes(sort)
-                      ? "shadow-sm"
-                      : "opacity-60 hover:opacity-100 hover:bg-background/80"
-                    }`}
-                >
-                  {sort === "hot" && <Flame className="h-3 w-3 mr-1.5" />}
-                  {sort === "top" && <TrendingUp className="h-3 w-3 mr-1.5" />}
-                  {sort === "new" && <Clock className="h-3 w-3 mr-1.5" />}
-                  {sort}
-                </Button>
-              ))}
-            </div>
+      <Card className="p-3 shadow-sm border-border/60 bg-white backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          {/* Search Input - Main Focus */}
+          <div className="relative flex-1 group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
+            <Input
+              placeholder="Search global subreddits, keywords, or topics..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="pl-9 h-9 bg-background/80 border-border/60 focus:ring-1 focus:ring-primary/20 transition-all text-sm"
+            />
           </div>
 
-          <div className="flex gap-2">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
-              <Input
-                placeholder="Search subreddits, keywords, or topics..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="pl-9 h-10 bg-background/80 border-border/60 focus:ring-1 focus:ring-primary/20 transition-all text-sm"
-              />
-            </div>
-            <Button
-              onClick={handleSearch}
-              disabled={isSearching || !query.trim()}
-              className="px-6 h-10 font-bold uppercase text-[11px] tracking-wider shadow-md hover:shadow-lg transition-all active:scale-95"
-            >
-              {isSearching ? (
-                <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Running...
-                </div>
-              ) : (
-                "Search"
-              )}
-            </Button>
-            {/*<Button
-              variant="outline"
-              onClick={searchMonitored}
-              disabled={isSearching}
-              className="h-10 border-border/60 text-[11px] font-bold uppercase tracking-wider hover:bg-primary/5 transition-all"
-            >
-              <Sparkles className="h-3.5 w-3.5 mr-2 text-primary" />
-              Auto-Pilot
-            </Button>*/}
+          <Button
+            onClick={handleSearch}
+            disabled={isSearching || !query.trim()}
+            className="px-4 h-9 font-bold uppercase text-[11px] tracking-wider shadow-sm hover:shadow transition-all active:scale-95"
+          >
+            {isSearching ? (
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Running
+              </div>
+            ) : (
+              "Search"
+            )}
+          </Button>
+
+          {/* Vertical Divider */}
+          <div className="h-6 w-px bg-border/60 mx-1" />
+
+          {/* Sort Selection - Sectioned */}
+          <div className="flex items-center gap-1.5 p-1 bg-muted/30 rounded-lg border border-border/40">
+            <span className="text-[10px] font-bold uppercase text-muted-foreground/60 px-1">
+              Source:
+            </span>
+            {(["hot", "top", "new"] as SortType[]).map((sort) => (
+              <Button
+                key={sort}
+                variant={selectedSorts.includes(sort) ? "default" : "ghost"}
+                size="sm"
+                onClick={() => toggleSort(sort)}
+                disabled={isSearching}
+                className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${selectedSorts.includes(sort)
+                    ? "shadow-sm"
+                    : "opacity-60 hover:opacity-100 hover:bg-background/80"
+                  }`}
+              >
+                {sort === "hot" && <Flame className="h-3 w-3 mr-1.5" />}
+                {sort === "top" && <TrendingUp className="h-3 w-3 mr-1.5" />}
+                {sort === "new" && <Clock className="h-3 w-3 mr-1.5" />}
+                {sort}
+              </Button>
+            ))}
           </div>
         </div>
       </Card>
@@ -797,12 +784,12 @@ export function RedditSearch({
                     key={filter}
                     onClick={() => toggleViewFilter(filter)}
                     className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewFilters.includes(filter)
-                        ? filter === "hot"
-                          ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                          : filter === "top"
-                            ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                            : "bg-green-500/10 text-green-600 dark:text-green-400"
-                        : "opacity-30 hover:opacity-100"
+                      ? filter === "hot"
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                        : filter === "top"
+                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                          : "bg-green-500/10 text-green-600 dark:text-green-400"
+                      : "opacity-30 hover:opacity-100"
                       }`}
                   >
                     {filter}
@@ -821,8 +808,8 @@ export function RedditSearch({
                     key={intent}
                     onClick={() => toggleViewIntentFilter(intent)}
                     className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewIntentFilters.includes(intent)
-                        ? "bg-primary/10 text-primary"
-                        : "opacity-30 hover:opacity-100"
+                      ? "bg-primary/10 text-primary"
+                      : "opacity-30 hover:opacity-100"
                       }`}
                   >
                     {intent}
@@ -881,14 +868,14 @@ export function RedditSearch({
             {paginatedResults.length > 0 ? (
               <div
                 className={`grid gap-3 ${gridColumns === 1
-                    ? "grid-cols-1"
-                    : gridColumns === 2
-                      ? "grid-cols-1 md:grid-cols-2"
-                      : gridColumns === 3
-                        ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                        : gridColumns === 4
-                          ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                          : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                  ? "grid-cols-1"
+                  : gridColumns === 2
+                    ? "grid-cols-1 md:grid-cols-2"
+                    : gridColumns === 3
+                      ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                      : gridColumns === 4
+                        ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                        : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
                   }`}
               >
                 {paginatedResults.map((result) => (
@@ -926,10 +913,10 @@ export function RedditSearch({
                               <div
                                 key={type}
                                 className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider text-white ${type === "hot"
-                                    ? "bg-gradient-to-r from-red-500 to-red-600"
-                                    : type === "top"
-                                      ? "bg-gradient-to-r from-blue-500 to-blue-600"
-                                      : "bg-gradient-to-r from-green-500 to-green-600"
+                                  ? "bg-gradient-to-r from-red-500 to-red-600"
+                                  : type === "top"
+                                    ? "bg-gradient-to-r from-blue-500 to-blue-600"
+                                    : "bg-gradient-to-r from-green-500 to-green-600"
                                   }`}
                               >
                                 {type}

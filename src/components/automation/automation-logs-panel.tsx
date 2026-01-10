@@ -12,7 +12,7 @@ export interface LogEntry {
 interface AutomationLogsPanelProps {
     logs: LogEntry[];
     clearLogs: () => void;
-    scrollRef: React.RefObject<HTMLDivElement>;
+    scrollRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function AutomationLogsPanel({
