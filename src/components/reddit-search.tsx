@@ -606,6 +606,8 @@ export function RedditSearch({
     localStorage.setItem("lastRedditSearchGridColumns", gridColumns.toString());
   }, [gridColumns]);
 
+  const [filterQuery, setFilterQuery] = useState("");
+
   // Filter local results based on viewSort and viewFilters
   const sortedSubreddits = [...subreddits]
     .filter((item) => {
@@ -619,7 +621,14 @@ export function RedditSearch({
         (f) => f.toLowerCase() === intent.toLowerCase(),
       );
 
-      return sortTypeMatch && intentMatch;
+      // Local keyword filter
+      const matchesFilter = filterQuery
+        ? (item.title || "").toLowerCase().includes(filterQuery.toLowerCase()) ||
+        (item.subreddit || "").toLowerCase().includes(filterQuery.toLowerCase()) ||
+        (item.selftext || "").toLowerCase().includes(filterQuery.toLowerCase())
+        : true;
+
+      return sortTypeMatch && intentMatch && matchesFilter;
     })
     .sort((a, b) => {
       if (viewSort === "original") return 0;
@@ -736,8 +745,8 @@ export function RedditSearch({
                 onClick={() => toggleSort(sort)}
                 disabled={isSearching}
                 className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${selectedSorts.includes(sort)
-                    ? "shadow-sm"
-                    : "opacity-60 hover:opacity-100 hover:bg-background/80"
+                  ? "shadow-sm"
+                  : "opacity-60 hover:opacity-100 hover:bg-background/80"
                   }`}
               >
                 {sort === "hot" && <Flame className="h-3 w-3 mr-1.5" />}
@@ -796,6 +805,49 @@ export function RedditSearch({
                   </button>
                 ))}
               </div>
+
+              <div className="w-px h-3 bg-border/60" />
+
+              {/* Local Filter Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={filterQuery ? "secondary" : "ghost"}
+                    size="sm"
+                    className={`h-6 px-2 text-[10px] uppercase font-bold tracking-wider ${filterQuery ? "text-primary" : "opacity-60 hover:opacity-100"
+                      }`}
+                  >
+                    <Search className="h-3 w-3 mr-1.5" />
+                    {filterQuery ? "Filtered" : "Filter"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-[240px] p-2">
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1">
+                      Filter Results
+                    </span>
+                    <Input
+                      placeholder="Type to filter..."
+                      value={filterQuery}
+                      onChange={(e) => setFilterQuery(e.target.value)}
+                      className="h-8 text-xs bg-muted/30"
+                      autoFocus
+                    />
+                    {filterQuery && (
+                      <div className="flex justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setFilterQuery("")}
+                          className="h-6 text-[10px] hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          Clear Filter
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <div className="w-px h-3 bg-border/60" />
 
