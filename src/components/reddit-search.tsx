@@ -1,6 +1,3 @@
-// @ts-nocheck
-"use client";
-
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,10 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Search,
   Plus,
-  Sparkles,
-  Flame,
-  TrendingUp,
-  Clock,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -41,46 +34,31 @@ import { useAppSettings } from "@/store/settings-store";
 import { invoke } from "@tauri-apps/api/core";
 import {
   useAddSingleSubReddit,
-  useRedditPostsTab,
   useSubredditsStore,
 } from "@/store/store";
+import type { Message } from "./smart-data-tables";
 import { RedditCommentsView } from "./reddit-comments-view";
 import { toast } from "sonner";
 import moment from "moment";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { KeywordHighlighter } from "./keyword-highlighter";
+import { getIntentColor } from "@/lib/marketing-utils";
+
+// Import modularized utilities
 import {
-  calculateIntent,
-  categorizePost,
-  getIntentColor,
-} from "@/lib/marketing-utils";
-
-// ... existing imports
-
-type SearchResult = {
-  id: string;
-  title: string;
-  subreddit: string;
-  url: string;
-  relevance_score: number; // Renamed from relevance
-  sort_type: string; // Added new field
-  snippet: string;
-  timestamp?: number;
-  formatted_date?: string;
-  score?: number;
-  num_comments?: number;
-  author?: string;
-  is_self?: boolean;
-  name?: string;
-  selftext?: string | null;
-  thumbnail?: string | null;
-  intent?: string; // allow string from backend
-  category?: "brand" | "competitor" | "general";
-  permalink?: string;
-  date_added?: number;
-};
-
-type SortType = "hot" | "top" | "new";
+  SearchBar,
+  exportToCSV,
+  exportToJSON,
+  importData,
+  filterAndSortResults,
+  performSearch,
+  fetchAllSearchedPosts,
+  addResultToTable,
+  addAllResultsToTable,
+  type SearchResult,
+  type SortType,
+  type ViewSortType,
+} from "./reddit-search/index";
 
 export function RedditSearch({
   onAddResults,
@@ -89,8 +67,9 @@ export function RedditSearch({
   onAddResults: (results: SearchResult[]) => void;
   onNotifyNewPosts: (count: number) => void;
 }) {
+  // Search state
   const [query, setQuery] = useState(
-    () => localStorage.getItem("lastRedditSearchQuery") || "",
+    () => localStorage.getItem("lastRedditSearchQuery") || ""
   );
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -98,24 +77,47 @@ export function RedditSearch({
     const saved = localStorage.getItem("lastRedditSearchSorts");
     return saved ? JSON.parse(saved) : ["hot"];
   });
+
+  // Pagination state
   const [currentPage, setCurrentPage] = useState(() => {
     return parseInt(localStorage.getItem("lastRedditSearchPage") || "1", 10);
   });
   const [rowsPerPage, setRowsPerPage] = useState(() => {
     return parseInt(localStorage.getItem("lastRedditSearchRows") || "100", 10);
   });
-  const { settings, updateSettings } = useAppSettings();
-  const { setSubreddits, subreddits } = useSubredditsStore();
-  const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
+
+  // View state
+  const [viewSort, setViewSort] = useState<ViewSortType>(() => {
+    return (
+      (localStorage.getItem("lastRedditSearchViewSort") as ViewSortType) ||
+      "date-desc"
+    );
+  });
+  const [viewFilters, setViewFilters] = useState<SortType[]>(() => {
+    const saved = localStorage.getItem("lastRedditSearchViewFilters");
+    return saved ? JSON.parse(saved) : ["hot", "top", "new"];
+  });
+  const [viewIntentFilters, setViewIntentFilters] = useState<string[]>(() => {
+    const saved = localStorage.getItem("lastRedditSearchViewIntentFilters");
+    return saved ? JSON.parse(saved) : ["High", "Medium", "Low"];
+  });
+  const [filterQuery, setFilterQuery] = useState("");
+  const [gridColumns, setGridColumns] = useState<number>(() => {
+    const saved = localStorage.getItem("lastRedditSearchGridColumns");
+    return saved ? parseInt(saved, 10) : 4;
+  });
 
   // Comments state
   const [comments, setComments] = useState<Message[]>([]);
   const [commentsPost, setCommentsPost] = useState<SearchResult | null>(null);
   const [sortTypeForComments, setSortTypeForComments] = useState("best");
 
-  // Helper function to escape special characters for regex
+  // Stores
+  const { settings, updateSettings } = useAppSettings();
+  const { setSubreddits, subreddits } = useSubredditsStore();
+  const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
 
-  // Persist query and sorts
+  // Persist state to localStorage
   useEffect(() => {
     localStorage.setItem("lastRedditSearchQuery", query);
   }, [query]);
@@ -123,7 +125,7 @@ export function RedditSearch({
   useEffect(() => {
     localStorage.setItem(
       "lastRedditSearchSorts",
-      JSON.stringify(selectedSorts),
+      JSON.stringify(selectedSorts)
     );
   }, [selectedSorts]);
 
@@ -135,110 +137,45 @@ export function RedditSearch({
     localStorage.setItem("lastRedditSearchRows", rowsPerPage.toString());
   }, [rowsPerPage]);
 
-  const addSubredditToMonitoring = (subreddit: string) => {
-    const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
-    if (settings.monitoredSubreddits.includes(cleaned)) {
-      toast.info(`Already monitoring r/${cleaned}`, {
-        position: "bottom-center",
-      });
-      return;
-    }
-
-    updateSettings({
-      monitoredSubreddits: [...settings.monitoredSubreddits, cleaned],
-    });
-
-    toast.success(`Now monitoring r/${cleaned}`, {
-      position: "bottom-center",
-    });
-  };
-
-  async function handleFetchSubreddits() {
-    try {
-      const fetchedPosts: PostDataWrapper[] = await invoke(
-        "get_all_searched_posts",
-      );
-      const mappedResults: SearchResult[] = fetchedPosts.map((post) => ({
-        id: post.id.toString(),
-        title: post.title,
-        subreddit: post.subreddit,
-        url: post.url,
-        relevance_score: post.relevance_score,
-        sort_type: post.sort_type,
-        snippet: post.selftext
-          ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
-          : "",
-        timestamp: post.timestamp,
-        formatted_date: post.formatted_date,
-        score: post.score,
-        num_comments: post.num_comments,
-        author: post.author,
-        is_self: post.is_self,
-        name: post.name,
-        selftext: post.selftext,
-        thumbnail: post.thumbnail,
-        intent: post.intent,
-        permalink: post.permalink,
-        category: categorizePost(
-          post.title,
-          settings.brandKeywords,
-          settings.competitorKeywords,
-        ),
-      }));
-      setSubreddits(mappedResults);
-      console.log("Subreddits:", mappedResults);
-    } catch (error) {
-      console.error("Error fetching subreddits:", error);
-    }
-  }
-
-  // KEEP THE SEARCH PERSISTING by querying the DB of the search results
-  async function persistSearch() {
-    try {
-      const fetchedPosts: PostDataWrapper[] = await invoke(
-        "get_all_searched_posts",
-      );
-      const mappedResults: SearchResult[] = fetchedPosts.map((post) => ({
-        id: post.id.toString(),
-        title: post.title,
-        subreddit: post.subreddit,
-        url: post.url,
-        relevance_score: post.relevance_score,
-        sort_type: post.sort_type,
-        snippet: post.selftext
-          ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
-          : "",
-        timestamp: post.timestamp,
-        formatted_date: post.formatted_date,
-        score: post.score,
-        num_comments: post.num_comments,
-        author: post.author,
-        is_self: post.is_self,
-        name: post.name,
-        selftext: post.selftext,
-        thumbnail: post.thumbnail,
-        intent: post.intent,
-        permalink: post.permalink,
-        category: categorizePost(
-          post.title,
-          settings.brandKeywords,
-          settings.competitorKeywords,
-        ),
-      }));
-      setSubreddits(mappedResults);
-      // NOTE: Removed setViewFilters reset here to rely on persisted state
-      console.log("Subreddits:", mappedResults);
-    } catch (error) {
-      console.error("Error persisting search:", error);
-    }
-  }
+  useEffect(() => {
+    localStorage.setItem("lastRedditSearchViewSort", viewSort);
+  }, [viewSort]);
 
   useEffect(() => {
-    persistSearch();
+    localStorage.setItem(
+      "lastRedditSearchViewFilters",
+      JSON.stringify(viewFilters)
+    );
+  }, [viewFilters]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "lastRedditSearchViewIntentFilters",
+      JSON.stringify(viewIntentFilters)
+    );
+  }, [viewIntentFilters]);
+
+  useEffect(() => {
+    localStorage.setItem("lastRedditSearchGridColumns", gridColumns.toString());
+  }, [gridColumns]);
+
+  // Load persisted search results on mount
+  useEffect(() => {
+    const loadPersistedResults = async () => {
+      try {
+        const results = await fetchAllSearchedPosts(
+          settings.brandKeywords,
+          settings.competitorKeywords
+        );
+        setSubreddits(results as any); // Type cast - SearchResult is compatible with PostDataWrapper
+      } catch (error) {
+        console.error("Error loading persisted results:", error);
+      }
+    };
+    loadPersistedResults();
   }, []);
 
+  // Handlers
   const toggleSort = (sort: SortType) => {
     setSelectedSorts((prev) => {
       if (prev.includes(sort)) {
@@ -248,7 +185,6 @@ export function RedditSearch({
     });
   };
 
-  // HANDLE THE SEARCH FUNCTION
   const handleSearch = async () => {
     if (!query.trim()) return;
 
@@ -257,167 +193,63 @@ export function RedditSearch({
     setCurrentPage(1);
 
     try {
-      // Call Tauri command to query Reddit and store in database
-      const fetchedPosts: PostDataWrapper[] = await invoke(
-        "get_reddit_results",
-        {
-          sortTypes: selectedSorts, // Renamed parameter to match Rust backend
-          query: query.trim(),
-        },
-      );
-
-      const mappedResults: SearchResult[] = fetchedPosts.map((post) => ({
-        id: post.id.toString(),
-        title: post.title,
-        subreddit: post.subreddit,
-        url: post.url,
-        relevance_score: post.relevance_score,
-        sort_type: post.sort_type,
-        snippet: post.selftext
-          ? post.selftext.slice(0, 200) +
-          (post.selftext.length > 200 ? "..." : "")
-          : "",
-        timestamp: post.timestamp,
-        formatted_date: post.formatted_date,
-        score: post.score,
-        num_comments: post.num_comments,
-        author: post.author,
-        is_self: post.is_self,
-        name: post.name,
-        selftext: post.selftext,
-        thumbnail: post.thumbnail,
-        intent: post.intent,
-        permalink: post.permalink,
-        category: categorizePost(
-          post.title,
-          settings.brandKeywords,
-          settings.competitorKeywords,
-        ),
-      }));
-      setSubreddits(mappedResults);
-      setViewFilters(selectedSorts); // Sync view filters with search params
-      console.log("Search results:", mappedResults);
+      const results = await performSearch({
+        query,
+        sortTypes: selectedSorts,
+        brandKeywords: settings.brandKeywords,
+        competitorKeywords: settings.competitorKeywords,
+      });
+      setSubreddits(results as any); // Type cast - SearchResult is compatible with PostDataWrapper
+      setViewFilters(selectedSorts);
     } catch (error) {
-      console.error("Search error:", error);
-      toast.error(`Search failed: ${error}`);
+      // Error already handled in performSearch
     } finally {
       setIsSearching(false);
     }
   };
 
-  // ADD SINGLE SUBREDDIT TO REDDIT POSTS TABLE
+  // Filter and sort results (moved up to be available for exports)
+  const sortedSubreddits = filterAndSortResults(subreddits as any, {
+    viewSort,
+    viewFilters,
+    viewIntentFilters,
+    filterQuery,
+  });
+
+  const handleExportCSV = () => exportToCSV(sortedSubreddits as any);
+  const handleExportJSON = () => exportToJSON(sortedSubreddits as any);
+  const handleImportClick = () => {
+    importData((data) => {
+      console.log("Importing data:", data);
+      setSubreddits(data as any);
+      // Reset filters to show all imported data
+      setViewFilters(["hot", "top", "new"]);
+      setViewIntentFilters(["High", "Medium", "Low"]);
+      setFilterQuery("");
+      setCurrentPage(1);
+    });
+  };
+
   const addToTable = async (result: SearchResult) => {
-    try {
-      // ID is already parsed by backend, sent as string to avoid JS precision loss
-      const parsedId = parseInt(result.id, 10);
+    await addResultToTable({
+      result,
+      brandKeywords: settings.brandKeywords,
+      competitorKeywords: settings.competitorKeywords,
+      subRedditsSaved,
+      addSingleSubreddit,
+      onNotifyNewPosts,
+    });
+  };
 
-      // Client-side duplicate check using parsed ID
-      const isClientSideDuplicate = subRedditsSaved.some(
-        (post) => post.id === parsedId,
-      );
-
-      if (isClientSideDuplicate) {
-        toast.info(
-          `Post "${result.title}" is already in your tracking table.`,
-          {
-            position: "bottom-center",
-          },
-        );
-        return; // Exit if already exists client-side
-      }
-
-      // TAURI COMMAND TO SEND TO BE
-      const isInserted: boolean = await invoke("save_single_reddit_command", {
-        post: {
-          id: parsedId,
-          timestamp: result.timestamp || Date.now(),
-          formatted_date:
-            result.formatted_date || new Date().toISOString().split("T")[0],
-          title: result.title,
-          url: result.url,
-          sort_type: result.sort_type,
-          relevance_score: result.relevance_score,
-          subreddit: result.subreddit,
-          permalink: result.permalink || result.url,
-          engaged: 0,
-          assignee: "",
-          notes: "",
-          name: result.name || `na-${result.id}`, // Generate if missing
-          selftext: result.selftext || "",
-          author: result.author || "unknown",
-          score: result.score || 0,
-          thumbnail: result.thumbnail || "",
-          is_self: result.is_self || false,
-          num_comments: result.num_comments || 0,
-          intent: result.intent || "Low", // Use result intent
-          date_added: result.date_added || 0,
-        },
-      });
-
-      // Reconstruct singlePost here as the backend only returns a boolean
-      const singlePost: PostDataWrapper = {
-        id: parsedId,
-        timestamp: result.timestamp || Date.now(),
-        formatted_date:
-          result.formatted_date || new Date().toISOString().split("T")[0],
-        title: result.title,
-        url: result.url,
-        sort_type: result.sort_type,
-        relevance_score: result.relevance_score,
-        subreddit: result.subreddit,
-        permalink: result.permalink || result.url, // Using permalink if available
-        engaged: 0,
-        assignee: "",
-        notes: "",
-        name: result.name || `t3_${result.id}`, // Generate if missing
-        selftext: result.selftext || "",
-        author: result.author || "unknown",
-        score: result.score || 0,
-        thumbnail: result.thumbnail || "",
-        is_self: result.is_self || false,
-        num_comments: result.num_comments || 0,
-        status: "new",
-        intent: result.intent || "Low",
-        category: categorizePost(
-          result.title,
-          settings.brandKeywords,
-          settings.competitorKeywords,
-        ),
-        date_added: result.date_added || 0,
-      };
-
-      if (!isInserted) {
-        toast.info(
-          `Post "${singlePost.title}" is already in your tracking table.`,
-          {
-            position: "bottom-center",
-          },
-        );
-        return;
-      }
-
-      addSingleSubreddit(singlePost);
-
-      // Ensure all parameters are defined
-      if (!singlePost?.url || !singlePost?.title || !singlePost.is_self) {
-        throw new Error("This is not a a valid reddit post ");
-      }
-
-      await invoke("get_post_comments_command", {
-        url: singlePost.url,
-        title: singlePost.title,
-        sortType: singlePost.sort_type, // Use new field, camelCase for Tauri
-        subreddit: singlePost.subreddit, // Add subreddit here
-      });
-
-      toast.info(`Added ${singlePost.title} post to table`, {
-        position: "bottom-center",
-      });
-      onNotifyNewPosts(1);
-    } catch (err: any) {
-      console.error("Error in addToTable:", err);
-      toast.error(`Failed to add post: ${err.message || err}`);
-    }
+  const addAllToTable = async () => {
+    await addAllResultsToTable(
+      paginatedResults,
+      settings.brandKeywords,
+      settings.competitorKeywords,
+      subRedditsSaved,
+      addSingleSubreddit,
+      onNotifyNewPosts
+    );
   };
 
   const handleOpenInBrowser = async (url: string) => {
@@ -428,7 +260,10 @@ export function RedditSearch({
     }
   };
 
-  const handleGetComments = async (result: SearchResult, sort_type: string) => {
+  const handleGetComments = async (
+    result: SearchResult,
+    sort_type: string
+  ) => {
     try {
       const fetchedComments = (await invoke("get_post_comments_command", {
         url: result.url,
@@ -452,212 +287,23 @@ export function RedditSearch({
     }
   };
 
-  const addAllToTable = async () => {
-    let addedCount = 0;
-    let duplicateCount = 0;
-
-    for (const result of paginatedResults) {
-      const parsedId = parseInt(result.id, 10);
-      const singlePost: PostDataWrapper = {
-        id: parsedId,
-        timestamp: result.timestamp || Date.now(),
-        formatted_date:
-          result.formatted_date || new Date().toISOString().split("T")[0],
-        title: result.title,
-        url: result.url,
-        sort_type: result.sort_type,
-        relevance_score: result.relevance_score,
-        subreddit: result.subreddit,
-        permalink: result.permalink || result.url,
-        engaged: 0,
-        assignee: "",
-        notes: "",
-        name: result.name || `t3_${result.id}`,
-        selftext: result.selftext || "",
-        author: result.author || "unknown",
-        score: result.score || 0,
-        thumbnail: result.thumbnail || "",
-        is_self: result.is_self || false,
-        num_comments: result.num_comments || 0,
-        status: "new",
-        intent: result.intent || "Low",
-        category: categorizePost(
-          result.title,
-          settings.brandKeywords,
-          settings.competitorKeywords,
-        ),
-        date_added: result.date_added || 0,
-      };
-
-      // Client-side duplicate check
-      const isClientSideDuplicate = subRedditsSaved.some(
-        (post) => post.id === singlePost.id,
-      );
-
-      if (isClientSideDuplicate) {
-        duplicateCount++;
-        continue;
-      }
-
-      try {
-        const isInserted: boolean = await invoke("save_single_reddit_command", {
-          post: singlePost,
-        });
-
-        if (isInserted) {
-          addSingleSubreddit(singlePost);
-          addedCount++;
-          if (
-            singlePost.url &&
-            singlePost.title &&
-            singlePost.sort_type &&
-            singlePost.subreddit
-          ) {
-            await invoke("get_post_comments_command", {
-              url: singlePost.url,
-              title: singlePost.title,
-              sortType: singlePost.sort_type,
-              subreddit: singlePost.subreddit,
-            });
-          }
-        } else {
-          // Backend reported it as a duplicate
-          duplicateCount++;
-        }
-      } catch (err: any) {
-        console.error(`Error adding post ${singlePost.title}:`, err);
-        toast.error(
-          `Failed to add post "${singlePost.title}": ${err.message || err}`,
-        );
-      }
-    }
-
-    if (addedCount > 0) {
-      toast.success(`Successfully added ${addedCount} post(s) to table!`, {
+  const addSubredditToMonitoring = (subreddit: string) => {
+    const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
+    if (settings.monitoredSubreddits.includes(cleaned)) {
+      toast.info(`Already monitoring r/${cleaned}`, {
         position: "bottom-center",
       });
-      onNotifyNewPosts(addedCount);
+      return;
     }
-    if (duplicateCount > 0) {
-      toast.info(
-        `${duplicateCount} post(s) were already in your tracking table.`,
-        {
-          position: "bottom-center",
-        },
-      );
-    }
-  };
 
-  const searchMonitored = () => {
-    const monitored = [
-      ...settings.monitoredSubreddits,
-      ...settings.monitoredKeywords,
-    ];
-    if (monitored.length > 0) {
-      setQuery(monitored.join(" OR "));
-    }
-  };
-
-  const [viewSort, setViewSort] = useState<
-    | "date-desc"
-    | "date-asc"
-    | "score-desc"
-    | "score-asc"
-    | "comments-desc"
-    | "comments-asc"
-    | "original"
-  >(() => {
-    return (
-      (localStorage.getItem("lastRedditSearchViewSort") as any) || "date-desc"
-    );
-  });
-
-  const [viewFilters, setViewFilters] = useState<SortType[]>(() => {
-    const saved = localStorage.getItem("lastRedditSearchViewFilters");
-    return saved ? JSON.parse(saved) : ["hot", "top", "new"];
-  });
-
-  const [viewIntentFilters, setViewIntentFilters] = useState<string[]>(() => {
-    const saved = localStorage.getItem("lastRedditSearchViewIntentFilters");
-    return saved ? JSON.parse(saved) : ["High", "Medium", "Low"];
-  });
-
-  const [gridColumns, setGridColumns] = useState<number>(() => {
-    const saved = localStorage.getItem("lastRedditSearchGridColumns");
-    return saved ? parseInt(saved, 10) : 4;
-  });
-
-  useEffect(() => {
-    localStorage.setItem("lastRedditSearchViewSort", viewSort);
-  }, [viewSort]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      "lastRedditSearchViewFilters",
-      JSON.stringify(viewFilters),
-    );
-  }, [viewFilters]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      "lastRedditSearchViewIntentFilters",
-      JSON.stringify(viewIntentFilters),
-    );
-  }, [viewIntentFilters]);
-
-  useEffect(() => {
-    localStorage.setItem("lastRedditSearchGridColumns", gridColumns.toString());
-  }, [gridColumns]);
-
-  const [filterQuery, setFilterQuery] = useState("");
-
-  // Filter local results based on viewSort and viewFilters
-  const sortedSubreddits = [...subreddits]
-    .filter((item) => {
-      const types = (item.sort_type || "").split(",");
-      const sortTypeMatch = viewFilters.some((filter) =>
-        types.includes(filter),
-      );
-
-      const intent = item.intent || "Low";
-      const intentMatch = viewIntentFilters.some(
-        (f) => f.toLowerCase() === intent.toLowerCase(),
-      );
-
-      // Local keyword filter
-      const matchesFilter = filterQuery
-        ? (item.title || "").toLowerCase().includes(filterQuery.toLowerCase()) ||
-        (item.subreddit || "").toLowerCase().includes(filterQuery.toLowerCase()) ||
-        (item.selftext || "").toLowerCase().includes(filterQuery.toLowerCase())
-        : true;
-
-      return sortTypeMatch && intentMatch && matchesFilter;
-    })
-    .sort((a, b) => {
-      if (viewSort === "original") return 0;
-
-      if (viewSort.startsWith("date")) {
-        const timeA = a.timestamp || 0;
-        const timeB = b.timestamp || 0;
-        return viewSort === "date-desc" ? timeB - timeA : timeA - timeB;
-      }
-
-      if (viewSort.startsWith("score")) {
-        const scoreA = a.score || 0;
-        const scoreB = b.score || 0;
-        return viewSort === "score-desc" ? scoreB - scoreA : scoreA - scoreB;
-      }
-
-      if (viewSort.startsWith("comments")) {
-        const commentsA = a.num_comments || 0;
-        const commentsB = b.num_comments || 0;
-        return viewSort === "comments-desc"
-          ? commentsB - commentsA
-          : commentsA - commentsB;
-      }
-
-      return 0;
+    updateSettings({
+      monitoredSubreddits: [...settings.monitoredSubreddits, cleaned],
     });
+
+    toast.success(`Now monitoring r/${cleaned}`, {
+      position: "bottom-center",
+    });
+  };
 
   const toggleViewFilter = (filter: SortType) => {
     setViewFilters((prev) => {
@@ -677,94 +323,27 @@ export function RedditSearch({
     });
   };
 
+  // Pagination
   const totalPages = Math.ceil(sortedSubreddits.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
   const paginatedResults = sortedSubreddits.slice(startIndex, endIndex);
 
-  function isColoredRelevance(sortType: string) {
-    // Renamed parameter
-    switch (
-    sortType // Use new parameter
-    ) {
-      case "hot":
-        return "bg-red-500";
-      case "top":
-        return "bg-blue-500";
-      case "new":
-        return "bg-green-500";
-      default:
-        return "bg-gray-500";
-    }
-  }
-
-  console.log("paginatedResults:", paginatedResults);
-
   return (
     <div className="flex-1 flex flex-col gap-4 min-h-0 animate-in fade-in duration-500">
-      {/* Search Bar Section */}
-      <Card className="p-3 shadow-sm border-border/60 bg-white backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          {/* Search Input - Main Focus */}
-          <div className="relative flex-1 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
-            <Input
-              placeholder="Search global subreddits, keywords, or topics..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="pl-9 h-9 bg-background/80 border-border/60 focus:ring-1 focus:ring-primary/20 transition-all text-sm"
-            />
-          </div>
-
-          <Button
-            onClick={handleSearch}
-            disabled={isSearching || !query.trim()}
-            className="px-4 h-9 font-bold uppercase text-[11px] tracking-wider shadow-sm hover:shadow transition-all active:scale-95"
-          >
-            {isSearching ? (
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Running
-              </div>
-            ) : (
-              "Search"
-            )}
-          </Button>
-
-          {/* Vertical Divider */}
-          <div className="h-6 w-px bg-border/60 mx-1" />
-
-          {/* Sort Selection - Sectioned */}
-          <div className="flex items-center gap-1.5 p-1 bg-muted/30 rounded-lg border border-border/40">
-            <span className="text-[10px] font-bold uppercase text-muted-foreground/60 px-1">
-              Source:
-            </span>
-            {(["hot", "top", "new"] as SortType[]).map((sort) => (
-              <Button
-                key={sort}
-                variant={selectedSorts.includes(sort) ? "default" : "ghost"}
-                size="sm"
-                onClick={() => toggleSort(sort)}
-                disabled={isSearching}
-                className={`h-7 px-3 text-[10px] font-bold uppercase tracking-tight transition-all ${selectedSorts.includes(sort)
-                  ? "shadow-sm"
-                  : "opacity-60 hover:opacity-100 hover:bg-background/80"
-                  }`}
-              >
-                {sort === "hot" && <Flame className="h-3 w-3 mr-1.5" />}
-                {sort === "top" && <TrendingUp className="h-3 w-3 mr-1.5" />}
-                {sort === "new" && <Clock className="h-3 w-3 mr-1.5" />}
-                {sort}
-              </Button>
-            ))}
-          </div>
-        </div>
-      </Card>
+      {/* Search Bar */}
+      <SearchBar
+        query={query}
+        setQuery={setQuery}
+        handleSearch={handleSearch}
+        isSearching={isSearching}
+        selectedSorts={selectedSorts}
+        toggleSort={toggleSort}
+      />
 
       {subreddits.length > 0 ? (
         <Card className="p-0 border-border/60 overflow-hidden flex flex-col flex-1 min-h-0">
-          {/* View Contol Bar */}
+          {/* View Control Bar */}
           <div className="flex items-center justify-between px-4 py-1.5 border-b bg-muted/20 backdrop-blur-md sticky top-0 z-10 transition-colors">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
@@ -774,7 +353,7 @@ export function RedditSearch({
                 <select
                   className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
                   value={viewSort}
-                  onChange={(e) => setViewSort(e.target.value as any)}
+                  onChange={(e) => setViewSort(e.target.value as ViewSortType)}
                 >
                   <option value="date-desc">Newest First</option>
                   <option value="date-asc">Oldest First</option>
@@ -817,7 +396,9 @@ export function RedditSearch({
                   <Button
                     variant={filterQuery ? "secondary" : "ghost"}
                     size="sm"
-                    className={`h-6 px-2 text-[10px] uppercase font-bold tracking-wider ${filterQuery ? "text-primary" : "opacity-60 hover:opacity-100"
+                    className={`h-6 px-2 text-[10px] uppercase font-bold tracking-wider ${filterQuery
+                      ? "text-primary"
+                      : "opacity-60 hover:opacity-100"
                       }`}
                   >
                     <Search className="h-3 w-3 mr-1.5" />
@@ -916,13 +497,13 @@ export function RedditSearch({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-green-500"
-                      // onClick={handleExportCSV} // TODO: Implement export
+                        onClick={handleExportCSV}
                       >
                         <FileSpreadsheet className="h-3.5 w-3.5" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
-                      Export CSV
+                      <p>Export CSV ({sortedSubreddits.length} filtered items)</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -934,13 +515,13 @@ export function RedditSearch({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-orange-500"
-                      // onClick={handleExportJSON} // TODO: Implement export
+                        onClick={handleExportJSON}
                       >
                         <FileJson className="h-3.5 w-3.5" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
-                      Export JSON
+                      <p>Export JSON ({sortedSubreddits.length} filtered items)</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -952,7 +533,7 @@ export function RedditSearch({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-blue-500"
-                      // onClick={handleImport} // TODO: Implement import
+                        onClick={handleImportClick}
                       >
                         <Upload className="h-3.5 w-3.5" />
                       </Button>
@@ -976,6 +557,7 @@ export function RedditSearch({
             </div>
           </div>
 
+          {/* Results Grid */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden bg-background/30 p-3 scrollbar-thin scrollbar-thumb-border/20 scrollbar-track-transparent -mt-6">
             {paginatedResults.length > 0 ? (
               <div
@@ -1047,7 +629,7 @@ export function RedditSearch({
                                     onClick={() =>
                                       handleGetComments(
                                         result,
-                                        sortTypeForComments,
+                                        sortTypeForComments
                                       )
                                     }
                                   >
@@ -1127,7 +709,7 @@ export function RedditSearch({
                           {result.intent && (
                             <Badge
                               className={`${getIntentColor(
-                                result.intent.toLowerCase(),
+                                result.intent.toLowerCase()
                               )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
                             >
                               {result.intent.toUpperCase()}
@@ -1166,7 +748,7 @@ export function RedditSearch({
             )}
           </div>
 
-          {/* Footer - Redesigned Pagination */}
+          {/* Pagination Footer */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-1.5 bg-muted/10 border-t backdrop-blur-md relative z-10">
               <div className="flex items-center gap-3">
@@ -1270,16 +852,34 @@ export function RedditSearch({
         )
       )}
 
+      {/* Comments View */}
       <RedditCommentsView
         isOpen={commentsPost !== null}
         onOpenChange={(open) => !open && setCommentsPost(null)}
         post={
           commentsPost
             ? {
-              id: commentsPost.name || commentsPost.id,
+              id: parseInt(commentsPost.id),
               title: commentsPost.title,
               url: commentsPost.url,
               subreddit: commentsPost.subreddit,
+              timestamp: commentsPost.timestamp || 0,
+              formatted_date: commentsPost.formatted_date || "",
+              sort_type: commentsPost.sort_type,
+              relevance_score: commentsPost.relevance_score,
+              score: commentsPost.score,
+              num_comments: commentsPost.num_comments,
+              author: commentsPost.author || "unknown",
+              is_self: commentsPost.is_self || false,
+              selftext: commentsPost.selftext || "",
+              engaged: 0,
+              assignee: "",
+              notes: "",
+              name: commentsPost.name || commentsPost.id,
+              permalink: commentsPost.permalink || commentsPost.url,
+              status: "new",
+              intent: commentsPost.intent || "Low",
+              date_added: commentsPost.date_added || 0,
             }
             : null
         }
