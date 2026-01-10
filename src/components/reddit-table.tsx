@@ -1173,7 +1173,7 @@ export function RedditTable({
                       className={`group hover:z-10 relative text-[11px] transition-all border-b border-border/40 
                         ${post.date_added > lastVisitTimestamp
                           ? "bg-blue-500/10 dark:bg-blue-500/20 border-l-[3px] border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.3)]"
-                          : `border-l-[3px] border-l-transparent hover:bg-accent/40 ${index % 2 === 0 ? "bg-background/20" : "bg-muted/10"}`
+                          : `border-l-[3px] border-l-transparent hover:bg-primary/5 ${index % 2 === 0 ? "bg-background" : "bg-slate-50/50"}`
                         } 
                         ${settings.tableDensity === "compact"
                           ? "h-[32px]"

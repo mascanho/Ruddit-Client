@@ -284,7 +284,7 @@ export function MessagesTable({
                   paginatedData.map((message, index) => (
                     <TableRow
                       key={message.id}
-                      className="group h-9 hover:bg-accent/30 transition-colors border-b border-border/40"
+                      className={`group h-9 hover:bg-primary/5 transition-colors border-b border-border/40 ${index % 2 === 0 ? "bg-background" : "bg-slate-50/50"}`}
                     >
                       <TableCell className="text-center font-mono text-[10px] opacity-30">
                         {(currentPage - 1) * rowsPerPage + index + 1}

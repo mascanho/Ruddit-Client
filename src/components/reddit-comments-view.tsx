@@ -127,32 +127,22 @@ const CommentItem = ({
     });
   };
 
-  const threadColorClass = getDepthColor(depth);
   const isRoot = depth === 0;
+  // Get thread color based on depth
+  const depthColor = getDepthColor(depth).replace(/bg-/g, "border-");
 
   return (
-    <div className={`relative group/comment isolate ${isRoot ? "mb-6" : ""}`}>
-      {/* Visual connection line for nested comments */}
-      {!isRoot && (
-        <div
-          className={`absolute left-[-20px] top-0 bottom-0 w-[2px] transition-colors ${threadColorClass} opacity-30 group-hover/comment:opacity-100`}
-          style={{ height: "100%" }}
-        />
-      )}
-
+    <div className={`relative group/comment isolate ${isRoot ? "mb-6" : "mb-3"}`}>
       {/* Comment Container */}
       <div
         className={`
           relative flex gap-3 p-3 transition-all duration-200 
           ${isRoot
             ? "bg-card border border-border/50 rounded-xl shadow-sm hover:shadow-md hover:border-border/80"
-            : "rounded-lg bg-black/5 dark:bg-white/5 border border-border/10 hover:bg-black/10 dark:hover:bg-white/10" // Improved contrast
+            : "rounded-lg bg-muted/60 border border-border/20 hover:bg-muted/80 hover:border-border/40"
           }
-          ${isMonitoredUser ? "ring-1 ring-blue-500/30 bg-blue-50/30 dark:bg-blue-900/10" : ""}
+          ${isMonitoredUser ? "ring-1 ring-blue-500/30 bg-blue-50/50 dark:bg-blue-900/20" : ""}
         `}
-        style={{
-          marginLeft: isRoot ? "0" : `${Math.min(depth * 18, 54)}px`,
-        }}
       >
         {/* Avatar / Side */}
         <div className="flex-shrink-0 pt-1">
@@ -247,7 +237,7 @@ const CommentItem = ({
           {/* Body */}
           <KeywordHighlighter
             text={comment?.body || ""}
-            className={`text-sm leading-relaxed break-words whitespace-pre-wrap mb-1.5 ${isRoot ? "text-foreground/90 font-medium" : "text-foreground/80"
+            className={`text-sm leading-relaxed break-words whitespace-pre-wrap mb-1.5 ${isRoot ? "text-foreground/90 font-medium" : "text-foreground/90"
               }`}
             brandKeywords={settings.brandKeywords}
             competitorKeywords={settings.competitorKeywords}
@@ -292,16 +282,13 @@ const CommentItem = ({
         </div>
       </div>
 
-      {/* Children Container */}
+      {/* Children Container - Recursive Indentation */}
       {comment.children.length > 0 && (
-        <div className={`relative flex flex-col ${isRoot ? "mt-2 mb-4" : ""}`}>
-          {/* Vertical Thread Spine for Root */}
-          {isRoot && (
-            <div
-              className={`absolute left-[16px] top-[-10px] bottom-4 w-[2px] bg-border/30 rounded-full -z-10`}
-            />
-          )}
-
+        <div className="relative flex flex-col pt-2 pl-4 md:pl-5 ml-4 md:ml-5">
+          {/* Thread Guideline with better visibility */}
+          <div
+            className={`absolute left-0 top-0 bottom-4 w-[2px] ${depthColor.replace(/border-/g, "bg-")} opacity-40 group-hover/comment:opacity-100 transition-opacity duration-300 rounded-full`}
+          />
           {comment.children.map((child) => (
             <CommentItem
               key={child.id}
