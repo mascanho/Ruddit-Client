@@ -264,16 +264,19 @@ export function RedditSearch({
     result: SearchResult,
     sort_type: string
   ) => {
-    if (!result.subreddit || result.subreddit === "N/A") {
-      toast.error("Non-Reddit Node", {
-        description: "This item is not a standard Reddit post thread. Communications are unavailable."
+    // Prioritize permalink as it always points to the Reddit thread
+    const targetUrl = result.permalink || result.url;
+
+    if (!result.subreddit || result.subreddit === "N/A" || !targetUrl) {
+      toast.error("Decryption Failed: Non-Reddit Node", {
+        description: "This search result lacks a valid Reddit path. Signal synchronization is impossible."
       });
       return;
     }
 
     try {
       const fetchedComments = (await invoke("get_post_comments_command", {
-        url: result.url,
+        url: targetUrl,
         title: result.title,
         sortType: sort_type,
         subreddit: result.subreddit,

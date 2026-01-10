@@ -558,16 +558,20 @@ export function AutomationTab() {
     post: PostDataWrapper,
     sort_type: string,
   ) => {
-    if (!post.subreddit || post.subreddit === "N/A") {
-      toast.error("Non-Reddit Node", {
-        description: "This item is not a standard Reddit post thread. Communications are unavailable."
+    // Prioritize permalink as it always points to the Reddit thread
+    // post.url might point to an external link (image, news) in link posts
+    const targetUrl = post.permalink || post.url;
+
+    if (!post.subreddit || post.subreddit === "N/A" || !targetUrl) {
+      toast.error("Decryption Failed: Non-Reddit Node", {
+        description: "This automation result lacks a valid Reddit path. Signal synchronization is impossible."
       });
       return;
     }
 
     try {
       const fetchedComments = (await invoke("get_post_comments_command", {
-        url: post.url,
+        url: targetUrl,
         title: post.title,
         sortType: sort_type,
         subreddit: post.subreddit,

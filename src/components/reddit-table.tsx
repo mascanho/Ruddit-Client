@@ -562,8 +562,8 @@ export function RedditTable({
 
   const handleGetComments = async (post: RedditPost, sort_type: string) => {
     if (!post.subreddit || post.subreddit === "N/A" || !post.permalink) {
-      toast.error("Non-Reddit Node", {
-        description: "This item is not a standard Reddit post thread. Communications are unavailable."
+      toast.error("Decryption Failed: Non-Reddit Node", {
+        description: "This record lacks a valid Reddit transmission path. Signal synchronization is impossible."
       });
       return;
     }

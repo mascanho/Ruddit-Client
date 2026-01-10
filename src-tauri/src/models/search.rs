@@ -533,17 +533,16 @@ fn flatten_comments(
 }
 
 fn extract_post_id_from_url(url: &str) -> Option<String> {
-    // Broadened regex to capture post ID from various Reddit URL formats
-    // Matches patterns like: /comments/{id}, /gallery/{id}, /s/{id}, redd.it/{id}
-    // Supports domains like reddit.com, oauth.reddit.com, etc.
+    // Domain-agnostic regex to capture Reddit IDs
+    // Looks for /comments/{id}, /gallery/{id}, /s/{id}, or redd.it/{id}
     let re = Regex::new(
-        r"(?:reddit\.com|oauth\.reddit\.com|redd\.it|i\.redd\.it)(?:/r/[^/]+)?/(?:comments|gallery|s)/([a-zA-Z0-9]+)|redd\.it/([a-zA-Z0-9]+)"
+        r"(?:comments|gallery|s|redd\.it)/([a-zA-Z0-9]+)"
     ).unwrap();
 
     let caps = re.captures(url)?;
     
-    // Capture group 1 or 2
-    caps.get(1).or_else(|| caps.get(2)).map(|m| m.as_str().to_string())
+    // Capture group 1
+    caps.get(1).map(|m| m.as_str().to_string())
 }
 
 fn extract_subreddit_from_url(url: &str) -> Option<String> {
