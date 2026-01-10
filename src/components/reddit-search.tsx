@@ -21,6 +21,9 @@ import {
   Radar,
   MessageSquare,
   ExternalLink,
+  FileSpreadsheet,
+  FileJson,
+  Upload,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -904,6 +907,63 @@ export function RedditSearch({
               <p className="text-[10px] font-mono opacity-50 uppercase mr-2">
                 {subreddits.length} Nodes Discovered
               </p>
+
+              <div className="flex items-center gap-1 border-r border-border/40 pr-2 mr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-green-500"
+                      // onClick={handleExportCSV} // TODO: Implement export
+                      >
+                        <FileSpreadsheet className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      Export CSV
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-orange-500"
+                      // onClick={handleExportJSON} // TODO: Implement export
+                      >
+                        <FileJson className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      Export JSON
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-blue-500"
+                      // onClick={handleImport} // TODO: Implement import
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      Import Data
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -911,7 +971,7 @@ export function RedditSearch({
                 className="h-7 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10 transition-all border border-primary/20 shadow-sm"
               >
                 <Plus className="h-3 w-3 mr-1.5" />
-                Import All
+                Track All
               </Button>
             </div>
           </div>
