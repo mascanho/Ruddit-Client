@@ -35,6 +35,7 @@ import {
   User,
   Link,
   UserPlus,
+  MoreHorizontal,
 } from "lucide-react";
 import moment from "moment";
 import { invoke } from "@tauri-apps/api/core";
@@ -71,6 +72,23 @@ function buildCommentTree(flatComments: Message[]): CommentTree[] {
 
   return roots;
 }
+
+const DEPTH_COLORS = [
+  "bg-zinc-200 dark:bg-zinc-800", // Default fallback
+  "bg-blue-400 dark:bg-blue-500",
+  "bg-green-400 dark:bg-green-500",
+  "bg-yellow-400 dark:bg-yellow-500",
+  "bg-orange-400 dark:bg-orange-500",
+  "bg-red-400 dark:bg-red-500",
+  "bg-purple-400 dark:bg-purple-500",
+  "bg-pink-400 dark:bg-pink-500",
+  "bg-teal-400 dark:bg-teal-500",
+];
+
+const getDepthColor = (d: number) => {
+  if (d === 0) return DEPTH_COLORS[0];
+  return DEPTH_COLORS[(d - 1) % (DEPTH_COLORS.length - 1) + 1];
+};
 
 const CommentItem = ({
   comment,
@@ -109,59 +127,107 @@ const CommentItem = ({
     });
   };
 
+  const threadColorClass = getDepthColor(depth);
+  const isRoot = depth === 0;
+
   return (
-    <div className="relative group/comment">
-      {/* Thread Line */}
-      {depth > 0 && (
+    <div className={`relative group/comment isolate ${isRoot ? "mb-6" : ""}`}>
+      {/* Visual connection line for nested comments */}
+      {!isRoot && (
         <div
-          className="absolute left-[-18px] top-0 bottom-0 w-px bg-border/40 group-hover/comment:bg-border/80 transition-colors"
-          style={{ height: 'calc(100% - 10px)' }}
+          className={`absolute left-[-20px] top-0 bottom-0 w-[2px] transition-colors ${threadColorClass} opacity-30 group-hover/comment:opacity-100`}
+          style={{ height: "100%" }}
         />
       )}
 
+      {/* Comment Container */}
       <div
         className={`
-          relative flex gap-3 p-3 rounded-xl transition-all duration-200 border
-          ${isMonitoredUser
-            ? "bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800"
-            : "bg-background/40 hover:bg-background/60 border-border/40 hover:border-border/60"
+          relative flex gap-3 p-3 transition-all duration-200 
+          ${isRoot
+            ? "bg-card border border-border/50 rounded-xl shadow-sm hover:shadow-md hover:border-border/80"
+            : "rounded-lg bg-black/5 dark:bg-white/5 border border-border/10 hover:bg-black/10 dark:hover:bg-white/10" // Improved contrast
           }
-          ${depth > 0 ? "mt-2" : "mb-2"}
+          ${isMonitoredUser ? "ring-1 ring-blue-500/30 bg-blue-50/30 dark:bg-blue-900/10" : ""}
         `}
-        style={{ marginLeft: depth > 0 ? `${Math.min(depth * 16, 64)}px` : "0" }}
+        style={{
+          marginLeft: isRoot ? "0" : `${Math.min(depth * 18, 54)}px`,
+        }}
       >
-        {/* Avatar Area */}
-        <div className="flex-shrink-0 pt-0.5">
+        {/* Avatar / Side */}
+        <div className="flex-shrink-0 pt-1">
           <div
             className={`
-              h-6 w-6 rounded-md flex items-center justify-center 
+              rounded-full flex items-center justify-center 
               text-[10px] font-bold uppercase select-none
               transition-all duration-300
               ${isMonitoredUser
-                ? "bg-blue-500/20 text-blue-600 ring-1 ring-blue-500/40"
-                : "bg-muted text-muted-foreground/70 ring-1 ring-border/40"}
+                ? "h-8 w-8 bg-blue-500 text-white shadow-blue-500/20 shadow-lg"
+                : isRoot
+                  ? "h-8 w-8 bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-border/50"
+                  : "h-6 w-6 bg-muted text-muted-foreground/60"
+              }
             `}
           >
             {comment?.author?.charAt(0).toUpperCase() || "?"}
           </div>
         </div>
 
-        {/* Content Area */}
+        {/* Content Side */}
         <div className="flex-1 min-w-0">
-          {/* Header Metadata */}
-          <div className="flex items-center gap-2 mb-1.5 text-xs">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <span
-                  className={`
-                    font-bold cursor-pointer hover:underline truncate max-w-[150px]
-                    ${isMonitoredUser ? "text-blue-600" : "text-foreground/90"}
-                  `}
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-1 text-xs">
+            <span
+              className={`
+                font-bold cursor-pointer hover:underline truncate
+                ${isMonitoredUser ? "text-blue-600 dark:text-blue-400 opacity-100" : isRoot ? "text-foreground" : "text-foreground/80"}
+              `}
+              onClick={() =>
+                openUrl(`https://www.reddit.com/user/${comment.author}/`)
+              }
+            >
+              u/{comment?.author || "[deleted]"}
+            </span>
+
+            {comment.author &&
+              comment.author.toLowerCase() ===
+              (comment as any).post_author?.toLowerCase() && (
+                <Badge
+                  variant="secondary"
+                  className="text-[9px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
                 >
-                  {comment?.author || "[deleted]"}
-                </span>
+                  OP
+                </Badge>
+              )}
+
+            <span className="text-muted-foreground/30">•</span>
+
+            <span className="font-mono text-[10px] text-muted-foreground/70">
+              {comment.score ?? 0} pts
+            </span>
+
+            <span className="text-muted-foreground/30">•</span>
+
+            <span
+              className="text-[10px] text-muted-foreground/50"
+              title={moment(comment?.formatted_date).format("LLL")}
+            >
+              {moment(comment?.formatted_date, "YYYY-MM-DD").fromNow()}
+            </span>
+
+            {/* Menu Trigger */}
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-auto h-6 w-6 opacity-0 group-hover/comment:opacity-100 transition-opacity"
+                >
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                  <span className="sr-only">Menu</span>
+                </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="z-[10000]">
+              <DropdownMenuContent align="end" className="z-[9999]">
                 <DropdownMenuItem
                   onClick={() =>
                     openUrl(`https://www.reddit.com/user/${comment.author}/`)
@@ -176,45 +242,31 @@ const CommentItem = ({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
-            <span className="text-muted-foreground/30 font-light">•</span>
-
-            {comment.score !== undefined && (
-              <>
-                <span className="font-mono text-muted-foreground/60 text-[10px]">
-                  {comment.score} pts
-                </span>
-                <span className="text-muted-foreground/30 font-light">•</span>
-              </>
-            )}
-
-            <span
-              className="text-muted-foreground/50 text-[10px]"
-              title={moment(comment?.formatted_date).format("LLL")}
-            >
-              {moment(comment?.formatted_date, "YYYY-MM-DD").fromNow()}
-            </span>
           </div>
 
-          {/* Comment Body */}
+          {/* Body */}
           <KeywordHighlighter
             text={comment?.body || ""}
-            className="text-sm leading-relaxed text-foreground/80 break-words whitespace-pre-wrap mb-1 block"
+            className={`text-sm leading-relaxed break-words whitespace-pre-wrap mb-1.5 ${isRoot ? "text-foreground/90 font-medium" : "text-foreground/80"
+              }`}
             brandKeywords={settings.brandKeywords}
             competitorKeywords={settings.competitorKeywords}
             generalKeywords={settings.monitoredKeywords}
           />
 
-          {/* Action Footer */}
+          {/* Actions */}
           {isConfigured && (
-            <div className="h-6 flex items-center mt-1">
+            <div className="flex items-center gap-4 mt-2">
               <button
                 className={`
-                  flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider
-                  text-muted-foreground/50 hover:text-primary transition-colors
-                  ${isReplying ? "text-primary" : ""}
+                  group flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider
+                  transition-colors px-1 py-0.5 rounded
+                  ${isReplying ? "text-primary bg-primary/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-muted/50"}
                 `}
-                onClick={() => setIsReplying(!isReplying)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsReplying(!isReplying);
+                }}
               >
                 <Reply className="h-3 w-3" />
                 Reply
@@ -222,9 +274,9 @@ const CommentItem = ({
             </div>
           )}
 
-          {/* Inline Reply Form */}
+          {/* Reply Form */}
           {isReplying && (
-            <div className="mt-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="mt-3 mb-2 animate-in fade-in zoom-in-95 duration-200 origin-top-left">
               <ReplySection
                 parentId={`t1_${comment.id}`}
                 onSuccess={(newComment) => {
@@ -240,17 +292,27 @@ const CommentItem = ({
         </div>
       </div>
 
-      {/* Recursive Children */}
-      {comment.children.length > 0 &&
-        comment.children.map((child) => (
-          <CommentItem
-            key={child.id}
-            comment={child}
-            depth={depth + 1}
-            onReplySuccess={onReplySuccess}
-            isConfigured={isConfigured}
-          />
-        ))}
+      {/* Children Container */}
+      {comment.children.length > 0 && (
+        <div className={`relative flex flex-col ${isRoot ? "mt-2 mb-4" : ""}`}>
+          {/* Vertical Thread Spine for Root */}
+          {isRoot && (
+            <div
+              className={`absolute left-[16px] top-[-10px] bottom-4 w-[2px] bg-border/30 rounded-full -z-10`}
+            />
+          )}
+
+          {comment.children.map((child) => (
+            <CommentItem
+              key={child.id}
+              comment={child}
+              depth={depth + 1}
+              onReplySuccess={onReplySuccess}
+              isConfigured={isConfigured}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
