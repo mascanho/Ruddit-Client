@@ -558,27 +558,35 @@ export function AutomationTab() {
     post: PostDataWrapper,
     sort_type: string,
   ) => {
-    const fetchedComments = (await invoke("get_post_comments_command", {
-      url: post.url,
-      title: post.title,
-      sortType: sort_type,
-      subreddit: post.subreddit,
-    })) as Message[];
+    if (!post.subreddit || post.subreddit === "N/A") {
+      toast.error("Non-Reddit Node", {
+        description: "This item is not a standard Reddit post thread. Communications are unavailable."
+      });
+      return;
+    }
 
-    setComments(fetchedComments);
-    setCommentsPost(post);
+    try {
+      const fetchedComments = (await invoke("get_post_comments_command", {
+        url: post.url,
+        title: post.title,
+        sortType: sort_type,
+        subreddit: post.subreddit,
+      })) as Message[];
+
+      setComments(fetchedComments || []);
+      setCommentsPost(post);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      toast.error(`Transmission Error: ${error}`, {
+        description: "Failed to fetch Reddit comments. Please verify your connection."
+      });
+    }
   };
 
   const handleSortTypeForCommentsChange = async (newSortType: string) => {
     setSortTypeForComments(newSortType);
     if (commentsPost) {
-      const newComments = (await invoke("get_post_comments_command", {
-        url: commentsPost.url,
-        title: commentsPost.title,
-        sortType: newSortType,
-        subreddit: commentsPost.subreddit,
-      })) as Message[];
-      setComments(newComments);
+      await handleGetComments(commentsPost, newSortType);
     }
   };
 

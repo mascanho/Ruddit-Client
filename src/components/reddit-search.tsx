@@ -111,7 +111,6 @@ export function RedditSearch({
   const [comments, setComments] = useState<Message[]>([]);
   const [commentsPost, setCommentsPost] = useState<SearchResult | null>(null);
   const [sortTypeForComments, setSortTypeForComments] = useState("best");
-  const [isLoadingComments, setIsLoadingComments] = useState(false);
 
   // Stores
   const { settings, updateSettings } = useAppSettings();
@@ -265,8 +264,12 @@ export function RedditSearch({
     result: SearchResult,
     sort_type: string
   ) => {
-    setCommentsPost(result);
-    setIsLoadingComments(true);
+    if (!result.subreddit || result.subreddit === "N/A") {
+      toast.error("Non-Reddit Node", {
+        description: "This item is not a standard Reddit post thread. Communications are unavailable."
+      });
+      return;
+    }
 
     try {
       const fetchedComments = (await invoke("get_post_comments_command", {
@@ -277,13 +280,12 @@ export function RedditSearch({
       })) as Message[];
 
       setComments(fetchedComments || []);
+      setCommentsPost(result);
     } catch (error) {
       console.error("Error fetching comments:", error);
       toast.error(`Transmission Error: ${error}`, {
         description: "Failed to fetch Reddit comments. Please verify your connection."
       });
-    } finally {
-      setIsLoadingComments(false);
     }
   };
 
@@ -863,7 +865,6 @@ export function RedditSearch({
       <RedditCommentsView
         isOpen={commentsPost !== null}
         onOpenChange={(open) => !open && setCommentsPost(null)}
-        isLoading={isLoadingComments}
         post={
           commentsPost
             ? {

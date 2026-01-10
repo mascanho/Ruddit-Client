@@ -561,8 +561,12 @@ export function RedditTable({
   };
 
   const handleGetComments = async (post: RedditPost, sort_type: string) => {
-    setComments([]);
-    setCommentsPost(post);
+    if (!post.subreddit || post.subreddit === "N/A" || !post.permalink) {
+      toast.error("Non-Reddit Node", {
+        description: "This item is not a standard Reddit post thread. Communications are unavailable."
+      });
+      return;
+    }
 
     try {
       const fetchedComments = (await invoke("get_post_comments_command", {
@@ -573,6 +577,7 @@ export function RedditTable({
       })) as Message[];
 
       setComments(fetchedComments || []);
+      setCommentsPost(post);
       onAddComments(fetchedComments || []);
       setData((prevData) =>
         prevData.map((p) =>

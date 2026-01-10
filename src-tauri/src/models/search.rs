@@ -399,23 +399,7 @@ pub async fn get_post_comments(
         Some(id) => id,
         None => {
             eprintln!("Failed to extract post ID from URL: {}", url);
-            // Create a single error comment if you want to indicate failure
-            let error_comment = CommentDataWrapper {
-                id: "error".to_string(),
-                post_id: "error".to_string(),
-                body: "Failed to extract post ID from URL".to_string(),
-                author: "system".to_string(),
-                timestamp: 0,
-                formatted_date: "1970-01-01 00:00:00".to_string(),
-                score: 0,
-                permalink: "".to_string(),
-                parent_id: "".to_string(),
-                subreddit: subreddit.to_string(), // Use the passed subreddit
-                post_title: "".to_string(),
-                engaged: 0,
-                assignee: "".to_string(),
-            };
-            return Ok(vec![error_comment]);
+            return Err("Signal Extraction Failure: Could not identify a valid Reddit post ID in the provided source.".into());
         }
     };
 
@@ -442,12 +426,10 @@ pub async fn get_post_comments(
     let token = match get_access_token(client_id, client_secret).await {
         Ok(t) if !t.is_empty() => t,
         Ok(_) => {
-            eprintln!("Empty access token received");
-            return Ok(Vec::new());
+            return Err("Authorization Error: Reddit API returned an empty buffer. Check your credentials.".into());
         }
         Err(e) => {
-            eprintln!("Failed to retrieve access token: {:?}", e);
-            return Ok(Vec::new());
+            return Err(format!("Network Protocol Error: Failed to secure access token: {}", e));
         }
     };
 
@@ -551,17 +533,17 @@ fn flatten_comments(
 }
 
 fn extract_post_id_from_url(url: &str) -> Option<String> {
-    // Regex to capture post ID from various Reddit URL formats
-    // 1. /r/{subreddit}/comments/{id}/...
-    // 2. /comments/{id}/...
-    // 3. /gallery/{id}
-    // 4. /r/{subreddit}/s/{id} (shortened URLs)
+    // Broadened regex to capture post ID from various Reddit URL formats
+    // Matches patterns like: /comments/{id}, /gallery/{id}, /s/{id}, redd.it/{id}
+    // Supports domains like reddit.com, oauth.reddit.com, etc.
     let re = Regex::new(
-        r"(?:reddit\.com/r/[^/]+/comments/|reddit\.com/comments/|reddit\.com/gallery/|reddit\.com/r/[^/]+/s/|redd\.it/|i\.redd\.it/)([a-zA-Z0-9]+)"
+        r"(?:reddit\.com|oauth\.reddit\.com|redd\.it|i\.redd\.it)(?:/r/[^/]+)?/(?:comments|gallery|s)/([a-zA-Z0-9]+)|redd\.it/([a-zA-Z0-9]+)"
     ).unwrap();
 
-    re.captures(url)
-        .and_then(|cap| cap.get(1).map(|m| m.as_str().to_string()))
+    let caps = re.captures(url)?;
+    
+    // Capture group 1 or 2
+    caps.get(1).or_else(|| caps.get(2)).map(|m| m.as_str().to_string())
 }
 
 fn extract_subreddit_from_url(url: &str) -> Option<String> {
