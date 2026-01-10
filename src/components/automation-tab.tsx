@@ -242,7 +242,10 @@ export function AutomationTab() {
   );
   const [generatingForId, setGeneratingForId] = useState<number | null>(null);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [manualBulkComment, setManualBulkComment] = useState("");
   const [bulkProgress, setBulkProgress] = useState(0);
+  const [processingStatus, setProcessingStatus] = useState("");
 
   const trackedPostIds = useMemo(
     () => new Set(subRedditsSaved.map((p) => p.id)),
@@ -525,6 +528,22 @@ export function AutomationTab() {
     }
   };
 
+  const generateReplyWithTimeout = async (post: PostDataWrapper) => {
+    const TIMEOUT_MS = 60000; // 60 seconds timeout
+    return Promise.race([
+      invoke<string>("generate_reply_command", {
+        postTitle: post.title,
+        postBody: post.selftext || "",
+      }),
+      new Promise<string>((_, reject) =>
+        setTimeout(
+          () => reject(new Error("AI Generation Timed Out")),
+          TIMEOUT_MS,
+        ),
+      ),
+    ]);
+  };
+
   const handleBulkGenerateReplies = async () => {
     const postsToGenerate = foundPosts.filter((p) => selectedPostIds.has(p.id));
     if (postsToGenerate.length === 0) return;
@@ -534,29 +553,42 @@ export function AutomationTab() {
     let successCount = 0;
     let failCount = 0;
 
+    console.log(`Starting bulk generation for ${postsToGenerate.length} posts`);
+    setProcessingStatus(`Starting... (0/${postsToGenerate.length})`);
+
     for (let i = 0; i < postsToGenerate.length; i++) {
       const post = postsToGenerate[i];
+      console.log(`Processing ${i + 1}/${postsToGenerate.length}: ${post.id}`);
+      setProcessingStatus(`Generating for "${post.title.slice(0, 15)}..." (${i + 1}/${postsToGenerate.length})`);
       setBulkProgress(((i + 1) / postsToGenerate.length) * 100);
 
       try {
-        const reply = await invoke<string>("generate_reply_command", {
-          postTitle: post.title,
-          postBody: post.selftext || "",
-        });
+        if (generatedReplies.has(post.id)) {
+          console.log(`Skipping ${post.id} - already generated`);
+          successCount++;
+          continue;
+        }
+
+        const reply = await generateReplyWithTimeout(post);
+        console.log(`Generated reply for ${post.id}`);
         setGeneratedReplies((prev) => new Map(prev).set(post.id, reply));
         successCount++;
       } catch (e: any) {
         console.error(`Failed to generate reply for post ${post.id}:`, e);
+        toast.error(`Error generating for "${post.title.slice(0, 15)}...": ${e.message || e}`);
         failCount++;
       }
 
-      // Small delay to avoid rate limiting
+      // Delay to avoid rate limiting
       if (i < postsToGenerate.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        console.log("Waiting for delay...");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
 
+    console.log("Bulk generation complete");
     setIsBulkGenerating(false);
+    setProcessingStatus("Complete");
     setBulkProgress(100);
 
     if (successCount > 0) {
@@ -564,6 +596,123 @@ export function AutomationTab() {
     }
     if (failCount > 0) {
       toast.error(`Failed to generate ${failCount} replies`);
+    }
+  };
+
+  const handlePublishReply = async (post: PostDataWrapper, replyText: string) => {
+    if (!replyText.trim()) return false;
+    try {
+      // Ensure we have a valid fullname. post.name is best, otherwise construct t3_id(base36)
+      // Note: post.id is number, so toString(36) gives the base36 ID.
+      const parentId =
+        post.name && post.name.startsWith("t3_")
+          ? post.name
+          : `t3_${post.id.toString(36)}`;
+
+      await invoke("submit_reddit_comment_command", {
+        parentId,
+        text: replyText,
+      });
+      return true;
+    } catch (e) {
+      console.error(`Failed to publish to ${post.id}:`, e);
+      return false;
+    }
+  };
+
+  const handleGenerateAndPublish = async () => {
+    const postsToProcess = foundPosts.filter((p) => selectedPostIds.has(p.id));
+    if (postsToProcess.length === 0) return;
+
+    setIsPublishing(true);
+    setBulkProgress(0);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < postsToProcess.length; i++) {
+      const post = postsToProcess[i];
+      setBulkProgress(((i + 1) / postsToProcess.length) * 100);
+
+      try {
+        let reply = generatedReplies.get(post.id);
+        if (!reply) {
+          try {
+            console.log(`Generating reply for ${post.id}`);
+            const newReply = await generateReplyWithTimeout(post);
+            reply = newReply;
+            setGeneratedReplies((prev) => new Map(prev).set(post.id, newReply));
+          } catch (genError: any) {
+            console.error(`Generation failed for ${post.id}:`, genError);
+            toast.error(`Generation failed for "${post.title.slice(0, 15)}...": ${genError.message}`);
+            failCount++;
+            continue; // Skip publishing if generation failed
+          }
+        }
+
+        if (reply) {
+          const published = await handlePublishReply(post, reply);
+          if (published) successCount++;
+          else failCount++;
+        } else {
+          failCount++;
+        }
+      } catch (e) {
+        console.error(`Error processing post ${post.id}:`, e);
+        failCount++;
+      }
+
+      if (i < postsToProcess.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // Rate limit buffer
+      }
+    }
+
+    setIsPublishing(false);
+    setBulkProgress(100);
+
+    if (successCount > 0) {
+      toast.success(`Published ${successCount} replies`);
+    }
+    if (failCount > 0) {
+      toast.error(`Failed to publish ${failCount} replies`);
+    }
+  };
+
+  const handleManualBulkPublish = async () => {
+    if (!manualBulkComment.trim()) {
+      toast.error("Please enter a comment to publish");
+      return;
+    }
+
+    const postsToProcess = foundPosts.filter((p) => selectedPostIds.has(p.id));
+    if (postsToProcess.length === 0) return;
+
+    setIsPublishing(true);
+    setBulkProgress(0);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < postsToProcess.length; i++) {
+      const post = postsToProcess[i];
+      setBulkProgress(((i + 1) / postsToProcess.length) * 100);
+
+      const published = await handlePublishReply(post, manualBulkComment);
+      if (published) successCount++;
+      else failCount++;
+
+      if (i < postsToProcess.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+    }
+
+    setIsPublishing(false);
+    setBulkProgress(100);
+    setManualBulkComment(""); // Clear after sending
+
+    if (successCount > 0) {
+      toast.success(`Published ${successCount} manual comments`);
+    }
+    if (failCount > 0) {
+      toast.error(`Failed to publish ${failCount} comments`);
     }
   };
 
@@ -1094,10 +1243,45 @@ export function AutomationTab() {
 
           {/* Bulk Actions */}
           <div className="space-y-3 pb-3 border-b">
+            {/* Manual Bulk Comment */}
+            <div className="p-3 bg-muted/20 rounded-md border border-border/40">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
+                Manual Bulk Comment
+              </label>
+              <div className="flex flex-col gap-2">
+                <Textarea
+                  value={manualBulkComment}
+                  onChange={(e) => setManualBulkComment(e.target.value)}
+                  placeholder="Type a message to post to ALL selected items..."
+                  className="text-xs min-h-[60px]"
+                />
+                <button
+                  onClick={handleManualBulkPublish}
+                  disabled={
+                    isPublishing ||
+                    selectedPostIds.size === 0 ||
+                    !manualBulkComment.trim()
+                  }
+                  className="self-end px-3 py-1.5 bg-blue-600 text-white rounded text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isPublishing ? (
+                    <div className="flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Publishing...
+                    </div>
+                  ) : (
+                    "Publish to Selection"
+                  )}
+                </button>
+              </div>
+            </div>
+
             <div className="flex items-center gap-2">
               <button
                 onClick={handleBulkGenerateReplies}
-                disabled={isBulkGenerating || selectedPostIds.size === 0}
+                disabled={
+                  isBulkGenerating || isPublishing || selectedPostIds.size === 0
+                }
                 className="w-full text-center justify-center flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
               >
                 {isBulkGenerating ? (
@@ -1113,30 +1297,32 @@ export function AutomationTab() {
                 )}
               </button>
               <button
-                onClick={handleBulkGenerateReplies}
-                disabled={isBulkGenerating || selectedPostIds.size === 0}
-                className="w-full flex text-center justify-center items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                onClick={handleGenerateAndPublish}
+                disabled={
+                  isBulkGenerating || isPublishing || selectedPostIds.size === 0
+                }
+                className="w-full flex text-center justify-center items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
               >
-                {isBulkGenerating ? (
+                {isPublishing ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Generating...
+                    Processing...
                   </>
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4" />
-                    Generate All Replies and post
+                    Generate & Publish All
                   </>
                 )}
               </button>
             </div>
 
             {/* Progress Bar */}
-            {isBulkGenerating && (
+            {(isBulkGenerating || isPublishing) && (
               <div className="space-y-1">
                 <Progress value={bulkProgress} className="h-2" />
-                <p className="text-xs text-muted-foreground">
-                  Processing {Math.round(bulkProgress)}%
+                <p className="text-xs text-muted-foreground font-mono">
+                  {processingStatus}
                 </p>
               </div>
             )}
@@ -1196,11 +1382,18 @@ export function AutomationTab() {
                               className="text-xs mt-1 bg-background"
                             />
                             <button
-                              onClick={() => {
-                                // TODO: Implement publish to Reddit
-                                toast.info(
-                                  "Publishing to Reddit (not yet implemented)",
+                              onClick={async () => {
+                                const reply = generatedReplies.get(post.id);
+                                if (!reply) return;
+                                const success = await handlePublishReply(
+                                  post,
+                                  reply,
                                 );
+                                if (success) {
+                                  toast.success("Reply published");
+                                } else {
+                                  toast.error("Failed to publish reply");
+                                }
                               }}
                               className="mt-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground rounded hover:bg-primary/90"
                             >
@@ -1255,6 +1448,6 @@ export function AutomationTab() {
           </div>
         </DialogContent>
       </Dialog>
-    </TooltipProvider>
+    </TooltipProvider >
   );
 }
