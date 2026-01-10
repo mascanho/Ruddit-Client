@@ -264,6 +264,9 @@ export function RedditSearch({
     result: SearchResult,
     sort_type: string
   ) => {
+    setComments([]);
+    setCommentsPost(result);
+
     try {
       const fetchedComments = (await invoke("get_post_comments_command", {
         url: result.url,
@@ -272,11 +275,12 @@ export function RedditSearch({
         subreddit: result.subreddit,
       })) as Message[];
 
-      setComments(fetchedComments);
-      setCommentsPost(result);
+      setComments(fetchedComments || []);
     } catch (error) {
       console.error("Error fetching comments:", error);
-      toast.error(`Failed to fetch comments: ${error}`);
+      toast.error(`Transmission Error: ${error}`, {
+        description: "Failed to fetch Reddit comments. Please verify your connection."
+      });
     }
   };
 

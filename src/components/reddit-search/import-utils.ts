@@ -94,26 +94,37 @@ async function importCSV(
         const rowData: any = {};
         headers.forEach((header, idx) => {
             const key = header.trim();
-            let val = values[idx].trim().replace(/^"|"$/g, ''); // Remove surrounding quotes
+            let val = (values[idx] || "").trim().replace(/^"|"$/g, '');
 
             if (
                 key === "score" ||
                 key === "num_comments" ||
                 key === "timestamp" ||
-                key === "relevance_score"
+                key === "relevance_score" ||
+                key === "date_added" ||
+                key === "engaged"
             ) {
                 rowData[key] = Number(val) || 0;
             } else if (key === "is_self") {
-                rowData[key] = val === "true";
+                rowData[key] = val === "true" || val === "1";
             } else {
                 rowData[key] = val;
             }
         });
 
-        // Ensure required fields exist
-        if (!rowData.id) {
+        // Robust ID parsing: Handle both decimal strings and base36 Reddit IDs
+        if (rowData.id) {
+            const idStr = String(rowData.id);
+            // If it contains non-numeric chars but looks like an ID, it's likely base36
+            if (/[a-z]/i.test(idStr)) {
+                rowData.id = parseInt(idStr, 36).toString();
+            } else {
+                rowData.id = idStr;
+            }
+        } else {
             rowData.id = Math.random().toString(36).substr(2, 9);
         }
+
         if (!rowData.sort_type) {
             rowData.sort_type = "hot";
         }
@@ -127,7 +138,7 @@ async function importCSV(
         newItems.push(rowData as SearchResult);
     }
 
-    console.log("Parsed items:", newItems);
+    console.log(`Successfully parsed ${newItems.length} items from CSV`);
 
     if (newItems.length > 0) {
         onImport(newItems);

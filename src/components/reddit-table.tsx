@@ -561,43 +561,36 @@ export function RedditTable({
   };
 
   const handleGetComments = async (post: RedditPost, sort_type: string) => {
-    // Renamed parameter
-    const fetchedComments = (await invoke("get_post_comments_command", {
-      url: post.permalink,
-      title: post.title,
-      sortType: sort_type, // Use new parameter, camelCase for Tauri
-      subreddit: post.subreddit, // Add subreddit here
-    })) as Message[];
-
-    setComments(fetchedComments);
+    setComments([]);
     setCommentsPost(post);
-    onAddComments(fetchedComments);
-    setData((prevData) =>
-      prevData.map((p) =>
-        p.id === post.id ? { ...p, num_comments: fetchedComments.length } : p,
-      ),
-    );
+
+    try {
+      const fetchedComments = (await invoke("get_post_comments_command", {
+        url: post.permalink,
+        title: post.title,
+        sortType: sort_type,
+        subreddit: post.subreddit,
+      })) as Message[];
+
+      setComments(fetchedComments || []);
+      onAddComments(fetchedComments || []);
+      setData((prevData) =>
+        prevData.map((p) =>
+          p.id === post.id ? { ...p, num_comments: (fetchedComments || []).length } : p,
+        ),
+      );
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      toast.error(`Transmission Error: ${error}`, {
+        description: "Failed to fetch Reddit comments. Please verify your connection."
+      });
+    }
   };
 
   const handleSortTypeForCommentsChange = async (newSortType: string) => {
-    // Renamed function and parameter
     setSortTypeForComments(newSortType);
     if (commentsPost) {
-      const newComments = (await invoke("get_post_comments_command", {
-        url: commentsPost.permalink,
-        title: commentsPost.title,
-        sortType: newSortType, // Use new parameter, camelCase for Taure
-        subreddit: commentsPost.subreddit, // Add subreddit here
-      })) as Message[];
-      setComments(newComments);
-      onAddComments(newComments);
-      setData((prevData) =>
-        prevData.map((p) =>
-          p.id === commentsPost.id
-            ? { ...p, num_comments: newComments.length }
-            : p,
-        ),
-      );
+      await handleGetComments(commentsPost, newSortType);
     }
   };
 
@@ -813,40 +806,71 @@ export function RedditTable({
 
         for (let i = 1; i < lines.length; i++) {
           const values = parseCSVLine(lines[i]);
-          if (values.length !== headers.length) continue;
+          // Be more tolerant: as long as we have some values, try to map them
+          if (values.length === 0) continue;
 
           const rowData: any = {};
           headers.forEach((header, idx) => {
             const key = header.trim();
-            const val = values[idx].trim().replace(/^"|"$/g, "");
+            const val = (values[idx] || "").trim().replace(/^"|"$/g, "");
+
             if (
-              ["id", "score", "num_comments", "timestamp", "relevance_score", "date_added", "engaged"].includes(
+              ["score", "num_comments", "timestamp", "relevance_score", "date_added", "engaged"].includes(
                 key,
               )
             ) {
               rowData[key] = Number(val) || 0;
+            } else if (key === "id") {
+              const idStr = String(val);
+              // Handle Reddit base36 IDs if they were exported as strings
+              if (/[a-z]/i.test(idStr)) {
+                rowData.id = parseInt(idStr, 36);
+              } else {
+                rowData.id = Number(idStr) || 0;
+              }
             } else if (key === "is_self") {
-              rowData[key] = val === "true";
+              rowData[key] = val === "true" || val === "1";
             } else {
               rowData[key] = val;
             }
           });
-          importedPosts.push(rowData as RedditPost);
+
+          // Ensure basic validity
+          if (rowData.id) {
+            importedPosts.push(rowData as RedditPost);
+          }
         }
       }
 
       if (importedPosts.length > 0) {
-        // Add all imported posts to the store
-        // We use setSingleSubreddit to completely replace for now, 
-        // or we could merge them. The user probably expects a merge or a load.
-        // Let's merge them with existing saved posts.
-        const currentSaved = useAddSingleSubReddit.getState().subRedditsSaved;
-        const existingIds = new Set(currentSaved.map(p => p.id));
-        const uniqueNew = importedPosts.filter(p => !existingIds.has(p.id));
+        console.log(`Attempting to import ${importedPosts.length} posts...`);
 
-        useAddSingleSubReddit.getState().setSingleSubreddit([...currentSaved, ...uniqueNew as any]);
+        let addedCount = 0;
+        let duplicateCount = 0;
 
-        // Reset filters in UI
+        for (const post of importedPosts) {
+          try {
+            // Save to database
+            const isInserted = await invoke("save_single_reddit_command", { post });
+
+            if (isInserted) {
+              addSingleSubreddit(post as any);
+              addedCount++;
+            } else {
+              duplicateCount++;
+            }
+          } catch (e) {
+            console.error("Failed to save imported post:", post.id, e);
+          }
+        }
+
+        if (addedCount > 0) {
+          toast.success(`Registry updated: ${addedCount} new nodes transmitted.`);
+        } else if (duplicateCount > 0) {
+          toast.info(`${duplicateCount} nodes were already in the registry.`);
+        }
+
+        // Reset filters in UI to show results immediately
         setStatusFilter("all");
         setEngagementFilter("all");
         setSubredditFilter("all");
@@ -859,10 +883,8 @@ export function RedditTable({
             redditRelevance: "all",
           });
         }
-
-        toast.success(`Imported ${importedPosts.length} items successfully`);
       } else {
-        toast.error("No valid data found to import");
+        toast.info("Null Buffer: No valid data found in import source.");
       }
     } catch (err) {
       console.error("Import error", err);
