@@ -410,7 +410,7 @@ export function AutomationTab() {
           engaged: 0,
           assignee: "",
           notes: "",
-          name: post.name || `t3_${post.id}`,
+          name: post.name || `na-${post.id}`,
           selftext: post.selftext || "",
           author: post.author || "unknown",
           score: post.score || 0,
