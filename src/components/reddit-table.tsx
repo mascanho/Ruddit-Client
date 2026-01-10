@@ -17,7 +17,8 @@ import { useAppSettings } from "@/store/settings-store";
 import { Radar } from "lucide-react";
 import { KeywordHighlighter } from "./keyword-highlighter";
 import { invoke } from "@tauri-apps/api/core";
-import { save } from "@tauri-apps/plugin-dialog";
+import { save, open } from "@tauri-apps/plugin-dialog";
+import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
 import { toast } from "sonner";
 import moment from "moment";
@@ -62,6 +63,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Icons
 import {
@@ -83,6 +90,9 @@ import {
   CheckCircle2,
   Circle,
   UserPlus,
+  FileJson,
+  Upload,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const initialData: RedditPost[] = []; // Declare initialData here
@@ -649,47 +659,214 @@ export function RedditTable({
       return;
     }
 
-    const headers = Object.keys(
-      filteredAndSortedData[0],
-    ) as (keyof RedditPost)[];
-    const csvRows = [];
+    const headers = [
+      "id",
+      "timestamp",
+      "formatted_date",
+      "title",
+      "subreddit",
+      "url",
+      "score",
+      "num_comments",
+      "intent",
+      "author",
+      "selftext",
+      "status",
+      "category",
+      "engaged",
+      "assignee",
+      "notes",
+    ];
 
-    // Add headers
-    csvRows.push(headers.map((header) => `"${header}"`).join(","));
-
-    // Add data rows
-    for (const row of filteredAndSortedData) {
-      const values = headers.map((header) => {
-        const value = row[header];
-        const stringValue =
-          value === undefined || value === null ? "" : String(value);
-        return `"${stringValue.replace(/"/g, '""')}"`;
-      });
-      csvRows.push(values.join(","));
-    }
-
-    const csvString = csvRows.join("\n");
+    const csvContent = [
+      headers.map((h) => `"${h}"`).join(","),
+      ...filteredAndSortedData.map((row) => {
+        return headers
+          .map((header) => {
+            let val = row[header as keyof RedditPost] ?? "";
+            if (typeof val === "number") val = val.toString();
+            if (typeof val === "boolean") val = val ? "true" : "false";
+            const escaped = String(val).replace(/"/g, '""');
+            return `"${escaped}"`;
+          })
+          .join(",");
+      }),
+    ].join("\n");
 
     try {
       const filePath = await save({
         filters: [
           {
-            name: "CSV",
+            name: "CSV File",
             extensions: ["csv"],
           },
         ],
-        defaultPath: `reddit_posts_${new Date().toISOString().slice(0, 10)}.csv`,
+        defaultPath: `ruddit_table_export_${moment().format("YYYY-MM-DD_HHmm")}.csv`,
       });
 
       if (filePath) {
-        await invoke("save_text_file", { path: filePath, contents: csvString });
-        toast.success(`Data exported to ${filePath} successfully!`);
-      } else {
-        toast.info("Export cancelled.");
+        await writeTextFile(filePath, csvContent);
+        toast.success(
+          `Exported ${filteredAndSortedData.length} items to CSV successfully`,
+        );
       }
     } catch (error) {
       console.error("Failed to export data:", error);
       toast.error("Failed to export data.");
+    }
+  };
+
+  const handleExportToJSON = async () => {
+    if (filteredAndSortedData.length === 0) {
+      toast.info("No data to export.");
+      return;
+    }
+
+    const dataStr = JSON.stringify(filteredAndSortedData, null, 2);
+
+    try {
+      const filePath = await save({
+        filters: [
+          {
+            name: "JSON File",
+            extensions: ["json"],
+          },
+        ],
+        defaultPath: `ruddit_table_export_${moment().format("YYYY-MM-DD_HHmm")}.json`,
+      });
+
+      if (filePath) {
+        await writeTextFile(filePath, dataStr);
+        toast.success(
+          `Exported ${filteredAndSortedData.length} items to JSON successfully`,
+        );
+      }
+    } catch (error) {
+      console.error("Failed to export JSON:", error);
+      toast.error("Failed to export JSON.");
+    }
+  };
+
+  const handleImportClick = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: "Data Files",
+            extensions: ["json", "csv"],
+          },
+        ],
+      });
+
+      if (!selected) return;
+
+      const filePath = Array.isArray(selected) ? selected[0] : selected;
+      if (!filePath) return;
+
+      const content = await readTextFile(filePath);
+      let importedPosts: RedditPost[] = [];
+
+      if (filePath.endsWith(".json")) {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          importedPosts = parsed;
+        } else {
+          toast.error("Invalid JSON structure. Expected an array.");
+          return;
+        }
+      } else if (filePath.endsWith(".csv")) {
+        const lines = content.split(/\r\n|\n/).filter((l) => l.trim());
+        if (lines.length < 2) {
+          toast.error("CSV file appears empty or missing headers");
+          return;
+        }
+
+        const parseCSVLine = (line: string): string[] => {
+          const values: string[] = [];
+          let inQuote = false;
+          let currentVal = "";
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              if (inQuote && line[i + 1] === '"') {
+                currentVal += '"';
+                i++;
+              } else {
+                inQuote = !inQuote;
+              }
+            } else if (char === "," && !inQuote) {
+              values.push(currentVal);
+              currentVal = "";
+            } else {
+              currentVal += char;
+            }
+          }
+          values.push(currentVal);
+          return values;
+        };
+
+        const headerLine = lines[0];
+        const headers = parseCSVLine(headerLine).map((h) =>
+          h.trim().replace(/^"|"$/g, ""),
+        );
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = parseCSVLine(lines[i]);
+          if (values.length !== headers.length) continue;
+
+          const rowData: any = {};
+          headers.forEach((header, idx) => {
+            const key = header.trim();
+            const val = values[idx].trim().replace(/^"|"$/g, "");
+            if (
+              ["id", "score", "num_comments", "timestamp", "relevance_score", "date_added", "engaged"].includes(
+                key,
+              )
+            ) {
+              rowData[key] = Number(val) || 0;
+            } else if (key === "is_self") {
+              rowData[key] = val === "true";
+            } else {
+              rowData[key] = val;
+            }
+          });
+          importedPosts.push(rowData as RedditPost);
+        }
+      }
+
+      if (importedPosts.length > 0) {
+        // Add all imported posts to the store
+        // We use setSingleSubreddit to completely replace for now, 
+        // or we could merge them. The user probably expects a merge or a load.
+        // Let's merge them with existing saved posts.
+        const currentSaved = useAddSingleSubReddit.getState().subRedditsSaved;
+        const existingIds = new Set(currentSaved.map(p => p.id));
+        const uniqueNew = importedPosts.filter(p => !existingIds.has(p.id));
+
+        useAddSingleSubReddit.getState().setSingleSubreddit([...currentSaved, ...uniqueNew as any]);
+
+        // Reset filters in UI
+        setStatusFilter("all");
+        setEngagementFilter("all");
+        setSubredditFilter("all");
+        setRelevanceFilter("all");
+        if (onSearchStateChange) {
+          onSearchStateChange({
+            ...searchState,
+            redditSearch: "",
+            redditSubreddit: "all",
+            redditRelevance: "all",
+          });
+        }
+
+        toast.success(`Imported ${importedPosts.length} items successfully`);
+      } else {
+        toast.error("No valid data found to import");
+      }
+    } catch (err) {
+      console.error("Import error", err);
+      toast.error("Failed to process file");
     }
   };
 
@@ -826,13 +1003,69 @@ export function RedditTable({
                   <SelectItem value="not_engaged">Not Engaged</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={handleExportToCsv}>
-                Export to CSV
-              </Button>
+              <div className="flex items-center gap-1.5 px-2 border-l border-border/40 ml-1">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-green-500"
+                        onClick={handleExportToCsv}
+                      >
+                        <FileSpreadsheet className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      <p>Export CSV ({filteredAndSortedData.length} filtered items)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-orange-500"
+                        onClick={handleExportToJSON}
+                      >
+                        <FileJson className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      <p>Export JSON ({filteredAndSortedData.length} filtered items)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-blue-500"
+                        onClick={handleImportClick}
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      Import Data
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
               <Button
                 variant="destructive"
+                size="sm"
+                className="h-7 text-[10px] font-bold uppercase tracking-wider"
                 onClick={() => setShowClearTableDialog(true)}
               >
+                <Trash2 className="h-3 w-3 mr-1.5" />
                 Clear Table
               </Button>
             </div>
