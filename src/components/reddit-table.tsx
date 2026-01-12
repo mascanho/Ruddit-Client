@@ -93,6 +93,7 @@ import {
   FileJson,
   Upload,
   FileSpreadsheet,
+  Star,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const initialData: RedditPost[] = []; // Declare initialData here
@@ -118,6 +119,7 @@ export type RedditPost = {
   selftext?: string | null;
   name?: string;
   date_added: number;
+  interest: number; // Added new field (0-5)
   // Client-side fields
   status?: "new" | "investigating" | "replied" | "closed" | "ignored";
   intent?: string;
@@ -444,6 +446,43 @@ export function RedditTable({
     }
   };
 
+  const handleInterestChange = async (postId: number, newInterest: number) => {
+    const postToUpdate = data.find((p) => p.id === postId);
+    if (!postToUpdate) return;
+
+    const originalInterest = postToUpdate.interest;
+
+    // Optimistic update
+    setData((prevData) =>
+      prevData.map((p) =>
+        p.id === postId ? { ...p, interest: newInterest } : p,
+      ),
+    );
+
+    try {
+      await invoke("update_post_interest", {
+        id: postId,
+        interest: newInterest,
+      });
+
+      toast.success(
+        `Interest level updated for "${postToUpdate.title.slice(0, 20)}...".`,
+        {
+          duration: 1500,
+        }
+      );
+    } catch (error) {
+      console.error("Failed to update interest status:", error);
+      toast.error("Failed to update interest level");
+      // Revert on error
+      setData((prevData) =>
+        prevData.map((p) =>
+          p.id === postId ? { ...p, interest: originalInterest } : p,
+        ),
+      );
+    }
+  };
+
   const subreddits = useMemo(() => {
     return Array.from(new Set(data.map((post) => post.subreddit)));
   }, [data, externalPosts]);
@@ -674,6 +713,7 @@ export function RedditTable({
       "engaged",
       "assignee",
       "notes",
+      "interest",
     ];
 
     const csvContent = [
@@ -820,7 +860,7 @@ export function RedditTable({
             const val = (values[idx] || "").trim().replace(/^"|"$/g, "");
 
             if (
-              ["score", "num_comments", "timestamp", "relevance_score", "date_added", "engaged"].includes(
+              ["score", "num_comments", "timestamp", "relevance_score", "date_added", "engaged", "interest"].includes(
                 key,
               )
             ) {
@@ -1117,6 +1157,7 @@ export function RedditTable({
               <col />
               <col className="w-[160px]" />
               <col className="w-[60px]" />
+              <col className="w-[100px]" />
               <col className="w-[40px]" />
               <col className="w-[95px]" />
               <col className="w-[45px]" />
@@ -1166,6 +1207,17 @@ export function RedditTable({
                 <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   Intent
                 </TableHead>
+                <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
+                    onClick={() => handleSort("interest")}
+                  >
+                    Interest
+                    <ArrowUpDown className="h-3 w-3 opacity-30" />
+                  </Button>
+                </TableHead>
                 <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
                   <CheckCircle2 className="h-3.5 w-3.5 mx-auto" />
                 </TableHead>
@@ -1186,7 +1238,7 @@ export function RedditTable({
               {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={10}
+                    colSpan={11}
                     className="h-24 text-center text-muted-foreground opacity-50"
                   >
                     No posts matching your current filters.
@@ -1314,6 +1366,24 @@ export function RedditTable({
                             {post.intent.slice(0, 4).toUpperCase()}
                           </Badge>
                         )}
+                      </TableCell>
+
+                      <TableCell className="px-1 text-center">
+                        <div className="flex items-center justify-center gap-0">
+                          {[1, 2, 3, 4, 5].map((level) => (
+                            <Star
+                              key={level}
+                              className={`h-3 w-3 cursor-pointer transition-all ${(post.interest || 0) >= level
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-muted-foreground/20 hover:text-yellow-400/50"
+                                }`}
+                              onClick={() => {
+                                const newLevel = post.interest === level ? level - 1 : level;
+                                handleInterestChange(post.id, newLevel);
+                              }}
+                            />
+                          ))}
+                        </div>
                       </TableCell>
 
                       <TableCell className="px-1 text-center">

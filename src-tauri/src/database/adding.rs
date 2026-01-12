@@ -28,6 +28,7 @@ pub struct PostDataWrapper {
     pub num_comments: i64,
     pub intent: String,
     pub date_added: i64,
+    pub interest: i64,
 }
 
 // Comment data structure
@@ -127,9 +128,13 @@ impl DB {
             [],
         )?;
 
-        // Migration: Add date_added to reddit_posts if it doesn't exist
         let _ = self.conn.execute(
             "ALTER TABLE reddit_posts ADD COLUMN date_added INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+
+        let _ = self.conn.execute(
+            "ALTER TABLE reddit_posts ADD COLUMN interest INTEGER NOT NULL DEFAULT 0",
             [],
         );
 
@@ -141,8 +146,8 @@ impl DB {
     pub fn save_single_reddit(&self, post: &PostDataWrapper) -> RusqliteResult<()> {
         println!("Attempting to save post: {:#?}", &post);
 
-        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        let query = "INSERT OR IGNORE INTO reddit_posts (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added, interest)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         self.conn.execute(
             query,
@@ -167,7 +172,8 @@ impl DB {
                 post.is_self,
                 post.num_comments,
                 post.intent,
-                if post.date_added == 0 { Utc::now().timestamp() } else { post.date_added }
+                if post.date_added == 0 { Utc::now().timestamp() } else { post.date_added },
+                post.interest
             ],
         )?;
 
@@ -216,6 +222,11 @@ impl DB {
             [],
         );
 
+        let _ = self.conn.execute(
+            "ALTER TABLE subreddit_search ADD COLUMN interest INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+
         // Create comments table
         self.create_comments_table()?;
 
@@ -252,8 +263,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT OR IGNORE INTO reddit_posts
-                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
+                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added, interest)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)",
             )?;
 
             for result in results {
@@ -303,8 +314,8 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT INTO subreddit_search
-            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
+            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added, interest)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)",
             )?;
 
             for result in results {
@@ -374,7 +385,7 @@ impl DB {
 
     pub fn get_db_results(&self) -> RusqliteResult<Vec<PostDataWrapper>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, thumbnail, is_self, num_comments, intent, date_added
+            "SELECT id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, thumbnail, is_self, num_comments, intent, date_added, interest
              FROM reddit_posts
              ORDER BY timestamp DESC",
         )?;
@@ -403,6 +414,7 @@ impl DB {
                     num_comments: row.get(17)?,
                     intent: row.get(18)?,
                     date_added: row.get(19)?,
+                    interest: row.get(20)?,
                 })
             })?
             .collect::<RusqliteResult<Vec<_>>>()?;
@@ -473,6 +485,19 @@ impl DB {
             "UPDATE reddit_posts SET engaged = ?1 WHERE id = ?2",
             params![engaged, id],
         )?;
+        Ok(())
+    }
+
+    pub fn update_post_interest(&self, id: i64, interest: i64) -> RusqliteResult<()> {
+        self.conn.execute(
+            "UPDATE reddit_posts SET interest = ?1 WHERE id = ?2",
+            params![interest, id],
+        )?;
+        // Also update search results if it exists there
+        let _ = self.conn.execute(
+            "UPDATE subreddit_search SET interest = ?1 WHERE id = ?2",
+            params![interest, id],
+        );
         Ok(())
     }
 

@@ -92,6 +92,18 @@ impl From<reqwest::Error> for RedditError {
     }
 }
 
+impl From<&str> for RedditError {
+    fn from(s: &str) -> Self {
+        RedditError::ParseError(s.to_string())
+    }
+}
+
+impl From<String> for RedditError {
+    fn from(s: String) -> Self {
+        RedditError::ParseError(s)
+    }
+}
+
 pub struct AppState {
     pub data: Vec<PostDataWrapper>,
 }
@@ -261,6 +273,7 @@ pub async fn get_subreddit_posts(
                     num_comments: post.num_comments,
                     intent,
                     date_added: 0,
+                    interest: 0,
                 })
             } else {
                 None
@@ -343,6 +356,7 @@ pub async fn search_subreddit_posts(
                     num_comments: post.num_comments.clone(),
                     intent,
                     date_added: 0,
+                    interest: 0,
                 })
             } else {
                 None
@@ -429,7 +443,7 @@ pub async fn get_post_comments(
             return Err("Authorization Error: Reddit API returned an empty buffer. Check your credentials.".into());
         }
         Err(e) => {
-            return Err(format!("Network Protocol Error: Failed to secure access token: {}", e));
+            return Err(format!("Network Protocol Error: Failed to secure access token: {}", e).into());
         }
     };
 

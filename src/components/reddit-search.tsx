@@ -32,10 +32,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAppSettings } from "@/store/settings-store";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  useAddSingleSubReddit,
-  useSubredditsStore,
-} from "@/store/store";
+import { useAddSingleSubReddit, useSubredditsStore } from "@/store/store";
 import type { Message } from "./smart-data-tables";
 import { RedditCommentsView } from "./reddit-comments-view";
 import { toast } from "sonner";
@@ -69,7 +66,7 @@ export function RedditSearch({
 }) {
   // Search state
   const [query, setQuery] = useState(
-    () => localStorage.getItem("lastRedditSearchQuery") || ""
+    () => localStorage.getItem("lastRedditSearchQuery") || "",
   );
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -125,7 +122,7 @@ export function RedditSearch({
   useEffect(() => {
     localStorage.setItem(
       "lastRedditSearchSorts",
-      JSON.stringify(selectedSorts)
+      JSON.stringify(selectedSorts),
     );
   }, [selectedSorts]);
 
@@ -144,14 +141,14 @@ export function RedditSearch({
   useEffect(() => {
     localStorage.setItem(
       "lastRedditSearchViewFilters",
-      JSON.stringify(viewFilters)
+      JSON.stringify(viewFilters),
     );
   }, [viewFilters]);
 
   useEffect(() => {
     localStorage.setItem(
       "lastRedditSearchViewIntentFilters",
-      JSON.stringify(viewIntentFilters)
+      JSON.stringify(viewIntentFilters),
     );
   }, [viewIntentFilters]);
 
@@ -165,7 +162,7 @@ export function RedditSearch({
       try {
         const results = await fetchAllSearchedPosts(
           settings.brandKeywords,
-          settings.competitorKeywords
+          settings.competitorKeywords,
         );
         setSubreddits(results as any); // Type cast - SearchResult is compatible with PostDataWrapper
       } catch (error) {
@@ -248,7 +245,7 @@ export function RedditSearch({
       settings.competitorKeywords,
       subRedditsSaved,
       addSingleSubreddit,
-      onNotifyNewPosts
+      onNotifyNewPosts,
     );
   };
 
@@ -260,16 +257,14 @@ export function RedditSearch({
     }
   };
 
-  const handleGetComments = async (
-    result: SearchResult,
-    sort_type: string
-  ) => {
+  const handleGetComments = async (result: SearchResult, sort_type: string) => {
     // Prioritize permalink as it always points to the Reddit thread
     const targetUrl = result.permalink || result.url;
 
     if (!result.subreddit || result.subreddit === "N/A" || !targetUrl) {
       toast.error("Decryption Failed: Non-Reddit Node", {
-        description: "This search result lacks a valid Reddit path. Signal synchronization is impossible."
+        description:
+          "This search result lacks a valid Reddit path. Signal synchronization is impossible.",
       });
       return;
     }
@@ -287,7 +282,8 @@ export function RedditSearch({
     } catch (error) {
       console.error("Error fetching comments:", error);
       toast.error(`Transmission Error: ${error}`, {
-        description: "Failed to fetch Reddit comments. Please verify your connection."
+        description:
+          "Failed to fetch Reddit comments. Please verify your connection.",
       });
     }
   };
@@ -386,14 +382,15 @@ export function RedditSearch({
                   <button
                     key={filter}
                     onClick={() => toggleViewFilter(filter)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewFilters.includes(filter)
-                      ? filter === "hot"
-                        ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                        : filter === "top"
-                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                          : "bg-green-500/10 text-green-600 dark:text-green-400"
-                      : "opacity-30 hover:opacity-100"
-                      }`}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
+                      viewFilters.includes(filter)
+                        ? filter === "hot"
+                          ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                          : filter === "top"
+                            ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                            : "bg-green-500/10 text-green-600 dark:text-green-400"
+                        : "opacity-30 hover:opacity-100"
+                    }`}
                   >
                     {filter}
                   </button>
@@ -408,10 +405,11 @@ export function RedditSearch({
                   <Button
                     variant={filterQuery ? "secondary" : "ghost"}
                     size="sm"
-                    className={`h-6 px-2 text-[10px] uppercase font-bold tracking-wider ${filterQuery
-                      ? "text-primary"
-                      : "opacity-60 hover:opacity-100"
-                      }`}
+                    className={`h-6 px-2 text-[10px] uppercase font-bold tracking-wider ${
+                      filterQuery
+                        ? "text-primary"
+                        : "opacity-60 hover:opacity-100"
+                    }`}
                   >
                     <Search className="h-3 w-3 mr-1.5" />
                     {filterQuery ? "Filtered" : "Filter"}
@@ -455,10 +453,11 @@ export function RedditSearch({
                   <button
                     key={intent}
                     onClick={() => toggleViewIntentFilter(intent)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewIntentFilters.includes(intent)
-                      ? "bg-primary/10 text-primary"
-                      : "opacity-30 hover:opacity-100"
-                      }`}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${
+                      viewIntentFilters.includes(intent)
+                        ? "bg-primary/10 text-primary"
+                        : "opacity-30 hover:opacity-100"
+                    }`}
                   >
                     {intent}
                   </button>
@@ -515,7 +514,9 @@ export function RedditSearch({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
-                      <p>Export CSV ({sortedSubreddits.length} filtered items)</p>
+                      <p>
+                        Export CSV ({sortedSubreddits.length} filtered items)
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -533,7 +534,9 @@ export function RedditSearch({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
-                      <p>Export JSON ({sortedSubreddits.length} filtered items)</p>
+                      <p>
+                        Export JSON ({sortedSubreddits.length} filtered items)
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -570,19 +573,20 @@ export function RedditSearch({
           </div>
 
           {/* Results Grid */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden bg-background/30 p-3 scrollbar-thin scrollbar-thumb-border/20 scrollbar-track-transparent -mt-6">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden bg-background/30 p-3 scrollbar-thin scrollbar-thumb-border/20 scrollbar-track-transparent -mt-6 -mb-6">
             {paginatedResults.length > 0 ? (
               <div
-                className={`grid gap-3 ${gridColumns === 1
-                  ? "grid-cols-1"
-                  : gridColumns === 2
-                    ? "grid-cols-1 md:grid-cols-2"
-                    : gridColumns === 3
-                      ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                      : gridColumns === 4
-                        ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                        : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
-                  }`}
+                className={`grid gap-3 ${
+                  gridColumns === 1
+                    ? "grid-cols-1"
+                    : gridColumns === 2
+                      ? "grid-cols-1 md:grid-cols-2"
+                      : gridColumns === 3
+                        ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                        : gridColumns === 4
+                          ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                          : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                }`}
               >
                 {paginatedResults.map((result) => (
                   <div
@@ -618,12 +622,13 @@ export function RedditSearch({
                             {result.sort_type?.split(",").map((type) => (
                               <div
                                 key={type}
-                                className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider text-white ${type === "hot"
-                                  ? "bg-gradient-to-r from-red-500 to-red-600"
-                                  : type === "top"
-                                    ? "bg-gradient-to-r from-blue-500 to-blue-600"
-                                    : "bg-gradient-to-r from-green-500 to-green-600"
-                                  }`}
+                                className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider text-white ${
+                                  type === "hot"
+                                    ? "bg-gradient-to-r from-red-500 to-red-600"
+                                    : type === "top"
+                                      ? "bg-gradient-to-r from-blue-500 to-blue-600"
+                                      : "bg-gradient-to-r from-green-500 to-green-600"
+                                }`}
                               >
                                 {type}
                               </div>
@@ -641,7 +646,7 @@ export function RedditSearch({
                                     onClick={() =>
                                       handleGetComments(
                                         result,
-                                        sortTypeForComments
+                                        sortTypeForComments,
                                       )
                                     }
                                   >
@@ -721,7 +726,7 @@ export function RedditSearch({
                           {result.intent && (
                             <Badge
                               className={`${getIntentColor(
-                                result.intent.toLowerCase()
+                                result.intent.toLowerCase(),
                               )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
                             >
                               {result.intent.toUpperCase()}
@@ -871,28 +876,28 @@ export function RedditSearch({
         post={
           commentsPost
             ? {
-              id: parseInt(commentsPost.id),
-              title: commentsPost.title,
-              url: commentsPost.url,
-              subreddit: commentsPost.subreddit,
-              timestamp: commentsPost.timestamp || 0,
-              formatted_date: commentsPost.formatted_date || "",
-              sort_type: commentsPost.sort_type,
-              relevance_score: commentsPost.relevance_score,
-              score: commentsPost.score,
-              num_comments: commentsPost.num_comments,
-              author: commentsPost.author || "unknown",
-              is_self: commentsPost.is_self || false,
-              selftext: commentsPost.selftext || "",
-              engaged: 0,
-              assignee: "",
-              notes: "",
-              name: commentsPost.name || commentsPost.id,
-              permalink: commentsPost.permalink || commentsPost.url,
-              status: "new",
-              intent: commentsPost.intent || "Low",
-              date_added: commentsPost.date_added || 0,
-            }
+                id: parseInt(commentsPost.id),
+                title: commentsPost.title,
+                url: commentsPost.url,
+                subreddit: commentsPost.subreddit,
+                timestamp: commentsPost.timestamp || 0,
+                formatted_date: commentsPost.formatted_date || "",
+                sort_type: commentsPost.sort_type,
+                relevance_score: commentsPost.relevance_score,
+                score: commentsPost.score,
+                num_comments: commentsPost.num_comments,
+                author: commentsPost.author || "unknown",
+                is_self: commentsPost.is_self || false,
+                selftext: commentsPost.selftext || "",
+                engaged: 0,
+                assignee: "",
+                notes: "",
+                name: commentsPost.name || commentsPost.id,
+                permalink: commentsPost.permalink || commentsPost.url,
+                status: "new",
+                intent: commentsPost.intent || "Low",
+                date_added: commentsPost.date_added || 0,
+              }
             : null
         }
         comments={comments}

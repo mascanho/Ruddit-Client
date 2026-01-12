@@ -281,6 +281,14 @@ pub fn update_post_engaged_status(id: i64, engaged: i64) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     Ok(())
 }
+
+#[tauri::command]
+pub fn update_post_interest(id: i64, interest: i64) -> Result<(), String> {
+    let db = database::adding::DB::new().map_err(|e| e.to_string())?;
+    db.update_post_interest(id, interest)
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
 #[tauri::command]
 pub fn get_reddit_config_command() -> Result<api_keys::ApiKeys, String> {
     let config = api_keys::ConfigDirs::read_config().map_err(|e| e.to_string())?;
