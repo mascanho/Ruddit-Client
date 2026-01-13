@@ -1261,12 +1261,18 @@ export function RedditTable({
                             : "h-10"
                         }`}
                     >
-                      <TableCell className="px-1 text-center">
+                      <TableCell className="px-1 text-center relative">
+                        {post.notes && (
+                          <Notebook className="h-3 w-3 mx-auto text-primary opacity-60 group-hover:opacity-0 transition-opacity absolute inset-0 m-auto pointer-events-none" />
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => toggleRowExpansion(post.id.toString())}
-                          className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-none flex items-center justify-center"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleRowExpansion(post.id.toString());
+                          }}
+                          className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-none relative z-10 flex items-center justify-center mx-auto"
                         >
                           <ChevronDown
                             className={`h-3 w-3 transition-transform duration-300 ${expandedRows.has(post.id.toString())
@@ -1504,7 +1510,7 @@ export function RedditTable({
                     </TableRow>
                     {expandedRows.has(post.id.toString()) && (
                       <TableRow className="bg-muted/10">
-                        <TableCell colSpan={10} className="p-0 border-b">
+                        <TableCell colSpan={11} className="p-0 border-b">
                           <div className="p-3 bg-muted/20 border-x">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <Card className="shadow-none border-border/40 bg-background/60">
