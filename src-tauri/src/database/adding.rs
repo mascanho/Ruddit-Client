@@ -263,12 +263,13 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT OR IGNORE INTO reddit_posts
-                (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added, interest)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)",
+                (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added, interest)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)",
             )?;
 
             for result in results {
                 stmt.execute(params![
+                    result.id,
                     result.timestamp,
                     result.formatted_date,
                     result.title,
@@ -288,7 +289,8 @@ impl DB {
                     result.is_self,
                     result.num_comments,
                     result.intent,
-                    if result.date_added == 0 { Utc::now().timestamp() } else { result.date_added }
+                    if result.date_added == 0 { Utc::now().timestamp() } else { result.date_added },
+                    result.interest
                 ])?;
             }
         }
@@ -314,12 +316,13 @@ impl DB {
         {
             let mut stmt = tx.prepare(
                 "INSERT INTO subreddit_search
-            (timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added, interest)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)",
+            (id, timestamp, formatted_date, title, url, sort_type, relevance_score, subreddit, permalink, engaged, assignee, notes, name, selftext, author, score, thumbnail, is_self, num_comments, intent, date_added, interest)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)",
             )?;
 
             for result in results {
                 stmt.execute(params![
+                    result.id,
                     result.timestamp,
                     result.formatted_date,
                     result.title,
@@ -339,7 +342,8 @@ impl DB {
                     result.is_self,
                     result.num_comments,
                     result.intent,
-                    if result.date_added == 0 { Utc::now().timestamp() } else { result.date_added }
+                    if result.date_added == 0 { Utc::now().timestamp() } else { result.date_added },
+                    result.interest
                 ])?;
             }
         }

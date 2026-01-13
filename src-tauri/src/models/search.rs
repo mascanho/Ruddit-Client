@@ -210,7 +210,7 @@ pub async fn get_subreddit_posts(
     let response = client
         .get(&url)
         .header("Authorization", format!("Bearer {}", access_token))
-        .header("User-Agent", "RustRedditApp/0.1 by YourUsername")
+        .header("User-Agent", "Atalaia/0.1.0 (by /u/Atalaia)")
         .send()
         .await
         .map_err(|e| {
@@ -311,7 +311,7 @@ pub async fn search_subreddit_posts(
             ("t", "all"),
         ])
         .header("Authorization", format!("Bearer {}", access_token))
-        .header("User-Agent", "RustAtalaiaApp/0.1 by Atalaia")
+        .header("User-Agent", "Atalaia/0.1.0 (by /u/Atalaia)")
         .send()
         .await?;
 
@@ -417,14 +417,27 @@ pub async fn get_post_comments(
         }
     };
 
-    // Use the passed subreddit directly
-    // let subreddit = extract_subreddit_from_url(url).unwrap_or("unknown".to_string());
+    // Clean the subreddit name
+    let subreddit_clean = subreddit.trim_start_matches("r/");
 
-    let api_url = format!(
-        "https://oauth.reddit.com/comments/{}?sort={}&limit=500",
-        post_id,
-        sort_type // Use sort_type here
-    );
+    // Construct the canonical Reddit API URL for comments
+    // Using /r/{subreddit}/comments/{id} is more robust than /comments/{id}
+    let api_url = if !subreddit_clean.is_empty() && subreddit_clean != "unknown" && subreddit_clean != "N/A" {
+        format!(
+            "https://oauth.reddit.com/r/{}/comments/{}?sort={}&limit=500",
+            subreddit_clean,
+            post_id,
+            sort_type.replace("q&a", "qa")
+        )
+    } else {
+        format!(
+            "https://oauth.reddit.com/comments/{}?sort={}&limit=500",
+            post_id,
+            sort_type.replace("q&a", "qa")
+        )
+    };
+
+    println!("Fetching comments from canonical URL: {}", api_url);
 
     // Read config
     let config = api_keys::ConfigDirs::read_config().unwrap_or_else(|err| {
@@ -452,7 +465,7 @@ pub async fn get_post_comments(
     let response = client
         .get(&api_url)
         .header("Authorization", format!("Bearer {}", token))
-        .header("User-Agent", "RustRedditApp/0.1 by YourUsername")
+        .header("User-Agent", "Atalaia/0.1.0 (by /u/Atalaia)")
         .send()
         .await
         .map_err(RedditError::Reqwest)?;
