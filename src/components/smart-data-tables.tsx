@@ -159,7 +159,7 @@ export function SmartDataTables() {
     const avgRelevance =
       subRedditsSaved.length > 0
         ? subRedditsSaved.reduce((sum, p) => sum + p.relevance_score, 0) /
-        subRedditsSaved.length
+          subRedditsSaved.length
         : 0;
 
     const highIntentPosts = subRedditsSaved.filter(
@@ -227,11 +227,7 @@ export function SmartDataTables() {
         <div className="flex items-center gap-3">
           <div className="relative group">
             <div className="absolute -inset-1 bg-linear-to-r from-primary/50 to-blue-600/50 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
-            <img
-              src="/atalaia.png"
-              alt="logo"
-              className="h-9 w-9 relative"
-            />
+            <img src="/atalaia.png" alt="logo" className="h-9 w-9 relative" />
           </div>
           <div>
             <h1 className="text-lg font-black tracking-tighter uppercase leading-none text-foreground/90">
@@ -245,31 +241,31 @@ export function SmartDataTables() {
 
         <section className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-border/40 shadow-sm">
           {[
-            {
-              icon: Play,
-              onClick: () => setSettingsOpen(true),
-              tooltip: "Run",
-            },
-            {
-              icon: StopCircle,
-              onClick: () => setSettingsOpen(true),
-              tooltip: "Stop",
-            },
-            {
-              icon: Settings2,
-              onClick: () => setSettingsOpen(true),
-              tooltip: "Quick Settings",
-            },
+            // {
+            //   icon: Play,
+            //   onClick: () => setSettingsOpen(true),
+            //   tooltip: "Run",
+            // },
+            // {
+            //   icon: StopCircle,
+            //   onClick: () => setSettingsOpen(true),
+            //   tooltip: "Stop",
+            // },
+            // {
+            //   icon: Settings2,
+            //   onClick: () => setSettingsOpen(true),
+            //   tooltip: "Quick Settings",
+            // },
             {
               icon: Cog,
               onClick: handleOpenSettings,
               tooltip: "Advanced Settings",
             },
-            {
-              icon: Database,
-              onClick: handleOpenDbFolder,
-              tooltip: "Database",
-            },
+            // {
+            //   icon: Database,
+            //   onClick: handleOpenDbFolder,
+            //   tooltip: "Database",
+            // },
           ].map((item, idx) => (
             <Button
               key={idx}
