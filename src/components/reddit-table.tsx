@@ -24,6 +24,8 @@ import { toast } from "sonner";
 import moment from "moment";
 import { useOpenUrl } from "@/hooks/useOpenUrl";
 import { getStatusColor, getIntentColor } from "@/lib/marketing-utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // UI Components
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -292,6 +294,7 @@ export function RedditTable({
   );
   const [currentNote, setCurrentNote] = useState("");
   const [lastVisitTimestamp, setLastVisitTimestamp] = useState<number>(0);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const savedTimestamp = parseInt(
@@ -1559,7 +1562,11 @@ export function RedditTable({
                                   <ScrollArea className="h-[100px] w-full pr-2">
                                     <div className="text-[11px] leading-relaxed">
                                       {post.notes ? (
-                                        <p>{post.notes}</p>
+                                        <div className="markdown-content prose prose-sm dark:prose-invert max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_li]:mb-1 [&_h1]:text-sm [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:mb-1 [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded [&_a]:text-primary [&_a]:underline">
+                                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {post.notes}
+                                          </ReactMarkdown>
+                                        </div>
                                       ) : (
                                         <p className="text-muted-foreground italic opacity-60">
                                           No notes available.
@@ -1674,21 +1681,50 @@ export function RedditTable({
       {/* Note Editing Dialog */}
       <Dialog
         open={editingNotePost !== null}
-        onOpenChange={() => setEditingNotePost(null)}
+        onOpenChange={() => {
+          setEditingNotePost(null);
+          setShowPreview(false);
+        }}
       >
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Add/Edit Note</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Add/Edit Note</DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPreview(!showPreview)}
+                className="h-7 text-[10px] uppercase font-bold tracking-wider"
+              >
+                {showPreview ? "Edit Mode" : "Preview Mode"}
+              </Button>
+            </div>
             <DialogDescription>
               Add or edit notes for the post: "{editingNotePost?.title}"
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            value={currentNote}
-            onChange={(e) => setCurrentNote(e.target.value)}
-            placeholder="Type your notes here..."
-            rows={6}
-          />
+
+          {showPreview ? (
+            <div className="min-h-[144px] p-3 rounded-md bg-muted/30 border border-border/50 markdown-content prose prose-sm dark:prose-invert max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_li]:mb-1 [&_h1]:text-sm [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:mb-1 [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded [&_a]:text-primary [&_a]:underline">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {currentNote || "*No notes content to preview*"}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <Textarea
+              value={currentNote}
+              onChange={(e) => setCurrentNote(e.target.value)}
+              placeholder="Type your notes here... (Markdown supported)"
+              rows={6}
+              className="font-mono text-sm"
+              autoFocus
+            />
+          )}
+
+          <div className="text-[10px] text-muted-foreground opacity-50 flex justify-between items-center mt-1">
+            <span>Supports **bold**, _italic_, - lists, [links](url), etc.</span>
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingNotePost(null)}>
               Cancel
