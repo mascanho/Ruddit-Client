@@ -35,6 +35,7 @@ import {
 import type { RedditPost, Message } from "./smart-data-tables";
 import { Progress } from "@/components/ui/progress";
 import { useAppSettings } from "@/store/settings-store";
+import { useOpenUrl } from "@/hooks/useOpenUrl";
 
 type Lead = {
   id: string;
@@ -43,9 +44,9 @@ type Lead = {
   type: "post" | "subreddit" | "conversation";
   reasons: string[];
   data:
-    | RedditPost
-    | { subreddit: string; posts: RedditPost[] }
-    | { messages: Message[]; topic: string };
+  | RedditPost
+  | { subreddit: string; posts: RedditPost[] }
+  | { messages: Message[]; topic: string };
 };
 
 export function LeadsGenerator({
@@ -60,6 +61,7 @@ export function LeadsGenerator({
   >("all");
   const [currentPage, setCurrentPage] = useState(1);
   const { settings } = useAppSettings();
+  const openUrl = useOpenUrl();
   const [rowsPerPage, setRowsPerPage] = useState(settings.rowsPerPage);
 
   const leads = useMemo(() => {
@@ -362,25 +364,21 @@ export function LeadsGenerator({
                       </TableCell>
                       <TableCell className="w-[100px]">
                         {lead.type === "post" && (
-                          <Button variant="outline" size="sm" asChild>
-                            <a
-                              href={(lead.data as RedditPost).url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openUrl((lead.data as RedditPost).url)}
+                          >
+                            <ExternalLink className="h-4 w-4" />
                           </Button>
                         )}
                         {lead.type === "subreddit" && (
-                          <Button variant="outline" size="sm" asChild>
-                            <a
-                              href={`https://reddit.com/r/${(lead.data as { subreddit: string }).subreddit}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openUrl(`https://reddit.com/r/${(lead.data as { subreddit: string }).subreddit}`)}
+                          >
+                            <ExternalLink className="h-4 w-4" />
                           </Button>
                         )}
                       </TableCell>

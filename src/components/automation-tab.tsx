@@ -241,6 +241,7 @@ export function AutomationTab() {
           num_comments: post.num_comments || 0,
           intent: post.intent || "Low",
           date_added: post.date_added || 0,
+          interest: post.interest || 0,
         },
       });
 
@@ -681,6 +682,7 @@ export function AutomationTab() {
           addSubredditToMonitoring={addSubredditToMonitoring}
           handleGetComments={handleGetComments}
           handleAddToTracking={handleAddToTracking}
+          monitoredSubreddits={settings.monitoredSubreddits}
         />
       </div>
       <RedditCommentsView

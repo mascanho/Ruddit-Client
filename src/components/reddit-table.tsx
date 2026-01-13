@@ -1848,14 +1848,12 @@ export function RedditTable({
                 <div className="text-sm font-medium text-muted-foreground mb-1">
                   URL
                 </div>
-                <a
-                  href={selectedPost.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline break-all"
+                <div
+                  onClick={() => openUrl(selectedPost.url)}
+                  className="text-sm text-primary hover:underline break-all cursor-pointer"
                 >
                   {selectedPost.url}
-                </a>
+                </div>
               </div>
             </div>
           )}

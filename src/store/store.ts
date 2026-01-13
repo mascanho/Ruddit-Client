@@ -24,6 +24,7 @@ interface PostDataWrapper {
   num_comments: number;
   intent: string;
   date_added: number;
+  interest: number;
   // Client-side only?
   status?: "new" | "investigating" | "replied" | "closed" | "ignored";
   category?: "brand" | "competitor" | "general";

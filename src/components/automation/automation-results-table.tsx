@@ -52,6 +52,7 @@ interface AutomationResultsTableProps {
   addSubredditToMonitoring: (subreddit: string) => void;
   handleGetComments: (post: PostDataWrapper, sortType: string) => void;
   handleAddToTracking: (post: PostDataWrapper) => void;
+  monitoredSubreddits: string[];
 }
 
 export function AutomationResultsTable({
@@ -72,6 +73,7 @@ export function AutomationResultsTable({
   addSubredditToMonitoring,
   handleGetComments,
   handleAddToTracking,
+  monitoredSubreddits,
 }: AutomationResultsTableProps) {
   return (
     <div className="bg-card rounded-lg border border-border/60 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -252,7 +254,12 @@ export function AutomationResultsTable({
                     <td className="p-1.5 text-muted-foreground text-xs w-44">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <span className="inline-block border px-2 rounded-sm  cursor-pointer hover:bg-gray-100 hover:text-black">
+                          <span
+                            className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors ${monitoredSubreddits.includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
+                                ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
+                                : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
+                              }`}
+                          >
                             r/{post.subreddit}
                           </span>
                         </DropdownMenuTrigger>
