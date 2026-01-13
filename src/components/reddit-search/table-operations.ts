@@ -59,6 +59,7 @@ export async function addResultToTable(
                 title: postData.title,
                 sortType: postData.sort_type,
                 subreddit: postData.subreddit,
+                fullname: postData.name,
             });
         }
 
@@ -120,6 +121,7 @@ export async function addAllResultsToTable(
                         title: postData.title,
                         sortType: postData.sort_type,
                         subreddit: postData.subreddit,
+                        fullname: postData.name,
                     });
                 }
             } else {
@@ -180,5 +182,6 @@ function buildPostData(
         intent: result.intent || "Low",
         category: categorizePost(result.title, brandKeywords, competitorKeywords),
         date_added: result.date_added || 0,
+        interest: result.interest || 0,
     };
 }

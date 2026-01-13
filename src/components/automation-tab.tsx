@@ -268,6 +268,7 @@ export function AutomationTab() {
             title: post.title,
             sortType: post.sort_type,
             subreddit: post.subreddit,
+            fullname: post.name,
           }).catch(console.error);
         }
         return "success";
@@ -590,6 +591,7 @@ export function AutomationTab() {
         title: post.title,
         sortType: sort_type,
         subreddit: post.subreddit,
+        fullname: post.name,
       })) as Message[];
 
       setComments(fetchedComments || []);

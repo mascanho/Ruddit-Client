@@ -19,6 +19,7 @@ export type SearchResult = {
     category?: "brand" | "competitor" | "general";
     permalink?: string;
     date_added?: number;
+    interest?: number;
 };
 
 export type SortType = "hot" | "top" | "new";

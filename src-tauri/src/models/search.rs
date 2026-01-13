@@ -403,26 +403,44 @@ pub struct CommentData {
 pub async fn get_post_comments(
     url: &str,
     post_title: &str,
-    sort_type: &str, // Renamed from relevance
-    subreddit: &str, // Add subreddit here
+    sort_type: &str,
+    subreddit: &str,
+    fullname: Option<String>,
 ) -> Result<Vec<CommentDataWrapper>, RedditError> {
     let client = Client::new();
 
-    // Extract post ID and handle the None case properly
-    let post_id = match extract_post_id_from_url(url) {
-        Some(id) => id,
-        None => {
-            eprintln!("Failed to extract post ID from URL: {}", url);
-            return Err("Signal Extraction Failure: Could not identify a valid Reddit post ID in the provided source.".into());
+    // Try to get post ID from fullname first (t3_id)
+    let post_id = if let Some(fn_str) = fullname {
+        if fn_str.starts_with("t3_") {
+            Some(fn_str[3..].to_string())
+        } else {
+            None
         }
+    } else {
+        None
+    };
+
+    // Fallback to URL extraction if fullname was missing or invalid
+    let post_id = match post_id {
+        Some(id) => id,
+        None => match extract_post_id_from_url(url) {
+            Some(id) => id,
+            None => {
+                eprintln!("Failed to extract post ID from URL: {}", url);
+                return Err("Signal Extraction Failure: Could not identify a valid Reddit post ID in the provided source.".into());
+            }
+        },
     };
 
     // Clean the subreddit name
     let subreddit_clean = subreddit.trim_start_matches("r/");
 
     // Construct the canonical Reddit API URL for comments
-    // Using /r/{subreddit}/comments/{id} is more robust than /comments/{id}
-    let api_url = if !subreddit_clean.is_empty() && subreddit_clean != "unknown" && subreddit_clean != "N/A" {
+    // Using global /comments/{id} endpoint is often more reliable than subreddit-specific ones,
+    // especially for user profile posts or cross-posts.
+    let is_user_sub = subreddit_clean.to_lowercase().starts_with("u_") || subreddit_clean.to_lowercase().starts_with("u/");
+    
+    let api_url = if !subreddit_clean.is_empty() && subreddit_clean != "unknown" && subreddit_clean != "N/A" && !is_user_sub {
         format!(
             "https://oauth.reddit.com/r/{}/comments/{}?sort={}&limit=500",
             subreddit_clean,

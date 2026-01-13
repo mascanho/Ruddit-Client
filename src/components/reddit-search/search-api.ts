@@ -74,6 +74,7 @@ function mapPostsToResults(
         thumbnail: post.thumbnail,
         intent: post.intent,
         permalink: post.permalink,
+        interest: post.interest,
         category: categorizePost(post.title, brandKeywords, competitorKeywords),
     }));
 }

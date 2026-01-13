@@ -616,6 +616,7 @@ export function RedditTable({
         title: post.title,
         sortType: sort_type,
         subreddit: post.subreddit,
+        fullname: post.name,
       })) as Message[];
 
       setComments(fetchedComments || []);

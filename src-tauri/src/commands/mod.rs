@@ -209,8 +209,9 @@ pub async fn get_post_comments_command(
     title: String,
     sort_type: String, // Renamed from relevance
     subreddit: String,
+    fullname: Option<String>,
 ) -> Result<Vec<CommentDataWrapper>, String> {
-    let results = search::get_post_comments(&url, &title, &sort_type, &subreddit)
+    let results = search::get_post_comments(&url, &title, &sort_type, &subreddit, fullname)
         .await
         .map_err(|e| e.to_string())?;
 
