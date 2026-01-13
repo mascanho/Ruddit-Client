@@ -251,11 +251,11 @@ export function SmartDataTables() {
             //   onClick: () => setSettingsOpen(true),
             //   tooltip: "Stop",
             // },
-            // {
-            //   icon: Settings2,
-            //   onClick: () => setSettingsOpen(true),
-            //   tooltip: "Quick Settings",
-            // },
+            {
+              icon: Settings2,
+              onClick: () => setSettingsOpen(true),
+              tooltip: "Quick Settings",
+            },
             {
               icon: Cog,
               onClick: handleOpenSettings,
