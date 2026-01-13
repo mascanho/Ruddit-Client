@@ -141,7 +141,7 @@ export function AutomationResultsTable({
         ) : (
           <div className="overflow-y-auto flex-1 flex flex-col custom-scroll border rounded-none">
             <table className="w-full text-xs text-left table-fixed rounded-none">
-              <thead className="sticky top-0 bg-[#0c0c0c] z-10 border-b border-border/60">
+              <thead className="sticky top-0 bg-background z-40 border-b border-border/50">
                 <tr className="border-b font-bold">
                   <th className="w-8 pl-3 pr-1">
                     <Checkbox
@@ -186,7 +186,7 @@ export function AutomationResultsTable({
               </thead>
               <tbody>
                 {filteredAndSortedPosts.map((post) => (
-                  <tr key={post.id} className="border-b hover:bg-muted/50">
+                  <tr key={post.id} className="border-b hover:bg-muted/50 relative z-0">
                     <td className="w-8 pl-3 pr-1">
                       <Checkbox
                         checked={selectedPostIds.has(post.id)}
