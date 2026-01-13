@@ -218,6 +218,20 @@ export function AutomationTab() {
     toast.success(`Now monitoring r/${cleaned}`);
   };
 
+  const addUsernameToMonitoring = (username: string) => {
+    const cleaned = username.trim().toLowerCase();
+    if ((settings.monitoredUsernames || []).includes(cleaned)) {
+      toast.info(`Already monitoring u/${cleaned}`);
+      return;
+    }
+
+    updateSettings({
+      monitoredUsernames: [...(settings.monitoredUsernames || []), cleaned],
+    });
+
+    toast.success(`Now monitoring u/${cleaned}`);
+  };
+
   const savePostToDb = async (post: PostDataWrapper) => {
     try {
       const isDuplicate = subRedditsSaved.some((p) => p.id === post.id);
@@ -683,6 +697,8 @@ export function AutomationTab() {
           handleGetComments={handleGetComments}
           handleAddToTracking={handleAddToTracking}
           monitoredSubreddits={settings.monitoredSubreddits}
+          monitoredUsernames={settings.monitoredUsernames || []}
+          addUsernameToMonitoring={addUsernameToMonitoring}
         />
       </div>
       <RedditCommentsView

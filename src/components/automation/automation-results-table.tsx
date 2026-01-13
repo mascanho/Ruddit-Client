@@ -8,8 +8,10 @@ import {
   ArrowUp,
   ArrowDown,
   User,
+  UserPlus,
   Radar,
   MessageCircle,
+  ExternalLink,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -25,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PostDataWrapper } from "@/store/store";
 import { getIntentColor } from "@/lib/marketing-utils";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { useOpenUrl } from "@/hooks/useOpenUrl";
 import {
   CustomButton,
   KeywordBadge,
@@ -53,6 +55,8 @@ interface AutomationResultsTableProps {
   handleGetComments: (post: PostDataWrapper, sortType: string) => void;
   handleAddToTracking: (post: PostDataWrapper) => void;
   monitoredSubreddits: string[];
+  monitoredUsernames: string[];
+  addUsernameToMonitoring: (username: string) => void;
 }
 
 export function AutomationResultsTable({
@@ -74,7 +78,10 @@ export function AutomationResultsTable({
   handleGetComments,
   handleAddToTracking,
   monitoredSubreddits,
+  monitoredUsernames,
+  addUsernameToMonitoring,
 }: AutomationResultsTableProps) {
+  const openUrl = useOpenUrl();
   return (
     <div className="bg-card rounded-lg border border-border/60 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
       <div className="px-3 py-2 border-b border-border flex justify-between items-center bg-muted/10">
@@ -134,7 +141,7 @@ export function AutomationResultsTable({
         ) : (
           <div className="overflow-y-auto flex-1 flex flex-col custom-scroll border rounded-none">
             <table className="w-full text-xs text-left table-fixed rounded-none">
-              <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
+              <thead className="sticky top-0 bg-[#0c0c0c] z-10 border-b border-border/60">
                 <tr className="border-b font-bold">
                   <th className="w-8 pl-3 pr-1">
                     <Checkbox
@@ -149,10 +156,14 @@ export function AutomationResultsTable({
                       className="translate-y-[1px]"
                     />
                   </th>
-                  {["Intent", "Title", "Subreddit"].map((h) => (
+                  {["Intent", "Title", "Author", "Subreddit"].map((h) => (
                     <th
                       key={h}
-                      className={`p-1.5 font-bold text-xs  text-muted-foreground ${h === "Subreddit" ? "w-44" : h === "Intent" ? "w-20" : h === "Title" ? "w-[50%]" : ""}`}
+                      className={`p-1.5 font-bold text-xs text-muted-foreground ${h === "Subreddit" ? "w-36" :
+                        h === "Author" ? "w-36" :
+                          h === "Intent" ? "w-20" :
+                            h === "Title" ? "w-[40%]" : ""
+                        }`}
                     >
                       {h}
                     </th>
@@ -251,13 +262,48 @@ export function AutomationResultsTable({
                         </TooltipContent>
                       </Tooltip>
                     </td>
-                    <td className="p-1.5 text-muted-foreground text-xs w-44">
+                    <td className="p-1.5 text-muted-foreground text-xs w-36">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <span
-                            className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors ${monitoredSubreddits.includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
-                                ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
-                                : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
+                            className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${monitoredUsernames.includes(post.author?.toLowerCase() || "")
+                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
+                              : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
+                              }`}
+                            title={`u/${post.author || "unknown"}`}
+                          >
+                            u/{post.author || "unknown"}
+                          </span>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem
+                            className="text-xs"
+                            onClick={() =>
+                              openUrl(`https://www.reddit.com/user/${post.author}/`)
+                            }
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            <span>View Profile</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-xs"
+                            onClick={() =>
+                              post.author && addUsernameToMonitoring(post.author)
+                            }
+                          >
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            <span>Monitor User</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                    <td className="p-1.5 text-muted-foreground text-xs w-36">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <span
+                            className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${monitoredSubreddits.includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
+                              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
+                              : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
                               }`}
                           >
                             r/{post.subreddit}

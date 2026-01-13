@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Sparkles, X } from "lucide-react";
 import { PostDataWrapper } from "@/store/store";
 import { getIntentColor } from "@/lib/marketing-utils";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { useOpenUrl } from "@/hooks/useOpenUrl";
 import { toast } from "sonner";
 
 interface AutomationSelectionDialogProps {
@@ -61,6 +61,7 @@ export function AutomationSelectionDialog({
   setSelectedPostIds,
   handleBulkAddToTracking,
 }: AutomationSelectionDialogProps) {
+  const openUrl = useOpenUrl();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
