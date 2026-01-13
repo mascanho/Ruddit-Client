@@ -344,7 +344,11 @@ export function SmartDataTables() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="reddit" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
+        <TabsContent
+          value="reddit"
+          forceMount
+          className={`flex-1 flex flex-col min-h-0 mt-0 outline-none ${activeTab !== "reddit" ? "hidden" : ""}`}
+        >
           <RedditTable
             onAddComments={handleAddComments}
             externalPosts={allSavedPosts}
@@ -354,7 +358,11 @@ export function SmartDataTables() {
           />
         </TabsContent>
 
-        <TabsContent value="messages" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
+        <TabsContent
+          value="messages"
+          forceMount
+          className={`flex-1 flex flex-col min-h-0 mt-0 outline-none ${activeTab !== "messages" ? "hidden" : ""}`}
+        >
           <MessagesTable
             externalMessages={messages}
             searchState={searchState}
@@ -363,18 +371,30 @@ export function SmartDataTables() {
           />
         </TabsContent>
 
-        <TabsContent value="search" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
+        <TabsContent
+          value="search"
+          forceMount
+          className={`flex-1 flex flex-col min-h-0 mt-0 outline-none ${activeTab !== "search" ? "hidden" : ""}`}
+        >
           <RedditSearch
             onAddResults={handleAddSearchResults}
             onNotifyNewPosts={handleNotifyNewPosts}
           />
         </TabsContent>
 
-        <TabsContent value="automation" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
+        <TabsContent
+          value="automation"
+          forceMount
+          className={`flex-1 flex flex-col min-h-0 mt-0 outline-none ${activeTab !== "automation" ? "hidden" : ""}`}
+        >
           <AutomationTab />
         </TabsContent>
 
-        <TabsContent value="ai" className="flex-1 flex flex-col min-h-0 mt-0 outline-none">
+        <TabsContent
+          value="ai"
+          forceMount
+          className={`flex-1 flex flex-col min-h-0 mt-0 outline-none ${activeTab !== "ai" ? "hidden" : ""}`}
+        >
           <AIDataChat dataStats={dataStats} shouldScroll={shouldScrollAI} />
         </TabsContent>
       </Tabs>
