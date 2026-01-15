@@ -5,7 +5,13 @@
 
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface FiltersProps {
   searchQuery: string;
@@ -55,151 +61,125 @@ export function Filters({
 
       {/* Filter Dropdowns - Grouped together */}
       <div className="flex items-center gap-2 flex-wrap">
-      <Select
-        value={subredditFilter}
-        onValueChange={setSubredditFilter}
-      >
-        <SelectTrigger className="w-[120px] h-7 text-[10px] font-bold uppercase tracking-tight bg-background/50">
-          <SelectValue placeholder="Community" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem
-            value="all"
-            className="text-[10px] font-bold uppercase"
-          >
-            Any Segment
-          </SelectItem>
-          {subreddits.map((subreddit) => (
+        <Select value={subredditFilter} onValueChange={setSubredditFilter}>
+          <SelectTrigger className="w-36 h-6 text-[10px] font-bold uppercase tracking-tight bg-background/50">
+            <SelectValue placeholder="Community" />
+          </SelectTrigger>
+          <SelectContent>
             <SelectItem
-              key={subreddit}
-              value={subreddit}
-              className="text-[10px] font-bold"
+              value="all"
+              className="text-[10px] font-bold uppercase w-[300px]"
             >
-              r/{subreddit}
+              All r/subreddits
             </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+            {subreddits.map((subreddit) => (
+              <SelectItem
+                key={subreddit}
+                value={subreddit}
+                className="text-[10px] font-bold"
+              >
+                r/{subreddit}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Select
-        value={relevanceFilter}
-        onValueChange={setRelevanceFilter}
-      >
-        <SelectTrigger className="w-[100px] h-7 text-[10px] font-bold uppercase tracking-tight bg-background/50">
-          <SelectValue placeholder="Intent" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem
-            value="all"
-            className="text-[10px] font-bold uppercase"
-          >
-            All
-          </SelectItem>
-          <SelectItem
-            value="high"
-            className="text-[10px] font-bold uppercase"
-          >
-            High
-          </SelectItem>
-          <SelectItem
-            value="medium"
-            className="text-[10px] font-bold uppercase"
-          >
-            Medium
-          </SelectItem>
-          <SelectItem
-            value="low"
-            className="text-[10px] font-bold uppercase"
-          >
-            Low
-          </SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select value={statusFilter} onValueChange={setStatusFilter}>
-        <SelectTrigger className="w-[100px] h-7 text-[10px] font-bold uppercase tracking-tight bg-background/50">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem
-            value="all"
-            className="text-[10px] font-bold uppercase"
-          >
-            All
-          </SelectItem>
-          <SelectItem
-            value="new"
-            className="text-[10px] font-bold uppercase"
-          >
-            New
-          </SelectItem>
-          <SelectItem
-            value="investigating"
-            className="text-[10px] font-bold uppercase"
-          >
-            Research
-          </SelectItem>
-          <SelectItem
-            value="replied"
-            className="text-[10px] font-bold uppercase"
-          >
-            Replied
-          </SelectItem>
-          <SelectItem
-            value="closed"
-            className="text-[10px] font-bold uppercase"
-          >
-            Closed
-          </SelectItem>
-          <SelectItem
-            value="ignored"
-            className="text-[10px] font-bold uppercase"
-          >
-            Ignored
-          </SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={engagementFilter}
-        onValueChange={setEngagementFilter}
-      >
-        <SelectTrigger className="w-[120px] h-7 text-[10px] font-bold uppercase tracking-tight bg-background/50">
-          <SelectValue placeholder="Engagement" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Any</SelectItem>
-          <SelectItem value="engaged">Engaged</SelectItem>
-          <SelectItem value="not_engaged">Not Engaged</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={segmentFilter}
-        onValueChange={setSegmentFilter}
-      >
-        <SelectTrigger className="w-[100px] h-7 text-[10px] font-bold uppercase tracking-tight bg-background/50">
-          <SelectValue placeholder="Segment" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem
-            value="all"
-            className="text-[10px] font-bold uppercase"
-          >
-            All
-          </SelectItem>
-          {segments.map((segment) => (
+        <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
+          <SelectTrigger className="w-[110px] h-7 text-[10px] font-bold uppercase tracking-tight bg-background/50">
+            <SelectValue placeholder="Intent" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="text-[10px] font-bold uppercase">
+              All Intent
+            </SelectItem>
             <SelectItem
-              key={segment}
-              value={segment}
-              className="text-[10px] font-bold"
+              value="high"
+              className="text-[10px] font-bold uppercase"
             >
-              {segment}
+              High
             </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+            <SelectItem
+              value="medium"
+              className="text-[10px] font-bold uppercase"
+            >
+              Medium
+            </SelectItem>
+            <SelectItem value="low" className="text-[10px] font-bold uppercase">
+              Low
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[110px] h-7 text-[10px] font-bold uppercase tracking-tight bg-background/50">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="text-[10px] font-bold uppercase">
+              All Status
+            </SelectItem>
+            <SelectItem value="new" className="text-[10px] font-bold uppercase">
+              New
+            </SelectItem>
+            <SelectItem
+              value="investigating"
+              className="text-[10px] font-bold uppercase"
+            >
+              Research
+            </SelectItem>
+            <SelectItem
+              value="replied"
+              className="text-[10px] font-bold uppercase"
+            >
+              Replied
+            </SelectItem>
+            <SelectItem
+              value="closed"
+              className="text-[10px] font-bold uppercase"
+            >
+              Closed
+            </SelectItem>
+            <SelectItem
+              value="ignored"
+              className="text-[10px] font-bold uppercase"
+            >
+              Ignored
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={engagementFilter} onValueChange={setEngagementFilter}>
+          <SelectTrigger className="w-[140px] h-7 text-[10px] font-bold uppercase tracking-tight bg-background/50">
+            <SelectValue placeholder="Engagement" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Any Engagement</SelectItem>
+            <SelectItem value="engaged">Engaged</SelectItem>
+            <SelectItem value="not_engaged">Not Engaged</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={segmentFilter} onValueChange={setSegmentFilter}>
+          <SelectTrigger className="w-[120px] h-7 text-[10px] font-bold uppercase tracking-tight bg-background/50">
+            <SelectValue placeholder="Segment" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="text-[10px] font-bold uppercase">
+              All Segments
+            </SelectItem>
+            {segments.map((segment) => (
+              <SelectItem
+                key={segment}
+                value={segment}
+                className="text-[10px] font-bold"
+              >
+                {segment}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </>
   );
 }
+
