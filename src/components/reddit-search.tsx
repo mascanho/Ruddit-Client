@@ -66,40 +66,47 @@ export function RedditSearch({
 }) {
   // Search state
   const [query, setQuery] = useState(
-    () => localStorage.getItem("lastRedditSearchQuery") || "",
+    () => typeof window !== "undefined" ? localStorage.getItem("lastRedditSearchQuery") || "" : "",
   );
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedSorts, setSelectedSorts] = useState<SortType[]>(() => {
+    if (typeof window === "undefined") return ["hot"];
     const saved = localStorage.getItem("lastRedditSearchSorts");
     return saved ? JSON.parse(saved) : ["hot"];
   });
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(() => {
+    if (typeof window === "undefined") return 1;
     return parseInt(localStorage.getItem("lastRedditSearchPage") || "1", 10);
   });
   const [rowsPerPage, setRowsPerPage] = useState(() => {
+    if (typeof window === "undefined") return 100;
     return parseInt(localStorage.getItem("lastRedditSearchRows") || "100", 10);
   });
 
   // View state
   const [viewSort, setViewSort] = useState<ViewSortType>(() => {
+    if (typeof window === "undefined") return "date-desc";
     return (
       (localStorage.getItem("lastRedditSearchViewSort") as ViewSortType) ||
       "date-desc"
     );
   });
   const [viewFilters, setViewFilters] = useState<SortType[]>(() => {
+    if (typeof window === "undefined") return ["hot", "top", "new"];
     const saved = localStorage.getItem("lastRedditSearchViewFilters");
     return saved ? JSON.parse(saved) : ["hot", "top", "new"];
   });
   const [viewIntentFilters, setViewIntentFilters] = useState<string[]>(() => {
+    if (typeof window === "undefined") return ["High", "Medium", "Low"];
     const saved = localStorage.getItem("lastRedditSearchViewIntentFilters");
     return saved ? JSON.parse(saved) : ["High", "Medium", "Low"];
   });
   const [filterQuery, setFilterQuery] = useState("");
   const [gridColumns, setGridColumns] = useState<number>(() => {
+    if (typeof window === "undefined") return 4;
     const saved = localStorage.getItem("lastRedditSearchGridColumns");
     return saved ? parseInt(saved, 10) : 4;
   });
@@ -116,44 +123,60 @@ export function RedditSearch({
 
   // Persist state to localStorage
   useEffect(() => {
-    localStorage.setItem("lastRedditSearchQuery", query);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("lastRedditSearchQuery", query);
+    }
   }, [query]);
 
   useEffect(() => {
-    localStorage.setItem(
-      "lastRedditSearchSorts",
-      JSON.stringify(selectedSorts),
-    );
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "lastRedditSearchSorts",
+        JSON.stringify(selectedSorts),
+      );
+    }
   }, [selectedSorts]);
 
   useEffect(() => {
-    localStorage.setItem("lastRedditSearchPage", currentPage.toString());
+    if (typeof window !== "undefined") {
+      localStorage.setItem("lastRedditSearchPage", currentPage.toString());
+    }
   }, [currentPage]);
 
   useEffect(() => {
-    localStorage.setItem("lastRedditSearchRows", rowsPerPage.toString());
+    if (typeof window !== "undefined") {
+      localStorage.setItem("lastRedditSearchRows", rowsPerPage.toString());
+    }
   }, [rowsPerPage]);
 
   useEffect(() => {
-    localStorage.setItem("lastRedditSearchViewSort", viewSort);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("lastRedditSearchViewSort", viewSort);
+    }
   }, [viewSort]);
 
   useEffect(() => {
-    localStorage.setItem(
-      "lastRedditSearchViewFilters",
-      JSON.stringify(viewFilters),
-    );
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "lastRedditSearchViewFilters",
+        JSON.stringify(viewFilters),
+      );
+    }
   }, [viewFilters]);
 
   useEffect(() => {
-    localStorage.setItem(
-      "lastRedditSearchViewIntentFilters",
-      JSON.stringify(viewIntentFilters),
-    );
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "lastRedditSearchViewIntentFilters",
+        JSON.stringify(viewIntentFilters),
+      );
+    }
   }, [viewIntentFilters]);
 
   useEffect(() => {
-    localStorage.setItem("lastRedditSearchGridColumns", gridColumns.toString());
+    if (typeof window !== "undefined") {
+      localStorage.setItem("lastRedditSearchGridColumns", gridColumns.toString());
+    }
   }, [gridColumns]);
 
   // Load persisted search results on mount
