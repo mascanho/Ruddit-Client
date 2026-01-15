@@ -29,6 +29,7 @@ export type AppSettings = {
   // Monitoring
   monitoredSubreddits: string[];
   monitoredKeywords: string[]; // Keeping for backward compatibility or "General"
+  monitoredSegments: string[];
   brandKeywords: string[];
   competitorKeywords: string[];
   monitoredUsernames: string[];
@@ -52,6 +53,7 @@ const defaultSettings: AppSettings = {
   defaultSortDirection: "desc",
   monitoredSubreddits: ["nextjs", "typescript", "webdev"],
   monitoredKeywords: ["api", "database", "performance"],
+  monitoredSegments: ["segment1", "segment2", "segment3"],
   brandKeywords: ["ruddit", "myproduct"],
   competitorKeywords: ["competitor1", "competitor2"],
   monitoredUsernames: [],

@@ -23,7 +23,7 @@ import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
 import { toast } from "sonner";
 import moment from "moment";
 import { useOpenUrl } from "@/hooks/useOpenUrl";
-import { getStatusColor, getIntentColor } from "@/lib/marketing-utils";
+import { getStatusColor, getIntentColor, getSegmentColor } from "@/lib/marketing-utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -126,6 +126,7 @@ export type RedditPost = {
   status?: "new" | "investigating" | "replied" | "closed" | "ignored";
   intent?: string;
   category?: "brand" | "competitor" | "general";
+  segment?: string;
 };
 
 // Icons specific to post types
@@ -246,6 +247,7 @@ export function RedditTable({
           intent: storedCrm[p.id]?.intent || p.intent || "low", // default to low if unknown? or calculate?
           category: storedCrm[p.id]?.category || p.category || "general",
           engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
+          segment: storedCrm[p.id]?.segment || p.segment || "",
         }));
 
         // Also update existing posts with CRM data if needed (e.g. on reload)
@@ -255,6 +257,7 @@ export function RedditTable({
           intent: storedCrm[p.id]?.intent || p.intent,
           category: storedCrm[p.id]?.category || p.category,
           engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
+          segment: storedCrm[p.id]?.segment || p.segment || "",
         }));
 
         return [...updatedPrev, ...mergedNewPosts];
@@ -289,12 +292,15 @@ export function RedditTable({
   const [showClearTableDialog, setShowClearTableDialog] = useState(false);
   const [sortTypeForComments, setSortTypeForComments] = useState("best"); // Renamed from relevance
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [editingNotePost, setEditingNotePost] = useState<RedditPost | null>(
-    null,
-  );
-  const [currentNote, setCurrentNote] = useState("");
-  const [lastVisitTimestamp, setLastVisitTimestamp] = useState<number>(0);
-  const [showPreview, setShowPreview] = useState(false);
+   const [editingNotePost, setEditingNotePost] = useState<RedditPost | null>(
+     null,
+   );
+   const [editingSegmentPost, setEditingSegmentPost] = useState<RedditPost | null>(
+     null,
+   );
+   const [currentNote, setCurrentNote] = useState("");
+   const [lastVisitTimestamp, setLastVisitTimestamp] = useState<number>(0);
+   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const savedTimestamp = parseInt(
@@ -484,6 +490,30 @@ export function RedditTable({
         ),
       );
     }
+  };
+
+  const handleSegmentChange = (postId: number, newSegment: string) => {
+    const postToUpdate = data.find((p) => p.id === postId);
+    if (!postToUpdate) return;
+
+    const originalSegment = postToUpdate.segment;
+
+    // Optimistic update
+    setData((prevData) =>
+      prevData.map((p) =>
+        p.id === postId ? { ...p, segment: newSegment } : p,
+      ),
+    );
+
+    // Update CRM data in localStorage
+    updateCrmData(postId, { segment: newSegment });
+
+    toast.success(
+      `Segment updated for "${postToUpdate.title.slice(0, 20)}...".`,
+      {
+        duration: 1500,
+      }
+    );
   };
 
   const subreddits = useMemo(() => {
@@ -718,6 +748,7 @@ export function RedditTable({
       "assignee",
       "notes",
       "interest",
+      "segment",
     ];
 
     const csvContent = [
@@ -1160,11 +1191,12 @@ export function RedditTable({
               <col className="w-[75px]" />
               <col />
               <col className="w-[160px]" />
-              <col className="w-[60px]" />
-              <col className="w-[100px]" />
-              <col className="w-[40px]" />
               <col className="w-[95px]" />
+              <col className="w-[40px]" />
               <col className="w-[45px]" />
+              <col className="w-[60px]" />
+              <col className="w-[60px]" />
+              <col className="w-[80px]" />
               <col className="w-[45px]" />
             </colgroup>
             <TableHeader className="sticky top-0 z-40 bg-background shadow-sm">
@@ -1208,32 +1240,35 @@ export function RedditTable({
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   </Button>
                 </TableHead>
-                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  Intent
-                </TableHead>
-                <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
-                    onClick={() => handleSort("interest")}
-                  >
-                    Interest
-                    <ArrowUpDown className="h-3 w-3 opacity-30" />
-                  </Button>
-                </TableHead>
-                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  <CheckCircle2 className="h-3.5 w-3.5 mx-auto" />
-                </TableHead>
-                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  Status
-                </TableHead>
-                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  Owner
-                </TableHead>
-                <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  Op
-                </TableHead>
+                 <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                   Status
+                 </TableHead>
+                 <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                   <CheckCircle2 className="h-3.5 w-3.5 mx-auto" />
+                 </TableHead>
+                  <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                    Owner
+                  </TableHead>
+                  <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                    Segments
+                  </TableHead>
+                 <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                   Intent
+                 </TableHead>
+                 <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                   <Button
+                     variant="ghost"
+                     size="sm"
+                     className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
+                     onClick={() => handleSort("interest")}
+                   >
+                     Interest
+                     <ArrowUpDown className="h-3 w-3 opacity-30" />
+                   </Button>
+                 </TableHead>
+                  <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+                    Op
+                  </TableHead>
               </TableRow>
             </TableHeader>
 
@@ -1242,7 +1277,7 @@ export function RedditTable({
               {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={11}
+                    colSpan={12}
                     className="h-24 text-center text-muted-foreground opacity-50"
                   >
                     No posts matching your current filters.
@@ -1366,118 +1401,150 @@ export function RedditTable({
                         </DropdownMenu>
                       </TableCell>
 
-                      <TableCell className="px-1 text-center">
-                        {post.intent && (
-                          <Badge
-                            className={`${getIntentColor(
-                              post.intent.toLowerCase(),
-                            )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
-                          >
-                            {post.intent.slice(0, 4).toUpperCase()}
-                          </Badge>
-                        )}
-                      </TableCell>
+                       <TableCell className="px-1 min-w-[90px]">
+                         <Select
+                           value={post.status || "new"}
+                           onValueChange={(value) =>
+                             updateCrmData(post.id, { status: value as any })
+                           }
+                         >
+                           <SelectTrigger
+                             className={`w-full h-6 text-[10px] px-2 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(
+                               post.status,
+                             )} hover:opacity-80 transition-all font-bold rounded-md`}
+                           >
+                             <SelectValue />
+                           </SelectTrigger>
+                           <SelectContent className="text-[11px]">
+                             <SelectItem value="new">New</SelectItem>
+                             <SelectItem value="investigating">
+                               Research
+                             </SelectItem>
+                             <SelectItem value="replied">Replied</SelectItem>
+                             <SelectItem value="closed">Closed</SelectItem>
+                             <SelectItem value="ignored">Ignored</SelectItem>
+                           </SelectContent>
+                         </Select>
+                       </TableCell>
 
-                      <TableCell className="px-1 text-center">
-                        <div className="flex items-center justify-center gap-0">
-                          {[1, 2, 3, 4, 5].map((level) => (
-                            <Star
-                              key={level}
-                              className={`h-3 w-3 cursor-pointer transition-all ${(post.interest || 0) >= level
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-muted-foreground/20 hover:text-yellow-400/50"
-                                }`}
-                              onClick={() => {
-                                const newLevel = post.interest === level ? level - 1 : level;
-                                handleInterestChange(post.id, newLevel);
+                       <TableCell className="px-1 text-center">
+                         <Button
+                           variant="ghost"
+                           size="icon"
+                           className="h-6 w-6 rounded-full hover:bg-transparent shadow-none flex items-center justify-center"
+                           onClick={() =>
+                             handleEngagedToggle(post.id, post.engaged !== 1)
+                           }
+                         >
+                           {post.engaged === 1 ? (
+                             <CheckCircle2 className="h-4 w-4 text-green-500" />
+                           ) : (
+                             <Circle className="h-4 w-4 text-muted-foreground/20" />
+                           )}
+                         </Button>
+                       </TableCell>
+
+                       <TableCell className="px-1 text-center">
+                         <Select
+                           value={post.assignee || "unassigned"}
+                           onValueChange={(value) =>
+                             handleAssign(post.id, value)
+                           }
+                         >
+                           <SelectTrigger className="w-6 h-6 rounded-full mx-auto p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden transition-transform active:scale-95">
+                             <Avatar className="h-5 w-5 border border-muted-foreground/10">
+                               {post.assignee &&
+                                 post.assignee !== "unassigned" ? (
+                                 <>
+                                   <AvatarImage
+                                     src={`https://avatar.vercel.sh/${post.assignee}`}
+                                     alt={post.assignee}
+                                   />
+                                   <AvatarFallback className="bg-primary/5 text-primary text-[8px] font-bold">
+                                     {post.assignee.slice(0, 1).toUpperCase()}
+                                   </AvatarFallback>
+                                 </>
+                               ) : (
+                                 <AvatarFallback className="bg-transparent opacity-30 group-hover:opacity-70">
+                                   <UserPlus className="h-3 w-3" />
+                                 </AvatarFallback>
+                               )}
+                             </Avatar>
+                           </SelectTrigger>
+                           <SelectContent align="center" className="text-[11px]">
+                             <SelectItem value="unassigned">None</SelectItem>
+                             {teamMembers.map((member) => (
+                               <SelectItem key={member.id} value={member.name}>
+                                 {member.name}
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
+                       </TableCell>
+
+                        <TableCell className="px-1 text-center">
+                          {editingSegmentPost?.id === post.id ? (
+                            <Select
+                              value={post.segment || "none"}
+                              onValueChange={(value) => {
+                                handleSegmentChange(post.id, value === "none" ? "" : value);
+                                setEditingSegmentPost(null);
                               }}
-                            />
-                          ))}
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="px-1 text-center">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 rounded-full hover:bg-transparent shadow-none flex items-center justify-center"
-                          onClick={() =>
-                            handleEngagedToggle(post.id, post.engaged !== 1)
-                          }
-                        >
-                          {post.engaged === 1 ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            >
+                              <SelectTrigger className={`h-6 text-[10px] px-1 border-0 shadow-none ring-0 focus:ring-0 ${getSegmentColor(post.segment)} hover:opacity-80 transition-all rounded-md max-w-[60px] truncate`}>
+                                <SelectValue placeholder="" />
+                              </SelectTrigger>
+                              <SelectContent className="text-[11px]">
+                                <SelectItem value="none">None</SelectItem>
+                                {(settings.monitoredSegments || []).map((segment) => (
+                                  <SelectItem key={segment} value={segment}>
+                                    {segment.length > 10 ? `${segment.slice(0, 10)}...` : segment}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           ) : (
-                            <Circle className="h-4 w-4 text-muted-foreground/20" />
+                            <Badge
+                              className={`${getSegmentColor(post.segment)} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
+                              onClick={() => setEditingSegmentPost(post)}
+                            >
+                              {post.segment || "None"}
+                            </Badge>
                           )}
-                        </Button>
-                      </TableCell>
+                        </TableCell>
 
-                      <TableCell className="px-1 min-w-[90px]">
-                        <Select
-                          value={post.status || "new"}
-                          onValueChange={(value) =>
-                            updateCrmData(post.id, { status: value as any })
-                          }
-                        >
-                          <SelectTrigger
-                            className={`w-full h-6 text-[10px] px-2 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(
-                              post.status,
-                            )} bg-opacity-10 hover:bg-opacity-20 transition-all font-bold rounded-md`}
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="text-[11px]">
-                            <SelectItem value="new">New</SelectItem>
-                            <SelectItem value="investigating">
-                              Research
-                            </SelectItem>
-                            <SelectItem value="replied">Replied</SelectItem>
-                            <SelectItem value="closed">Closed</SelectItem>
-                            <SelectItem value="ignored">Ignored</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
+                       <TableCell className="px-1 text-center">
+                         {post.intent && (
+                           <Badge
+                             className={`${getIntentColor(
+                               post.intent.toLowerCase(),
+                             )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
+                           >
+                             {post.intent.slice(0, 4).toUpperCase()}
+                           </Badge>
+                         )}
+                       </TableCell>
 
-                      <TableCell className="px-1 text-center">
-                        <Select
-                          value={post.assignee || "unassigned"}
-                          onValueChange={(value) =>
-                            handleAssign(post.id, value)
-                          }
-                        >
-                          <SelectTrigger className="w-6 h-6 rounded-full mx-auto p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden transition-transform active:scale-95">
-                            <Avatar className="h-5 w-5 border border-muted-foreground/10">
-                              {post.assignee &&
-                                post.assignee !== "unassigned" ? (
-                                <>
-                                  <AvatarImage
-                                    src={`https://avatar.vercel.sh/${post.assignee}`}
-                                    alt={post.assignee}
-                                  />
-                                  <AvatarFallback className="bg-primary/5 text-primary text-[8px] font-bold">
-                                    {post.assignee.slice(0, 1).toUpperCase()}
-                                  </AvatarFallback>
-                                </>
-                              ) : (
-                                <AvatarFallback className="bg-transparent opacity-30 group-hover:opacity-70">
-                                  <UserPlus className="h-3 w-3" />
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                          </SelectTrigger>
-                          <SelectContent align="center" className="text-[11px]">
-                            <SelectItem value="unassigned">None</SelectItem>
-                            {teamMembers.map((member) => (
-                              <SelectItem key={member.id} value={member.name}>
-                                {member.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="px-1 text-center">
-                        <DropdownMenu>
+                       <TableCell className="px-1 text-center">
+                         <div className="flex items-center justify-center gap-0">
+                           {[1, 2, 3, 4, 5].map((level) => (
+                             <Star
+                               key={level}
+                               className={`h-3 w-3 cursor-pointer transition-all ${(post.interest || 0) >= level
+                                 ? "fill-yellow-400 text-yellow-400"
+                                 : "text-muted-foreground/20 hover:text-yellow-400/50"
+                                 }`}
+                               onClick={() => {
+                                 const newLevel = post.interest === level ? level - 1 : level;
+                                 handleInterestChange(post.id, newLevel);
+                               }}
+                             />
+                           ))}
+                         </div>
+                       </TableCell>
+
+                       <TableCell className="px-1 text-center">
+                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
@@ -1510,11 +1577,11 @@ export function RedditTable({
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </TableCell>
+                       </TableCell>
                     </TableRow>
                     {expandedRows.has(post.id.toString()) && (
                       <TableRow className="bg-muted/10">
-                        <TableCell colSpan={11} className="p-0 border-b">
+                        <TableCell colSpan={12} className="p-0 border-b">
                           <div className="p-3 bg-muted/20 border-x">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <Card className="shadow-none border-border/40 bg-background/60">

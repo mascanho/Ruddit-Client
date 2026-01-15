@@ -115,3 +115,31 @@ export function getIntentColor(intent?: string) {
       return "bg-slate-50 text-slate-500 border-slate-200";
   }
 }
+
+export function getSegmentColor(segment?: string) {
+  if (!segment || segment === "") {
+    return "bg-slate-100 text-slate-600 border-slate-200";
+  }
+
+  // Simple hash-based color assignment for different segments
+  const colors = [
+    "bg-purple-100 text-purple-800 border-purple-200",
+    "bg-indigo-100 text-indigo-800 border-indigo-200",
+    "bg-cyan-100 text-cyan-800 border-cyan-200",
+    "bg-teal-100 text-teal-800 border-teal-200",
+    "bg-emerald-100 text-emerald-800 border-emerald-200",
+    "bg-lime-100 text-lime-800 border-lime-200",
+    "bg-amber-100 text-amber-800 border-amber-200",
+    "bg-orange-100 text-orange-800 border-orange-200",
+    "bg-red-100 text-red-800 border-red-200",
+    "bg-pink-100 text-pink-800 border-pink-200",
+  ];
+
+  // Use a simple hash of the segment name to pick a color
+  let hash = 0;
+  for (let i = 0; i < segment.length; i++) {
+    hash = segment.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+}
