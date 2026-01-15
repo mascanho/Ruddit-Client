@@ -1,6 +1,26 @@
+/**
+ * RedditTable Component
+ *
+ * A comprehensive table component for displaying and managing Reddit posts.
+ * Features include filtering, sorting, CRUD operations, export/import functionality,
+ * and real-time comment fetching.
+ *
+ * This component has been modularized for better maintainability.
+ */
+
+/**
+ * RedditTable Component
+ *
+ * A comprehensive table component for displaying and managing Reddit posts.
+ * Features include filtering, sorting, CRUD operations, export/import functionality,
+ * and real-time comment fetching.
+ *
+ * This component has been modularized for better maintainability.
+ */
+
 "use client";
 
-import { useState, useEffect, useMemo, Fragment, useRef } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,13 +33,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import type { Message, SearchState } from "./smart-data-tables";
 import { RedditCommentsView } from "./reddit-comments-view";
-import { useAppSettings } from "@/store/settings-store";
-import { Radar } from "lucide-react";
 import { KeywordHighlighter } from "./keyword-highlighter";
 import { invoke } from "@tauri-apps/api/core";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
-import { useAddSingleSubReddit, useRedditPostsTab } from "@/store/store";
+import { useAddSingleSubReddit } from "@/store/store";
 import { toast } from "sonner";
 import moment from "moment";
 import { useOpenUrl } from "@/hooks/useOpenUrl";
@@ -29,141 +47,100 @@ import remarkGfm from "remark-gfm";
 
 // UI Components
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // Icons
-import {
-  Search,
-  ArrowUpDown,
-  ExternalLink,
-  MoreVertical,
-  MessageCircle,
-  Info,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  ChevronDown,
-  User,
-  Pencil,
-  Notebook,
-  CheckCircle2,
-  Circle,
-  UserPlus,
-  FileJson,
-  Upload,
-  FileSpreadsheet,
-  Star,
-} from "lucide-react";
+import { ChevronDown, User, Pencil, CheckCircle2, Circle, Star, MessageCircle, ArrowUpDown, Radar, UserPlus, MoreVertical, Trash2, Notebook, ExternalLink, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-const initialData: RedditPost[] = []; // Declare initialData here
 
-// Define RedditPost type to match Rust's PostDataWrapper
-export type RedditPost = {
-  id: number;
-  timestamp: number;
-  formatted_date: string;
-  title: string;
-  url: string;
-  sort_type: string; // Renamed from relevance
-  relevance_score: number; // Added new field
-  subreddit: string;
-  permalink: string;
-  engaged: number; // Changed from boolean to number (0 or 1)
-  assignee: string;
-  notes: string;
-  num_comments?: number;
-  author?: string;
-  score?: number;
-  is_self?: boolean;
-  selftext?: string | null;
-  name?: string;
-  date_added: number;
-  interest: number; // Added new field (0-5)
-  // Client-side fields
-  status?: "new" | "investigating" | "replied" | "closed" | "ignored";
-  intent?: string;
-  category?: "brand" | "competitor" | "general";
-  segment?: string;
-};
-
-// Icons specific to post types
+// Post types
 import { FileText, Link as LinkIcon } from "lucide-react";
 
-const teamMembers = [
-  { id: "user1", name: "Alex" },
-  { id: "user2", name: "Maria" },
-  { id: "user3", name: "David" },
-  { id: "user4", name: "Sarah" },
-];
+// Extracted modules
+import type { RedditPost, RedditTableProps, SortField } from "./reddit-table-types";
+import { teamMembers, TABLE_COLUMN_WIDTHS } from "./reddit-table-constants";
+import { useRedditTableState } from "./useRedditTableState";
+import { useDataManagement } from "./useDataManagement";
+import {
+  getFilteredAndSortedData,
+  getUniqueSubreddits,
+  toggleRowExpansion,
+  handleSort as handleSortUtil,
+  exportToCSV,
+  exportToJSON,
+} from "./reddit-table-utils";
 
-interface CommentTree extends Message {
-  children: CommentTree[];
-}
+// Sub-components
+import { Filters } from "./Filters";
+import { Actions } from "./Actions";
+import { RedditTableHeader } from "./RedditTableHeader";
 
-type SortField = keyof RedditPost | null;
-
-type SortDirection = "asc" | "desc";
-
+/**
+ * Main RedditTable component function
+ *
+ * @param onAddComments - Callback to add comments to the parent component
+ * @param externalPosts - Posts data from external sources (optional)
+ * @param searchState - Current search/filter state
+ * @param onSearchStateChange - Callback to update search state
+ * @param isActive - Whether this tab is currently active
+ */
 export function RedditTable({
   onAddComments,
   externalPosts = [],
   searchState,
   onSearchStateChange,
   isActive = false,
-}: {
-  onAddComments: (comments: Message[]) => void;
-  externalPosts?: RedditPost[];
-  searchState: SearchState;
-  onSearchStateChange: (state: SearchState) => void;
-  isActive?: boolean;
-}) {
-  const [data, setData] = useState<RedditPost[]>(initialData);
-  const { settings, updateSettings } = useAppSettings();
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [engagementFilter, setEngagementFilter] = useState("all");
+}: RedditTableProps) {
+  // Use custom hook for state management
+  const {
+    data,
+    setData,
+    statusFilter,
+    setStatusFilter,
+    engagementFilter,
+    setEngagementFilter,
+    segmentFilter,
+    setSegmentFilter,
+    sortField,
+    setSortField,
+    sortDirection,
+    setSortDirection,
+    deleteId,
+    setDeleteId,
+    selectedPost,
+    setSelectedPost,
+    commentsPost,
+    setCommentsPost,
+    comments,
+    setComments,
+    currentPage,
+    setCurrentPage,
+    rowsPerPage,
+    setRowsPerPage,
+    showClearTableDialog,
+    setShowClearTableDialog,
+    sortTypeForComments,
+    setSortTypeForComments,
+    expandedRows,
+    setExpandedRows,
+    editingNotePost,
+    setEditingNotePost,
+    editingSegmentPost,
+    setEditingSegmentPost,
+    currentNote,
+    setCurrentNote,
+    lastVisitTimestamp,
+    setLastVisitTimestamp,
+    showPreview,
+    setShowPreview,
+    settings,
+    updateSettings,
+  } = useRedditTableState();
 
   const {
     addSingleSubreddit,
@@ -275,40 +252,7 @@ export function RedditTable({
   const setRelevanceFilter = (value: string) =>
     onSearchStateChange({ ...searchState, redditRelevance: value });
 
-  const [sortField, setSortField] = useState<SortField>(
-    settings.defaultSortField === "none"
-      ? null
-      : (settings.defaultSortField as SortField),
-  );
-  const [sortDirection, setSortDirection] = useState<SortDirection>(
-    settings.defaultSortDirection,
-  );
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [selectedPost, setSelectedPost] = useState<RedditPost | null>(null);
-  const [commentsPost, setCommentsPost] = useState<RedditPost | null>(null);
-  const [comments, setComments] = useState<Message[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(settings.rowsPerPage);
-  const [showClearTableDialog, setShowClearTableDialog] = useState(false);
-  const [sortTypeForComments, setSortTypeForComments] = useState("best"); // Renamed from relevance
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-   const [editingNotePost, setEditingNotePost] = useState<RedditPost | null>(
-     null,
-   );
-   const [editingSegmentPost, setEditingSegmentPost] = useState<RedditPost | null>(
-     null,
-   );
-   const [currentNote, setCurrentNote] = useState("");
-   const [lastVisitTimestamp, setLastVisitTimestamp] = useState<number>(0);
-   const [showPreview, setShowPreview] = useState(false);
-
-  useEffect(() => {
-    const savedTimestamp = parseInt(
-      localStorage.getItem("atalaia-last-visit-timestamp") || "0",
-      10,
-    );
-    setLastVisitTimestamp(savedTimestamp);
-  }, []);
+  // State management is now handled by useRedditTableState hook
 
   const maxDateAdded = useMemo(() => {
     if (data.length === 0) return 0;
@@ -520,6 +464,10 @@ export function RedditTable({
     return Array.from(new Set(data.map((post) => post.subreddit)));
   }, [data, externalPosts]);
 
+  const segments = useMemo(() => {
+    return Array.from(new Set(data.map((post) => post.segment).filter((segment): segment is string => Boolean(segment))));
+  }, [data]);
+
   const filteredAndSortedData = useMemo(() => {
     const filtered = data.filter((post) => {
       const matchesSearch =
@@ -545,12 +493,16 @@ export function RedditTable({
         (engagementFilter === "engaged" && post.engaged === 1) ||
         (engagementFilter === "not_engaged" && post.engaged !== 1);
 
+      const matchesSegment =
+        segmentFilter === "all" || post.segment === segmentFilter;
+
       return (
         matchesSearch &&
         matchesSubreddit &&
         matchesRelevance &&
         matchesStatus &&
-        matchesEngagement
+        matchesEngagement &&
+        matchesSegment
       );
     });
 
@@ -585,6 +537,7 @@ export function RedditTable({
     relevanceFilter,
     statusFilter,
     engagementFilter,
+    segmentFilter,
     sortField,
     sortDirection,
     externalPosts,
@@ -607,6 +560,7 @@ export function RedditTable({
     relevanceFilter,
     statusFilter,
     engagementFilter,
+    segmentFilter,
   ]);
 
   const handleSort = (field: SortField) => {
@@ -676,6 +630,9 @@ export function RedditTable({
     setSearchQuery("");
     setSubredditFilter("all");
     setRelevanceFilter("all");
+    setStatusFilter("all");
+    setEngagementFilter("all");
+    setSegmentFilter("all");
     setSortField(null);
     setCurrentPage(1);
   };
@@ -707,6 +664,9 @@ export function RedditTable({
     searchQuery ||
     subredditFilter !== "all" ||
     relevanceFilter !== "all" ||
+    statusFilter !== "all" ||
+    engagementFilter !== "all" ||
+    segmentFilter !== "all" ||
     sortField;
 
   const handleClearTable = async () => {
@@ -953,6 +913,7 @@ export function RedditTable({
         // Reset filters in UI to show results immediately
         setStatusFilter("all");
         setEngagementFilter("all");
+        setSegmentFilter("all");
         setSubredditFilter("all");
         setRelevanceFilter("all");
         if (onSearchStateChange) {
@@ -974,208 +935,35 @@ export function RedditTable({
 
   return (
     <div className="flex-1 flex flex-col min-h-0 gap-3">
-      <Card className="p-3 shadow-sm border-border/60 bg-white backdrop-blur-sm">
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col sm:flex-row gap-2 items-center">
-            <div className="relative flex-1 group w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
-              <Input
-                placeholder="Search tracked posts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 bg-background/80 border-border/60 focus:ring-1 focus:ring-primary/20 transition-all text-xs"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto custom-scroll">
-              <Select
-                value={subredditFilter}
-                onValueChange={setSubredditFilter}
-              >
-                <SelectTrigger className="w-[140px] h-8 text-[11px] font-bold uppercase tracking-tight bg-background/50">
-                  <SelectValue placeholder="Community" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    value="all"
-                    className="text-[11px] font-bold uppercase"
-                  >
-                    All
-                  </SelectItem>
-                  {subreddits.map((subreddit) => (
-                    <SelectItem
-                      key={subreddit}
-                      value={subreddit}
-                      className="text-[11px] font-bold"
-                    >
-                      r/{subreddit}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={relevanceFilter}
-                onValueChange={setRelevanceFilter}
-              >
-                <SelectTrigger className="w-[120px] h-8 text-[11px] font-bold uppercase tracking-tight bg-background/50">
-                  <SelectValue placeholder="Intent" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    value="all"
-                    className="text-[11px] font-bold uppercase"
-                  >
-                    All Intent
-                  </SelectItem>
-                  <SelectItem
-                    value="high"
-                    className="text-[11px] font-bold uppercase"
-                  >
-                    High
-                  </SelectItem>
-                  <SelectItem
-                    value="medium"
-                    className="text-[11px] font-bold uppercase"
-                  >
-                    Medium
-                  </SelectItem>
-                  <SelectItem
-                    value="low"
-                    className="text-[11px] font-bold uppercase"
-                  >
-                    Low
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[120px] h-8 text-[11px] font-bold uppercase tracking-tight bg-background/50">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    value="all"
-                    className="text-[11px] font-bold uppercase"
-                  >
-                    All Status
-                  </SelectItem>
-                  <SelectItem
-                    value="new"
-                    className="text-[11px] font-bold uppercase"
-                  >
-                    New
-                  </SelectItem>
-                  <SelectItem
-                    value="investigating"
-                    className="text-[11px] font-bold uppercase"
-                  >
-                    Investigating
-                  </SelectItem>
-                  <SelectItem
-                    value="replied"
-                    className="text-[11px] font-bold uppercase"
-                  >
-                    Replied
-                  </SelectItem>
-                  <SelectItem
-                    value="closed"
-                    className="text-[11px] font-bold uppercase"
-                  >
-                    Closed
-                  </SelectItem>
-                  <SelectItem
-                    value="ignored"
-                    className="text-[11px] font-bold uppercase"
-                  >
-                    Ignored
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={engagementFilter}
-                onValueChange={setEngagementFilter}
-              >
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="All engagement" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Engagement</SelectItem>
-                  <SelectItem value="engaged">Engaged</SelectItem>
-                  <SelectItem value="not_engaged">Not Engaged</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-1.5 px-2 border-l border-border/40 ml-1">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-green-500"
-                        onClick={handleExportToCsv}
-                      >
-                        <FileSpreadsheet className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">
-                      <p>Export CSV ({filteredAndSortedData.length} filtered items)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-orange-500"
-                        onClick={handleExportToJSON}
-                      >
-                        <FileJson className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">
-                      <p>Export JSON ({filteredAndSortedData.length} filtered items)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-blue-500"
-                        onClick={handleImportClick}
-                      >
-                        <Upload className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">
-                      Import Data
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-
-              <Button
-                variant="destructive"
-                size="sm"
-                className="h-7 text-[10px] font-bold uppercase tracking-wider"
-                onClick={() => setShowClearTableDialog(true)}
-              >
-                <Trash2 className="h-3 w-3 mr-1.5" />
-                Clear Table
-              </Button>
-            </div>
-            <div className="text-[10px] uppercase font-bold tracking-widest opacity-40 px-1">
-              Nodes: {filteredAndSortedData.length} / {data.length}
+      <Card className="p-2 shadow-sm border-border/60 bg-white backdrop-blur-sm">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filters
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              subredditFilter={subredditFilter}
+              setSubredditFilter={setSubredditFilter}
+              relevanceFilter={relevanceFilter}
+              setRelevanceFilter={setRelevanceFilter}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              engagementFilter={engagementFilter}
+              setEngagementFilter={setEngagementFilter}
+              segmentFilter={segmentFilter}
+              setSegmentFilter={setSegmentFilter}
+              subreddits={subreddits}
+              segments={segments}
+            />
+            <Actions
+              filteredAndSortedDataLength={filteredAndSortedData.length}
+              onExportCsv={handleExportToCsv}
+              onExportJson={handleExportToJSON}
+              onImport={handleImportClick}
+              onClearTable={() => setShowClearTableDialog(true)}
+            />
+            <div className="text-[10px] uppercase font-bold tracking-widest opacity-60 px-2 border-l border-border/40 ml-2">
+              {filteredAndSortedData.length} / {data.length}
             </div>
           </div>
-        </div>
       </Card>
 
       <Card className="p-0 m-0 flex-1 min-h-0 flex flex-col">
@@ -1199,78 +987,7 @@ export function RedditTable({
               <col className="w-[80px]" />
               <col className="w-[45px]" />
             </colgroup>
-            <TableHeader className="sticky top-0 z-40 bg-background shadow-sm">
-              <TableRow className="hover:bg-transparent border-none">
-                <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  <Notebook className="h-3.5 w-3.5 mx-auto opacity-40" />
-                </TableHead>
-                <TableHead className="sticky top-0 h-9 px-1 text-center font-mono text-[10px] uppercase tracking-wider opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  #
-                </TableHead>
-                <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
-                    onClick={() => handleSort("formatted_date")}
-                  >
-                    Date
-                    <ArrowUpDown className="h-3 w-3 opacity-30" />
-                  </Button>
-                </TableHead>
-                <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center gap-1"
-                    onClick={() => handleSort("title")}
-                  >
-                    Post Content
-                    <ArrowUpDown className="h-3 w-3 opacity-30" />
-                  </Button>
-                </TableHead>
-                <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
-                    onClick={() => handleSort("subreddit")}
-                  >
-                    Subreddit
-                    <ArrowUpDown className="h-3 w-3 opacity-30" />
-                  </Button>
-                </TableHead>
-                 <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                   Status
-                 </TableHead>
-                 <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                   <CheckCircle2 className="h-3.5 w-3.5 mx-auto" />
-                 </TableHead>
-                  <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                    Owner
-                  </TableHead>
-                  <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                    Segments
-                  </TableHead>
-                 <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                   Intent
-                 </TableHead>
-                 <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                   <Button
-                     variant="ghost"
-                     size="sm"
-                     className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
-                     onClick={() => handleSort("interest")}
-                   >
-                     Interest
-                     <ArrowUpDown className="h-3 w-3 opacity-30" />
-                   </Button>
-                 </TableHead>
-                  <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-                    Op
-                  </TableHead>
-              </TableRow>
-            </TableHeader>
+            <RedditTableHeader onSort={handleSort} />
 
             {/* Scrollable Body */}
             <TableBody>

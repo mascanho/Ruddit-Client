@@ -1,4 +1,5 @@
 import React from "react";
+import { useState, useEffect } from "react";
 import { Radar } from "lucide-react";
 import { KeywordBadge } from "./automation-utils";
 
@@ -25,6 +26,11 @@ export function AutomationSensorsPanel({
     setKeywordsExpanded,
     handleKeywordClick,
 }: AutomationSensorsPanelProps) {
+    const [isHydrated, setIsHydrated] = useState(false);
+
+    useEffect(() => {
+        setIsHydrated(true);
+    }, []);
     return (
         <div className="lg:col-span-1 rounded-lg border border-border/40 bg-background/30 flex flex-col h-[180px]">
             <div className="flex justify-between items-center px-2 py-1.5 border-b border-border/40 bg-muted/10">
@@ -48,7 +54,7 @@ export function AutomationSensorsPanel({
                     </span>
                 ) : (
                     <div className="space-y-3">
-                        {keywordCategories.map(
+                        {isHydrated && keywordCategories.map(
                             (category) =>
                                 category.keywords.length > 0 && (
                                     <div key={category.title}>
@@ -76,7 +82,7 @@ export function AutomationSensorsPanel({
                                             )}
                                         </div>
                                     </div>
-                                ),
+                                )
                         )}
                     </div>
                 )}

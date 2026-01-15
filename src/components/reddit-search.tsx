@@ -65,51 +65,93 @@ export function RedditSearch({
   onNotifyNewPosts: (count: number) => void;
 }) {
   // Search state
-  const [query, setQuery] = useState(
-    () => typeof window !== "undefined" ? localStorage.getItem("lastRedditSearchQuery") || "" : "",
-  );
+  const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [selectedSorts, setSelectedSorts] = useState<SortType[]>(() => {
-    if (typeof window === "undefined") return ["hot"];
+  const [selectedSorts, setSelectedSorts] = useState<SortType[]>(["hot"]);
+
+  // Load from localStorage after hydration
+  useEffect(() => {
+    const savedQuery = localStorage.getItem("lastRedditSearchQuery");
+    if (savedQuery) setQuery(savedQuery);
+
     const saved = localStorage.getItem("lastRedditSearchSorts");
-    return saved ? JSON.parse(saved) : ["hot"];
-  });
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setSelectedSorts(parsed);
+      } catch (e) {
+        // If parsing fails, keep default
+      }
+    }
+  }, []);
 
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(() => {
-    if (typeof window === "undefined") return 1;
-    return parseInt(localStorage.getItem("lastRedditSearchPage") || "1", 10);
-  });
-  const [rowsPerPage, setRowsPerPage] = useState(() => {
-    if (typeof window === "undefined") return 100;
-    return parseInt(localStorage.getItem("lastRedditSearchRows") || "100", 10);
-  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(100);
+
+  // Load pagination settings from localStorage after hydration
+  useEffect(() => {
+    const savedPage = localStorage.getItem("lastRedditSearchPage");
+    const savedRows = localStorage.getItem("lastRedditSearchRowsPerPage");
+
+    if (savedPage) {
+      const page = parseInt(savedPage, 10);
+      if (!isNaN(page)) setCurrentPage(page);
+    }
+
+    if (savedRows) {
+      const rows = parseInt(savedRows, 10);
+      if (!isNaN(rows)) setRowsPerPage(rows);
+    }
+  }, []);
 
   // View state
-  const [viewSort, setViewSort] = useState<ViewSortType>(() => {
-    if (typeof window === "undefined") return "date-desc";
-    return (
-      (localStorage.getItem("lastRedditSearchViewSort") as ViewSortType) ||
-      "date-desc"
-    );
-  });
-  const [viewFilters, setViewFilters] = useState<SortType[]>(() => {
-    if (typeof window === "undefined") return ["hot", "top", "new"];
-    const saved = localStorage.getItem("lastRedditSearchViewFilters");
-    return saved ? JSON.parse(saved) : ["hot", "top", "new"];
-  });
-  const [viewIntentFilters, setViewIntentFilters] = useState<string[]>(() => {
-    if (typeof window === "undefined") return ["High", "Medium", "Low"];
+  const [viewSort, setViewSort] = useState<ViewSortType>("date-desc");
+  const [viewFilters, setViewFilters] = useState<SortType[]>(["hot", "top", "new"]);
+
+  // Load view settings from localStorage after hydration
+  useEffect(() => {
+    const savedSort = localStorage.getItem("lastRedditSearchViewSort") as ViewSortType;
+    if (savedSort) setViewSort(savedSort);
+
+    const savedFilters = localStorage.getItem("lastRedditSearchViewFilters");
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        if (parsed && parsed.length > 0) {
+          setViewFilters(parsed);
+        }
+      } catch (e) {
+        // If parsing fails, keep default
+      }
+    }
+  }, []);
+  const [viewIntentFilters, setViewIntentFilters] = useState<string[]>(["High", "Medium", "Low"]);
+
+  // Load intent filters from localStorage after hydration
+  useEffect(() => {
     const saved = localStorage.getItem("lastRedditSearchViewIntentFilters");
-    return saved ? JSON.parse(saved) : ["High", "Medium", "Low"];
-  });
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setViewIntentFilters(parsed);
+      } catch (e) {
+        // If parsing fails, keep default
+      }
+    }
+  }, []);
   const [filterQuery, setFilterQuery] = useState("");
-  const [gridColumns, setGridColumns] = useState<number>(() => {
-    if (typeof window === "undefined") return 4;
+  const [gridColumns, setGridColumns] = useState<number>(4);
+
+  // Load grid columns from localStorage after hydration
+  useEffect(() => {
     const saved = localStorage.getItem("lastRedditSearchGridColumns");
-    return saved ? parseInt(saved, 10) : 4;
-  });
+    if (saved) {
+      const cols = parseInt(saved, 10);
+      if (!isNaN(cols)) setGridColumns(cols);
+    }
+  }, []);
 
   // Comments state
   const [comments, setComments] = useState<Message[]>([]);
