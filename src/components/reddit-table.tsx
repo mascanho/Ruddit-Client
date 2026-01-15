@@ -1193,9 +1193,9 @@ export function RedditTable({
               <col className="w-[160px]" />
               <col className="w-[95px]" />
               <col className="w-[40px]" />
-              <col className="w-[45px]" />
-              <col className="w-[60px]" />
-              <col className="w-[60px]" />
+               <col className="w-[45px]" />
+               <col className="w-[70px]" />
+               <col className="w-[60px]" />
               <col className="w-[80px]" />
               <col className="w-[45px]" />
             </colgroup>
