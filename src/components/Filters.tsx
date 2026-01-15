@@ -28,6 +28,7 @@ interface FiltersProps {
   setSegmentFilter: (value: string) => void;
   subreddits: string[];
   segments: string[];
+  onOpenSettings?: () => void;
 }
 
 export function Filters({
@@ -45,6 +46,7 @@ export function Filters({
   setSegmentFilter,
   subreddits,
   segments,
+  onOpenSettings,
 }: FiltersProps) {
   return (
     <>
@@ -159,13 +161,20 @@ export function Filters({
           </SelectContent>
         </Select>
 
-        <Select value={segmentFilter} onValueChange={setSegmentFilter}>
+        <Select value={segmentFilter} onValueChange={(value) => {
+          if (value === "add_segment") {
+            // Open settings modal to add segments
+            onOpenSettings?.();
+            return;
+          }
+          setSegmentFilter(value);
+        }}>
           <SelectTrigger className="w-[120px] h-7 text-[10px] font-bold uppercase tracking-tight bg-background/50">
-            <SelectValue placeholder="Segment" />
+            <SelectValue placeholder={segments.length === 0 ? "Add segment" : "Segment"} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="text-[10px] font-bold uppercase">
-              All Segments
+              Any Segment
             </SelectItem>
             {segments.map((segment) => (
               <SelectItem
@@ -176,6 +185,12 @@ export function Filters({
                 {segment}
               </SelectItem>
             ))}
+            <SelectItem
+              value="add_segment"
+              className="text-[10px] font-bold text-blue-600 border-t border-border/50 mt-1 pt-2"
+            >
+              + Add segment
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>

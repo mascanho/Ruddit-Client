@@ -95,7 +95,8 @@ export function RedditTable({
   searchState,
   onSearchStateChange,
   isActive = false,
-}: RedditTableProps) {
+  onOpenSettings,
+}: RedditTableProps & { onOpenSettings?: () => void }) {
   // Use custom hook for state management
   const {
     data,
@@ -465,8 +466,8 @@ export function RedditTable({
   }, [data, externalPosts]);
 
   const segments = useMemo(() => {
-    return Array.from(new Set(data.map((post) => post.segment).filter((segment): segment is string => Boolean(segment))));
-  }, [data]);
+    return settings.monitoredSegments || [];
+  }, [settings.monitoredSegments]);
 
   const filteredAndSortedData = useMemo(() => {
     const filtered = data.filter((post) => {
@@ -952,6 +953,7 @@ export function RedditTable({
               setSegmentFilter={setSegmentFilter}
               subreddits={subreddits}
               segments={segments}
+              onOpenSettings={onOpenSettings}
             />
             <Actions
               filteredAndSortedDataLength={filteredAndSortedData.length}

@@ -47,19 +47,28 @@ export function AppSettingsDialog({
   open,
   onOpenChange,
   onSubredditsChanged,
+  defaultTab = "appearance",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubredditsChanged?: (addedCount: number) => void;
+  defaultTab?: string;
 }) {
   const { settings, updateSettings, resetSettings } = useAppSettings();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  // Update active tab when defaultTab changes
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
   const [newSubreddit, setNewSubreddit] = useState("");
   const [newKeyword, setNewKeyword] = useState("");
   const [newBrandKeyword, setNewBrandKeyword] = useState("");
   const [newCompetitorKeyword, setNewCompetitorKeyword] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [newBlacklistKeyword, setNewBlacklistKeyword] = useState("");
+  const [newSegment, setNewSegment] = useState("");
 
   const handleReset = () => {
     resetSettings();
@@ -203,6 +212,38 @@ export function AppSettingsDialog({
     toast({
       title: "Keyword removed",
       description: `Stopped monitoring "${keyword}"`,
+    });
+  };
+
+  const addSegment = () => {
+    if (!newSegment.trim()) return;
+    const cleaned = newSegment.trim();
+    if (settings.monitoredSegments.includes(cleaned)) {
+      toast({
+        title: "Already exists",
+        description: `"${cleaned}" is already in your segments.`,
+      });
+      return;
+    }
+    updateSettings({
+      monitoredSegments: [...(settings.monitoredSegments || []), cleaned],
+    });
+    setNewSegment("");
+    toast({
+      title: "Segment added",
+      description: `Added segment "${cleaned}"`,
+    });
+  };
+
+  const removeSegment = (segment: string) => {
+    updateSettings({
+      monitoredSegments: (settings.monitoredSegments || []).filter(
+        (s) => s !== segment,
+      ),
+    });
+    toast({
+      title: "Segment removed",
+      description: `Removed segment "${segment}"`,
     });
   };
 
@@ -409,7 +450,8 @@ export function AppSettingsDialog({
         </DialogHeader>
 
         <Tabs
-          defaultValue="appearance"
+          value={activeTab}
+          onValueChange={setActiveTab}
           className="flex-1 overflow-hidden flex flex-col"
         >
           <TabsList className="grid w-full grid-cols-3">
@@ -1001,10 +1043,61 @@ export function AppSettingsDialog({
                         </Badge>
                       ))}
                     </div>
-                  </div>
+                   </div>
 
-                  {/* Monitored Usernames */}
-                  <div>
+                   {/* Segments */}
+                   <div>
+                     <Label className="text-base font-semibold text-purple-500">
+                       Segments
+                     </Label>
+                     <p className="text-sm text-muted-foreground mb-3">
+                       Define custom segments to categorize and filter posts
+                     </p>
+                     <div className="flex gap-2 mb-3">
+                       <Input
+                         placeholder="e.g., Enterprise, SMB, Technical"
+                         value={newSegment}
+                         onChange={(e) => setNewSegment(e.target.value)}
+                         onKeyDown={(e) =>
+                           e.key === "Enter" && addSegment()
+                         }
+                       />
+                       <Button
+                         onClick={addSegment}
+                         size="icon"
+                         variant="default"
+                         className="bg-purple-600 hover:bg-purple-700"
+                       >
+                         <Plus className="h-4 w-4" />
+                       </Button>
+                     </div>
+                     <div className="flex flex-wrap gap-2">
+                       {(settings.monitoredSegments || []).map((segment) => (
+                         <Badge
+                           key={segment}
+                           className="px-3 py-1.5 bg-purple-100 text-purple-800 hover:bg-purple-200"
+                         >
+                           {segment}
+                           <Button
+                             variant="ghost"
+                             size="icon"
+                             className="h-4 w-4 ml-2 hover:bg-transparent text-purple-800"
+                             onClick={() => removeSegment(segment)}
+                           >
+                             <X className="h-3 w-3" />
+                           </Button>
+                         </Badge>
+                       ))}
+                       {(settings.monitoredSegments || []).length === 0 && (
+                         <p className="text-sm text-muted-foreground">
+                           No segments defined yet
+                         </p>
+                       )}
+                     </div>
+                   </div>
+
+                   {/* Monitored Usernames */}
+                   <div>
                     <Label className="text-base font-semibold text-green-500">
                       Monitored Usernames
                     </Label>

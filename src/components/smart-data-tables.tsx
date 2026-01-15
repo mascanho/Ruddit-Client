@@ -66,6 +66,7 @@ export function SmartDataTables() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [redditPosts, setRedditPosts] = useState<RedditPost[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsDefaultTab, setSettingsDefaultTab] = useState("appearance");
   const { settings } = useAppSettings();
 
   const [subredditsModified, setSubredditsModified] = useState(false);
@@ -347,10 +348,14 @@ export function SmartDataTables() {
         >
           <RedditTable
             onAddComments={handleAddComments}
-            externalPosts={allSavedPosts}
+            externalPosts={subRedditsSaved}
             searchState={searchState}
             onSearchStateChange={setSearchState}
             isActive={activeTab === "reddit"}
+            onOpenSettings={() => {
+              setSettingsDefaultTab("monitoring");
+              setSettingsOpen(true);
+            }}
           />
         </TabsContent>
 
@@ -399,6 +404,7 @@ export function SmartDataTables() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         onSubredditsChanged={handleSubredditsChanged}
+        defaultTab={settingsDefaultTab}
       />
     </div>
   );
