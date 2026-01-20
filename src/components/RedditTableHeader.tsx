@@ -14,78 +14,78 @@ interface TableHeaderProps {
 
 export function RedditTableHeader({ onSort }: TableHeaderProps) {
   return (
-    <TableHeader className="sticky top-0 z-40 bg-background shadow-sm">
-      <TableRow className="hover:bg-transparent border-none">
-        <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-          <Notebook className="h-3.5 w-3.5 mx-auto opacity-40" />
+    <TableHeader className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+      <TableRow className="hover:bg-transparent border-none h-10">
+        <TableHead className="w-[32px] px-2 text-center border-b border-border/50">
+          <Notebook className="h-3.5 w-3.5 mx-auto text-muted-foreground/30 hover:text-primary transition-colors cursor-help" />
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-1 text-center font-mono text-[10px] uppercase tracking-wider opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-          #
+        <TableHead className="w-[30px] px-1 text-center font-mono text-[9px] uppercase tracking-tighter text-muted-foreground/40 border-b border-border/50">
+          ID
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+        <TableHead className="w-[75px] px-2 border-b border-border/50">
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
+            className="h-7 w-full px-1 text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-between"
             onClick={() => onSort("formatted_date")}
           >
             Date
-            <ArrowUpDown className="h-3 w-3 opacity-30" />
+            <ArrowUpDown className="h-2.5 w-2.5 opacity-20" />
           </Button>
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-2 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+        <TableHead className="px-2 border-b border-border/50">
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center gap-1"
+            className="h-7 px-1 text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 hover:text-primary hover:bg-primary/5 transition-all flex items-center gap-1.5"
             onClick={() => onSort("title")}
           >
-            Post Content
-            <ArrowUpDown className="h-3 w-3 opacity-30" />
+            Intelligence Feed
+            <ArrowUpDown className="h-2.5 w-2.5 opacity-20" />
           </Button>
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+        <TableHead className="w-[160px] px-2 text-center border-b border-border/50">
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
+            className="h-7 w-full px-1 text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-between"
             onClick={() => onSort("subreddit")}
           >
-            Subreddit
-            <ArrowUpDown className="h-3 w-3 opacity-30" />
+            Source
+            <ArrowUpDown className="h-2.5 w-2.5 opacity-20" />
           </Button>
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-          Status
+        <TableHead className="w-[95px] px-2 text-center text-[9px] uppercase font-black tracking-widest text-muted-foreground/40 border-b border-border/50">
+          Workflow
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-          <CheckCircle2 className="h-3.5 w-3.5 mx-auto" />
+        <TableHead className="w-[40px] px-2 text-center border-b border-border/50">
+          <CheckCircle2 className="h-3.5 w-3.5 mx-auto text-muted-foreground/30" />
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-          Owner
+        <TableHead className="w-[45px] px-2 text-center text-[9px] uppercase font-black tracking-widest text-muted-foreground/40 border-b border-border/50">
+          Lead
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-          Segments
+        <TableHead className="w-[70px] px-2 text-center text-[9px] uppercase font-black tracking-widest text-muted-foreground/40 border-b border-border/50">
+          Segment
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+        <TableHead className="w-[60px] px-2 text-center text-[9px] uppercase font-black tracking-widest text-muted-foreground/40 border-b border-border/50">
           Intent
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+        <TableHead className="w-[85px] px-2 text-center text-[9px] uppercase font-black tracking-widest text-muted-foreground/40 border-b border-border/50">
           Tone
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-2 text-center bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
+        <TableHead className="w-[80px] px-2 text-center border-b border-border/50">
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-full px-1 text-[10px] uppercase font-bold tracking-tight opacity-70 hover:opacity-100 hover:bg-accent/50 transition-all flex items-center justify-between"
+            className="h-7 w-full px-1 text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-between"
             onClick={() => onSort("interest")}
           >
-            Interest
-            <ArrowUpDown className="h-3 w-3 opacity-30" />
+            Score
+            <ArrowUpDown className="h-2.5 w-2.5 opacity-20" />
           </Button>
         </TableHead>
-        <TableHead className="sticky top-0 h-9 px-2 text-center text-[10px] uppercase font-bold tracking-tight opacity-50 bg-background/95 backdrop-blur-md z-40 border-b border-border/50">
-          Op
+        <TableHead className="w-[45px] px-2 text-center text-[9px] uppercase font-black tracking-widest text-muted-foreground/40 border-b border-border/50">
+          Ops
         </TableHead>
       </TableRow>
     </TableHeader>

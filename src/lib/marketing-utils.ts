@@ -89,53 +89,51 @@ export function categorizePost(
 export function getStatusColor(status?: string) {
   switch (status) {
     case "new":
-      return "bg-blue-100 text-blue-800 border-blue-200";
+      return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
     case "investigating":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      return "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20";
     case "replied":
-      return "bg-green-100 text-green-800 border-green-200";
+      return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20";
     case "closed":
-      return "bg-gray-100 text-gray-800 border-gray-200";
+      return "bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20";
     case "ignored":
-      return "bg-gray-100 text-gray-500 border-gray-200 opacity-60";
+      return "bg-slate-500/5 text-slate-400 dark:text-slate-500 border-slate-500/10 opacity-60";
     default:
-      return "bg-slate-100 text-slate-800 border-slate-200";
+      return "bg-slate-500/10 text-slate-600 border-slate-500/20";
   }
 }
 
 export function getIntentColor(intent?: string) {
   switch (intent) {
     case "high":
-      return "bg-rose-100 text-rose-800 border-rose-200 font-bold";
+      return "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20 font-bold shadow-[0_0_10px_rgba(244,63,94,0.1)]";
     case "medium":
-      return "bg-orange-100 text-orange-800 border-orange-200";
+      return "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20";
     case "low":
-      return "bg-slate-50 text-slate-500 border-slate-200";
+      return "bg-slate-500/5 text-slate-500 dark:text-slate-400 border-slate-500/10";
     default:
-      return "bg-slate-50 text-slate-500 border-slate-200";
+      return "bg-slate-500/5 text-slate-500 dark:text-slate-400 border-slate-500/10";
   }
 }
 
 export function getSegmentColor(segment?: string) {
   if (!segment || segment === "") {
-    return "bg-slate-100 text-slate-600 border-slate-200";
+    return "bg-slate-500/5 text-slate-500 dark:text-slate-400 border-slate-500/10";
   }
 
-  // Simple hash-based color assignment for different segments
   const colors = [
-    "bg-purple-100 text-purple-800 border-purple-200",
-    "bg-indigo-100 text-indigo-800 border-indigo-200",
-    "bg-cyan-100 text-cyan-800 border-cyan-200",
-    "bg-teal-100 text-teal-800 border-teal-200",
-    "bg-emerald-100 text-emerald-800 border-emerald-200",
-    "bg-lime-100 text-lime-800 border-lime-200",
-    "bg-amber-100 text-amber-800 border-amber-200",
-    "bg-orange-100 text-orange-800 border-orange-200",
-    "bg-red-100 text-red-800 border-red-200",
-    "bg-pink-100 text-pink-800 border-pink-200",
+    "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20",
+    "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20",
+    "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20",
+    "bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20",
+    "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+    "bg-lime-500/10 text-lime-700 dark:text-lime-400 border-lime-500/20",
+    "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+    "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
+    "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20",
+    "bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-500/20",
   ];
 
-  // Use a simple hash of the segment name to pick a color
   let hash = 0;
   for (let i = 0; i < segment.length; i++) {
     hash = segment.charCodeAt(i) + ((hash << 5) - hash);
@@ -147,12 +145,12 @@ export function getSegmentColor(segment?: string) {
 export function getToneColor(tone?: string) {
   switch (tone) {
     case "positive":
-      return "bg-green-100 text-green-800 border-green-200";
+      return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
     case "neutral":
-      return "bg-slate-100 text-slate-800 border-slate-200";
+      return "bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20";
     case "negative":
-      return "bg-red-100 text-red-800 border-red-200";
+      return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
     default:
-      return "bg-slate-100 text-slate-600 border-slate-200";
+      return "bg-slate-500/5 text-slate-500 dark:text-slate-400 border-slate-500/10";
   }
 }

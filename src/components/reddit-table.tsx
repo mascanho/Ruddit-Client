@@ -55,11 +55,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // Icons
-import { ChevronDown, User, Pencil, CheckCircle2, Circle, Star, MessageCircle, ArrowUpDown, Radar, UserPlus, MoreVertical, Trash2, Notebook, ExternalLink, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
+import {
+  ChevronDown, User, Pencil, CheckCircle2, Circle, Star, MessageCircle,
+  ArrowUpDown, Radar, UserPlus, MoreVertical, Trash2, Notebook,
+  ExternalLink, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight,
+  TrendingUp, Activity, MessageSquare, History, Shield, Globe
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Post types
-import { FileText, Link as LinkIcon } from "lucide-react";
+import { FileText, Link as LinkIcon, Hash } from "lucide-react";
 
 // Extracted modules
 import type { RedditPost, RedditTableProps, SortField } from "./reddit-table-types";
@@ -1053,21 +1058,23 @@ export function RedditTable({
                   <Fragment key={post.id}>
                     <TableRow
                       key={post.id}
-                      className={`group hover:z-10 relative text-[11px] transition-all border-b border-border/40 
+                      className={`group hover:z-10 relative text-[11px] transition-all duration-300 border-b border-border/40 
                         ${post.date_added > lastVisitTimestamp
-                          ? "bg-blue-500/10 dark:bg-blue-500/20 border-l-[3px] border-l-blue-500 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.3)]"
-                          : `border-l-[3px] border-l-transparent hover:bg-primary/5 ${index % 2 === 0 ? "bg-background" : "bg-slate-50/50"}`
+                          ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-[3px] border-l-blue-500/80 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.2)]"
+                          : `border-l-[3px] border-l-transparent hover:bg-muted/30 ${index % 2 === 0 ? "bg-background" : "bg-muted/5"}`
                         } 
                         ${settings.tableDensity === "compact"
                           ? "h-[32px]"
                           : settings.tableDensity === "spacious"
-                            ? "h-14"
-                            : "h-10"
+                            ? "h-16"
+                            : "h-12"
                         }`}
                     >
                       <TableCell className="px-1 text-center relative">
                         {post.notes && (
-                          <Notebook className="h-3 w-3 mx-auto text-primary opacity-60 group-hover:opacity-0 transition-opacity absolute inset-0 m-auto pointer-events-none" />
+                          <div className="absolute top-1 right-1">
+                            <div className="h-1 w-1 rounded-full bg-primary animate-pulse" />
+                          </div>
                         )}
                         <Button
                           variant="ghost"
@@ -1076,35 +1083,39 @@ export function RedditTable({
                             e.stopPropagation();
                             toggleRowExpansion(post.id.toString());
                           }}
-                          className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-none relative z-10 flex items-center justify-center mx-auto"
+                          className={`h-7 w-7 rounded-lg transition-all duration-300 shadow-none relative z-10 flex items-center justify-center mx-auto hover:bg-primary/10 hover:text-primary ${expandedRows.has(post.id.toString()) ? "bg-primary/5 text-primary opacity-100" : "opacity-0 group-hover:opacity-100"
+                            }`}
                         >
                           <ChevronDown
-                            className={`h-3 w-3 transition-transform duration-300 ${expandedRows.has(post.id.toString())
+                            className={`h-3.5 w-3.5 transition-transform duration-500 ${expandedRows.has(post.id.toString())
                               ? "rotate-180"
                               : ""
                               }`}
                           />
                         </Button>
                       </TableCell>
-                      <TableCell className="text-muted-foreground/40 font-mono text-[9px] px-1 text-center">
+                      <TableCell className="text-muted-foreground/30 font-mono text-[9px] px-1 text-center group-hover:text-muted-foreground/60 transition-colors">
                         {(currentPage - 1) * rowsPerPage + index + 1}
                       </TableCell>
-                      <TableCell className="font-mono text-[10px] px-2 whitespace-nowrap opacity-70">
-                        {post?.formatted_date?.slice(0, 10).trim() || "N/A"}
+                      <TableCell className="font-mono text-[10px] px-2 whitespace-nowrap opacity-60 group-hover:opacity-100 transition-opacity">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-bold text-foreground/80">{post?.formatted_date?.slice(5, 10).trim() || "N/A"}</span>
+                          <span className="text-[8px] opacity-50 uppercase tracking-tighter">{post?.formatted_date?.slice(0, 4)}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="px-2 min-w-0 max-w-0 w-full overflow-hidden">
-                        <div className="flex flex-col gap-0">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="shrink-0 opacity-40">
+                        <div className="flex flex-col gap-1 py-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="shrink-0 h-6 w-6 rounded-md bg-muted/40 flex items-center justify-center opacity-40 group-hover:opacity-100 transition-all border border-border/40">
                               {post.is_self ? (
                                 <FileText className="h-3 w-3" />
                               ) : (
                                 <LinkIcon className="h-3 w-3" />
                               )}
-                            </span>
+                            </div>
                             <div
                               onClick={() => openUrl(post.url)}
-                              className="font-medium cursor-pointer hover:underline truncate text-foreground/90 group-hover:text-primary transition-colors"
+                              className="font-semibold text-[11.5px] cursor-pointer hover:underline truncate text-foreground/80 group-hover:text-primary transition-all duration-300"
                               title={post.title}
                             >
                               <KeywordHighlighter
@@ -1116,24 +1127,24 @@ export function RedditTable({
                               />
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 mt-0.5 opacity-60 text-[9px]">
+                          <div className="flex items-center gap-3 mt-0.5 text-[9px] font-medium">
                             <div
-                              className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
+                              className="flex items-center gap-1.5 cursor-pointer text-muted-foreground hover:text-primary transition-colors bg-muted/20 px-1.5 py-0.5 rounded border border-border/20"
                               onClick={() =>
                                 handleGetComments(post, post.sort_type)
                               }
                             >
-                              <MessageCircle className="h-2.5 w-2.5" />
-                              <span>{post.num_comments ?? 0}</span>
+                              <MessageSquare className="h-2.5 w-2.5 opacity-60" />
+                              <span>{post.num_comments ?? 0} comments</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <ArrowUpDown className="h-2.5 w-2.5" />
-                              <span>{post.score ?? 0}</span>
+                            <div className="flex items-center gap-1.5 text-muted-foreground bg-muted/20 px-1.5 py-0.5 rounded border border-border/20">
+                              <TrendingUp className="h-2.5 w-2.5 opacity-60" />
+                              <span>{post.score ?? 0} karma</span>
                             </div>
                             {post.author && (
-                              <div className="flex items-center gap-1 ml-1 border-l pl-2">
-                                <User className="h-2.5 w-2.5 opacity-50" />
-                                <span className="truncate">
+                              <div className="flex items-center gap-1.5 text-muted-foreground/60 hover:text-primary transition-colors">
+                                <User className="h-2.5 w-2.5 opacity-40" />
+                                <span className="truncate opacity-80 uppercase tracking-tighter font-bold">
                                   u/{post.author}
                                 </span>
                               </div>
@@ -1141,29 +1152,32 @@ export function RedditTable({
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="px-0.5 text-center overflow-hidden">
+                      <TableCell className="px-1 text-center overflow-hidden">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Badge
                               variant="outline"
-                              className={`font-mono text-[9px] py-0 h-4 px-2 cursor-pointer hover:bg-accent/50 selection:bg-transparent transition-colors truncate max-w-full block ${(settings.blacklistSubreddits || []).includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
+                              className={`font-mono text-[9px] py-0.5 h-5 px-2.5 cursor-pointer hover:scale-105 active:scale-95 selection:bg-transparent transition-all truncate max-w-full inline-flex items-center gap-1.5 border-dashed ${(settings.blacklistSubreddits || []).includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
                                 ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20"
-                                : "bg-background/50 border-muted-foreground/10"
+                                : "bg-background/80 border-muted-foreground/20 hover:border-primary/40 hover:text-primary"
                                 }`}
                               title={`r/${post.subreddit}`}
                             >
+                              <Globe className="h-2.5 w-2.5 opacity-40" />
                               r/{post.subreddit}
                             </Badge>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start">
+                          <DropdownMenuContent align="start" className="rounded-xl border-border/40 shadow-2xl backdrop-blur-xl">
+                            <DropdownMenuLabel className="text-[10px] uppercase tracking-widest opacity-40">Community Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator className="opacity-40" />
                             <DropdownMenuItem
-                              className="text-xs"
+                              className="text-xs focus:bg-primary/5 focus:text-primary rounded-lg transition-colors"
                               onClick={() =>
                                 addSubredditToMonitoring(post.subreddit)
                               }
                             >
-                              <Radar className="h-4 w-4" />
-                              Monitor r/{post.subreddit}
+                              <Radar className="h-3.5 w-3.5 mr-2 opacity-60" />
+                              Monitor Intelligence Feed
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1177,20 +1191,18 @@ export function RedditTable({
                           }
                         >
                           <SelectTrigger
-                            className={`w-full h-6 text-[10px] px-2 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(
+                            className={`w-full h-7 text-[9px] uppercase tracking-widest px-2.5 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(
                               post.status,
-                            )} hover:opacity-80 transition-all font-bold rounded-md`}
+                            )} hover:brightness-110 active:scale-95 transition-all font-black rounded-lg`}
                           >
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="text-[11px]">
-                            <SelectItem value="new">New</SelectItem>
-                            <SelectItem value="investigating">
-                              Research
-                            </SelectItem>
-                            <SelectItem value="replied">Replied</SelectItem>
-                            <SelectItem value="closed">Closed</SelectItem>
-                            <SelectItem value="ignored">Ignored</SelectItem>
+                          <SelectContent className="rounded-xl border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl">
+                            <SelectItem value="new" className="text-[10px] font-bold uppercase tracking-wider">New Lead</SelectItem>
+                            <SelectItem value="investigating" className="text-[10px] font-bold uppercase tracking-wider">Researching</SelectItem>
+                            <SelectItem value="replied" className="text-[10px] font-bold uppercase tracking-wider">Engaged</SelectItem>
+                            <SelectItem value="closed" className="text-[10px] font-bold uppercase tracking-wider">Won / Closed</SelectItem>
+                            <SelectItem value="ignored" className="text-[10px] font-bold uppercase tracking-wider">Disqualified</SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>
@@ -1199,15 +1211,15 @@ export function RedditTable({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 rounded-full hover:bg-transparent shadow-none flex items-center justify-center"
+                          className={`h-7 w-7 rounded-lg transition-all active:scale-75 ${post.engaged === 1 ? "bg-green-500/10 text-green-600 hover:bg-green-500/20" : "hover:bg-muted opacity-40"}`}
                           onClick={() =>
                             handleEngagedToggle(post.id, post.engaged !== 1)
                           }
                         >
                           {post.engaged === 1 ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            <CheckCircle2 className="h-4 w-4" />
                           ) : (
-                            <Circle className="h-4 w-4 text-muted-foreground/20" />
+                            <Circle className="h-4 w-4" />
                           )}
                         </Button>
                       </TableCell>
@@ -1219,8 +1231,8 @@ export function RedditTable({
                             handleAssign(post.id, value)
                           }
                         >
-                          <SelectTrigger className="w-6 h-6 rounded-full mx-auto p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden transition-transform active:scale-95">
-                            <Avatar className="h-5 w-5 border border-muted-foreground/10">
+                          <SelectTrigger className="w-8 h-8 rounded-xl mx-auto p-0.5 border border-border/40 bg-muted/20 ring-0 focus:ring-0 [&>svg]:hidden transition-all hover:border-primary/40 active:scale-90 shadow-sm">
+                            <Avatar className="h-full w-full rounded-[10px]">
                               {post.assignee &&
                                 post.assignee !== "unassigned" ? (
                                 <>
@@ -1228,22 +1240,30 @@ export function RedditTable({
                                     src={`https://avatar.vercel.sh/${post.assignee}`}
                                     alt={post.assignee}
                                   />
-                                  <AvatarFallback className="bg-primary/5 text-primary text-[8px] font-bold">
+                                  <AvatarFallback className="bg-primary/10 text-primary text-[9px] font-black">
                                     {post.assignee.slice(0, 1).toUpperCase()}
                                   </AvatarFallback>
                                 </>
                               ) : (
-                                <AvatarFallback className="bg-transparent opacity-30 group-hover:opacity-70">
-                                  <UserPlus className="h-3 w-3" />
+                                <AvatarFallback className="bg-transparent opacity-20 group-hover:opacity-40">
+                                  <UserPlus className="h-3.5 w-3.5" />
                                 </AvatarFallback>
                               )}
                             </Avatar>
                           </SelectTrigger>
-                          <SelectContent align="center" className="text-[11px]">
-                            <SelectItem value="unassigned">None</SelectItem>
+                          <SelectContent align="center" className="rounded-xl border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl">
+                            <DropdownMenuLabel className="text-[9px] uppercase tracking-widest opacity-40">Assign Resource</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <SelectItem value="unassigned" className="text-xs font-medium">Unassigned</SelectItem>
                             {teamMembers.map((member) => (
-                              <SelectItem key={member.id} value={member.name}>
-                                {member.name}
+                              <SelectItem key={member.id} value={member.name} className="text-xs font-medium">
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-4 w-4">
+                                    <AvatarImage src={`https://avatar.vercel.sh/${member.name}`} />
+                                    <AvatarFallback>{member.name[0]}</AvatarFallback>
+                                  </Avatar>
+                                  {member.name}
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1259,21 +1279,21 @@ export function RedditTable({
                               setEditingSegmentPost(null);
                             }}
                           >
-                            <SelectTrigger className={`h-6 text-[10px] px-1 border-0 shadow-none ring-0 focus:ring-0 ${getSegmentColor(post.segment)} hover:opacity-80 transition-all rounded-md max-w-[60px] truncate`}>
+                            <SelectTrigger className={`h-7 text-[9px] uppercase tracking-widest px-2 border-0 shadow-none ring-0 focus:ring-0 ${getSegmentColor(post.segment)} hover:brightness-110 transition-all font-black rounded-lg max-w-[70px] truncate`}>
                               <SelectValue placeholder="" />
                             </SelectTrigger>
-                            <SelectContent className="text-[11px]">
-                              <SelectItem value="none">None</SelectItem>
+                            <SelectContent className="rounded-xl border-border/40 bg-background/95 backdrop-blur-xl">
+                              <SelectItem value="none" className="text-[10px] font-bold uppercase tracking-wider">No Segment</SelectItem>
                               {(settings.monitoredSegments || []).map((segment) => (
-                                <SelectItem key={segment} value={segment}>
-                                  {segment.length > 10 ? `${segment.slice(0, 10)}...` : segment}
+                                <SelectItem key={segment} value={segment} className="text-[10px] font-bold uppercase tracking-wider">
+                                  {segment}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         ) : (
                           <Badge
-                            className={`${getSegmentColor(post.segment)} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
+                            className={`${getSegmentColor(post.segment)} text-[9px] h-5 px-2 font-black border-0 shadow-sm cursor-pointer hover:brightness-110 active:scale-95 transition-all rounded-lg uppercase tracking-tighter`}
                             onClick={() => setEditingSegmentPost(post)}
                           >
                             {post.segment || "None"}
@@ -1286,9 +1306,9 @@ export function RedditTable({
                           <Badge
                             className={`${getIntentColor(
                               post.intent.toLowerCase(),
-                            )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
+                            )} text-[9px] h-5 px-2 font-black border-0 shadow-sm rounded-lg uppercase tracking-tighter`}
                           >
-                            {post.intent.slice(0, 4).toUpperCase()}
+                            {post.intent.toUpperCase()}
                           </Badge>
                         )}
                       </TableCell>
@@ -1302,18 +1322,18 @@ export function RedditTable({
                               setEditingTonePost(null);
                             }}
                           >
-                            <SelectTrigger className={`h-6 text-[10px] px-1 border-0 shadow-none ring-0 focus:ring-0 ${getToneColor(post.tone)} hover:opacity-80 transition-all rounded-md max-w-[70px] truncate`}>
+                            <SelectTrigger className={`h-7 text-[9px] uppercase tracking-widest px-2 border-0 shadow-none ring-0 focus:ring-0 ${getToneColor(post.tone)} hover:brightness-110 transition-all font-black rounded-lg max-w-[70px] truncate`}>
                               <SelectValue placeholder="" />
                             </SelectTrigger>
-                            <SelectContent className="text-[11px]">
-                              <SelectItem value="positive">Positive</SelectItem>
+                            <SelectContent className="rounded-xl border-border/40 bg-background/95 backdrop-blur-xl text-xs uppercase font-bold tracking-tight">
+                              <SelectItem value="positive" className="text-green-600">Positive</SelectItem>
                               <SelectItem value="neutral">Neutral</SelectItem>
-                              <SelectItem value="negative">Negative</SelectItem>
+                              <SelectItem value="negative" className="text-red-600">Negative</SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
                           <Badge
-                            className={`${getToneColor(post.tone)} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none cursor-pointer`}
+                            className={`${getToneColor(post.tone)} text-[9px] h-5 px-2 font-black border-0 shadow-sm cursor-pointer hover:brightness-110 active:scale-95 transition-all rounded-lg uppercase tracking-tighter`}
                             onClick={() => setEditingTonePost(post)}
                           >
                             {(post.tone || "neutral").toUpperCase()}
@@ -1322,13 +1342,13 @@ export function RedditTable({
                       </TableCell>
 
                       <TableCell className="px-1 text-center">
-                        <div className="flex items-center justify-center gap-0">
+                        <div className="flex items-center justify-center gap-0.5">
                           {[1, 2, 3, 4, 5].map((level) => (
                             <Star
                               key={level}
-                              className={`h-3 w-3 cursor-pointer transition-all ${(post.interest || 0) >= level
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-muted-foreground/20 hover:text-yellow-400/50"
+                              className={`h-3 w-3 cursor-pointer transition-all duration-300 hover:scale-125 ${(post.interest || 0) >= level
+                                ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]"
+                                : "text-muted-foreground/10 hover:text-yellow-400/30"
                                 }`}
                               onClick={() => {
                                 const newLevel = post.interest === level ? level - 1 : level;
@@ -1345,31 +1365,44 @@ export function RedditTable({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 rounded-full opacity-40 group-hover:opacity-100 shadow-none flex items-center justify-center"
+                              className="h-7 w-7 rounded-lg opacity-20 group-hover:opacity-100 group-hover:bg-primary/10 group-hover:text-primary transition-all duration-300 active:scale-90"
                             >
-                              <MoreVertical className="h-3 w-3" />
+                              <MoreVertical className="h-3.5 w-3.5" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="text-xs">
+                          <DropdownMenuContent align="end" className="rounded-xl border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl">
+                            <DropdownMenuLabel className="text-[10px] uppercase tracking-widest opacity-40">Operations</DropdownMenuLabel>
+                            <DropdownMenuSeparator className="opacity-40" />
                             <DropdownMenuItem
+                              className="text-xs transition-colors rounded-lg focus:bg-primary/5 focus:text-primary"
                               onClick={() =>
                                 handleGetComments(post, post.sort_type)
                               }
                             >
-                              <MessageCircle className="h-3 w-3 mr-2" />{" "}
-                              Comments
+                              <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-60" />
+                              Intelligence View
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleEditNote(post)}
+                              className="text-xs transition-colors rounded-lg focus:bg-primary/5 focus:text-primary"
+                              onClick={() => openUrl(post.url)}
                             >
-                              <Pencil className="h-3 w-3 mr-2" /> Notes
+                              <ExternalLink className="h-3.5 w-3.5 mr-2 opacity-60" />
+                              Open Source Matrix
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
                             <DropdownMenuItem
+                              className="text-xs transition-colors rounded-lg focus:bg-primary/5 focus:text-primary"
+                              onClick={() => setEditingNotePost(post)}
+                            >
+                              <Notebook className="h-3.5 w-3.5 mr-2 opacity-60" />
+                              Internal Intelligence Note
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="opacity-40" />
+                            <DropdownMenuItem
+                              className="text-xs text-destructive focus:bg-destructive/10 focus:text-destructive transition-colors rounded-lg"
                               onClick={() => setDeleteId(post.id)}
-                              className="text-destructive focus:bg-destructive/10"
                             >
-                              <Trash2 className="h-3 w-3 mr-2" /> Delete
+                              <Trash2 className="h-3.5 w-3.5 mr-2" />
+                              Purge Record
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1377,7 +1410,7 @@ export function RedditTable({
                     </TableRow>
                     {expandedRows.has(post.id.toString()) && (
                       <TableRow className="bg-muted/10">
-                        <TableCell colSpan={12} className="p-0 border-b">
+                        <TableCell colSpan={13} className="p-0 border-b">
                           <div className="p-3 bg-muted/20 border-x">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <Card className="shadow-none border-border/40 bg-background/60">
@@ -1389,7 +1422,7 @@ export function RedditTable({
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-5 w-5 rounded-full shadow-none flex items-center justify-center"
+                                      className="h-5 w-5 rounded-full shadow-none flex items-center justify-center hover:bg-primary/10 hover:text-primary"
                                       onClick={() => openUrl(post.permalink)}
                                     >
                                       <ExternalLink className="h-3 w-3" />
@@ -1416,7 +1449,7 @@ export function RedditTable({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-5 w-5 rounded-full shadow-none flex items-center justify-center"
+                                    className="h-5 w-5 rounded-full shadow-none flex items-center justify-center hover:bg-primary/10 hover:text-primary"
                                     onClick={() => handleEditNote(post)}
                                   >
                                     <Pencil className="h-3 w-3" />
@@ -1453,94 +1486,96 @@ export function RedditTable({
         </div>
 
         {/* Footer - Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t backdrop-blur-md">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
-                  Display:
-                </span>
-                <select
-                  className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
-                  value={rowsPerPage}
-                  onChange={(e) => {
-                    setRowsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
+        {
+          totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t backdrop-blur-md">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+                    Display:
+                  </span>
+                  <select
+                    className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
+                    value={rowsPerPage}
+                    onChange={(e) => {
+                      setRowsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    {[10, 25, 50, 100].map((v) => (
+                      <option key={v} value={v}>
+                        {v} / Page
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="text-[10px] font-mono text-muted-foreground uppercase">
+                  Batch: {startIndex + 1}—
+                  {Math.min(endIndex, filteredAndSortedData.length)} of{" "}
+                  {filteredAndSortedData.length}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
                 >
-                  {[10, 25, 50, 100].map((v) => (
-                    <option key={v} value={v}>
-                      {v} / Page
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="text-[10px] font-mono text-muted-foreground uppercase">
-                Batch: {startIndex + 1}—
-                {Math.min(endIndex, filteredAndSortedData.length)} of{" "}
-                {filteredAndSortedData.length}
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                <div className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary/5 border border-primary/20">
+                  <span className="text-[10px] font-bold text-primary opacity-60">
+                    PAGE
+                  </span>
+                  <span className="text-[11px] font-bold text-primary font-mono">
+                    {currentPage}
+                  </span>
+                  <span className="text-[10px] font-bold text-primary opacity-40">
+                    /
+                  </span>
+                  <span className="text-[11px] font-bold text-primary font-mono">
+                    {totalPages}
+                  </span>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-
-              <div className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary/5 border border-primary/20">
-                <span className="text-[10px] font-bold text-primary opacity-60">
-                  PAGE
-                </span>
-                <span className="text-[11px] font-bold text-primary font-mono">
-                  {currentPage}
-                </span>
-                <span className="text-[10px] font-bold text-primary opacity-40">
-                  /
-                </span>
-                <span className="text-[11px] font-bold text-primary font-mono">
-                  {totalPages}
-                </span>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
+          )
+        }
+      </Card >
 
       {/* Note Editing Dialog */}
       <Dialog
@@ -1596,34 +1631,36 @@ export function RedditTable({
             <Button onClick={handleSaveNote}>Save Note</Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog >
 
       {/* Delete Confirmation Dialog */}
-      {settings.confirmDelete && (
-        <AlertDialog
-          open={deleteId !== null}
-          onOpenChange={() => setDeleteId(null)}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the
-                post from your data.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => deleteId && handleDelete(deleteId)}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      {
+        settings.confirmDelete && (
+          <AlertDialog
+            open={deleteId !== null}
+            onOpenChange={() => setDeleteId(null)}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the
+                  post from your data.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteId && handleDelete(deleteId)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )
+      }
 
       {/* Clear Table Dialog */}
       <AlertDialog
@@ -1742,6 +1779,6 @@ export function RedditTable({
           onAddComments([newComment]);
         }}
       />
-    </div>
+    </div >
   );
 }
