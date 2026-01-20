@@ -34,6 +34,7 @@ export type RedditPost = {
   intent?: string;
   category?: "brand" | "competitor" | "general";
   segment?: string;
+  tone?: "positive" | "neutral" | "negative";
 };
 
 /**

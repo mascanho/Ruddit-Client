@@ -41,6 +41,7 @@ export const CSV_HEADERS = [
   "notes",
   "interest",
   "segment",
+  "tone",
 ];
 
 /**
@@ -58,5 +59,6 @@ export const TABLE_COLUMN_WIDTHS = {
   segments: "w-[70px]",
   intent: "w-[60px]",
   interest: "w-[80px]",
+  tone: "w-[85px]",
   op: "w-[45px]",
 } as const;

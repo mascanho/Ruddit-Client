@@ -22,6 +22,7 @@ export function useRedditTableState() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [engagementFilter, setEngagementFilter] = useState("all");
   const [segmentFilter, setSegmentFilter] = useState("all");
+  const [toneFilter, setToneFilter] = useState("all");
 
   // Sorting states
   const [sortField, setSortField] = useState<SortField>(
@@ -45,6 +46,7 @@ export function useRedditTableState() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [editingNotePost, setEditingNotePost] = useState<RedditPost | null>(null);
   const [editingSegmentPost, setEditingSegmentPost] = useState<RedditPost | null>(null);
+  const [editingTonePost, setEditingTonePost] = useState<RedditPost | null>(null);
   const [currentNote, setCurrentNote] = useState("");
   const [lastVisitTimestamp, setLastVisitTimestamp] = useState<number>(0);
   const [showPreview, setShowPreview] = useState(false);
@@ -75,6 +77,8 @@ export function useRedditTableState() {
     setEngagementFilter,
     segmentFilter,
     setSegmentFilter,
+    toneFilter,
+    setToneFilter,
 
     // Sorting
     sortField,
@@ -105,6 +109,8 @@ export function useRedditTableState() {
     setEditingNotePost,
     editingSegmentPost,
     setEditingSegmentPost,
+    editingTonePost,
+    setEditingTonePost,
     currentNote,
     setCurrentNote,
     lastVisitTimestamp,

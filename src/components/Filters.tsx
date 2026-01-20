@@ -26,6 +26,8 @@ interface FiltersProps {
   setEngagementFilter: (value: string) => void;
   segmentFilter: string;
   setSegmentFilter: (value: string) => void;
+  toneFilter: string;
+  setToneFilter: (value: string) => void;
   subreddits: string[];
   segments: string[];
   onOpenSettings?: () => void;
@@ -44,6 +46,8 @@ export function Filters({
   setEngagementFilter,
   segmentFilter,
   setSegmentFilter,
+  toneFilter,
+  setToneFilter,
   subreddits,
   segments,
   onOpenSettings,
@@ -158,6 +162,26 @@ export function Filters({
             <SelectItem value="all">Any Engagement</SelectItem>
             <SelectItem value="engaged">Engaged</SelectItem>
             <SelectItem value="not_engaged">Not Engaged</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={toneFilter} onValueChange={setToneFilter}>
+          <SelectTrigger className="w-[110px] h-7 text-[10px] font-bold uppercase tracking-tight bg-background/50">
+            <SelectValue placeholder="Tone" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="text-[10px] font-bold uppercase">
+              All Tones
+            </SelectItem>
+            <SelectItem value="positive" className="text-[10px] font-bold uppercase text-green-600">
+              Positive
+            </SelectItem>
+            <SelectItem value="neutral" className="text-[10px] font-bold uppercase">
+              Neutral
+            </SelectItem>
+            <SelectItem value="negative" className="text-[10px] font-bold uppercase text-red-600">
+              Negative
+            </SelectItem>
           </SelectContent>
         </Select>
 

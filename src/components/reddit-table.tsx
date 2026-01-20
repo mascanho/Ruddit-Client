@@ -41,7 +41,7 @@ import { useAddSingleSubReddit } from "@/store/store";
 import { toast } from "sonner";
 import moment from "moment";
 import { useOpenUrl } from "@/hooks/useOpenUrl";
-import { getStatusColor, getIntentColor, getSegmentColor } from "@/lib/marketing-utils";
+import { getStatusColor, getIntentColor, getSegmentColor, getToneColor } from "@/lib/marketing-utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -139,6 +139,10 @@ export function RedditTable({
     setLastVisitTimestamp,
     showPreview,
     setShowPreview,
+    toneFilter,
+    setToneFilter,
+    editingTonePost,
+    setEditingTonePost,
     settings,
     updateSettings,
   } = useRedditTableState();
@@ -244,6 +248,7 @@ export function RedditTable({
           category: storedCrm[p.id]?.category || p.category || "general",
           engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
           segment: storedCrm[p.id]?.segment || p.segment || "",
+          tone: storedCrm[p.id]?.tone || p.tone || "neutral",
         }));
 
         // Also update existing posts with CRM data if needed (e.g. on reload)
@@ -254,6 +259,7 @@ export function RedditTable({
           category: storedCrm[p.id]?.category || p.category,
           engaged: storedCrm[p.id]?.engaged ?? p.engaged ?? 0, // Add engaged status
           segment: storedCrm[p.id]?.segment || p.segment || "",
+          tone: storedCrm[p.id]?.tone || p.tone || "neutral",
         }));
 
         return [...updatedPrev, ...mergedNewPosts];
@@ -479,6 +485,18 @@ export function RedditTable({
     );
   };
 
+  const handleToneChange = (postId: number, newTone: "positive" | "neutral" | "negative") => {
+    setData((prevData) =>
+      prevData.map((p) =>
+        p.id === postId ? { ...p, tone: newTone } : p,
+      ),
+    );
+
+    updateCrmData(postId, { tone: newTone });
+
+    toast.success("Tone updated", { duration: 1500 });
+  };
+
   const subreddits = useMemo(() => {
     return Array.from(new Set(data.map((post) => post.subreddit)));
   }, [data, externalPosts]);
@@ -515,13 +533,17 @@ export function RedditTable({
       const matchesSegment =
         segmentFilter === "all" || post.segment === segmentFilter;
 
+      const matchesTone =
+        toneFilter === "all" || (post.tone || "neutral") === toneFilter;
+
       return (
         matchesSearch &&
         matchesSubreddit &&
         matchesRelevance &&
         matchesStatus &&
         matchesEngagement &&
-        matchesSegment
+        matchesSegment &&
+        matchesTone
       );
     });
 
@@ -557,6 +579,7 @@ export function RedditTable({
     statusFilter,
     engagementFilter,
     segmentFilter,
+    toneFilter,
     sortField,
     sortDirection,
     externalPosts,
@@ -580,6 +603,7 @@ export function RedditTable({
     statusFilter,
     engagementFilter,
     segmentFilter,
+    toneFilter,
   ]);
 
   const handleSort = (field: SortField) => {
@@ -933,6 +957,7 @@ export function RedditTable({
         setStatusFilter("all");
         setEngagementFilter("all");
         setSegmentFilter("all");
+        setToneFilter("all");
         setSubredditFilter("all");
         setRelevanceFilter("all");
         if (onSearchStateChange) {
@@ -969,6 +994,8 @@ export function RedditTable({
             setEngagementFilter={setEngagementFilter}
             segmentFilter={segmentFilter}
             setSegmentFilter={setSegmentFilter}
+            toneFilter={toneFilter}
+            setToneFilter={setToneFilter}
             subreddits={subreddits}
             segments={segments}
             onOpenSettings={onOpenSettings}
@@ -1004,6 +1031,7 @@ export function RedditTable({
               <col className="w-[45px]" />
               <col className="w-[70px]" />
               <col className="w-[60px]" />
+              <col className="w-[85px]" />
               <col className="w-[80px]" />
               <col className="w-[45px]" />
             </colgroup>
@@ -1014,7 +1042,7 @@ export function RedditTable({
               {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={12}
+                    colSpan={13}
                     className="h-24 text-center text-muted-foreground opacity-50"
                   >
                     No posts matching your current filters.
@@ -1261,6 +1289,34 @@ export function RedditTable({
                             )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
                           >
                             {post.intent.slice(0, 4).toUpperCase()}
+                          </Badge>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="px-1 text-center">
+                        {editingTonePost?.id === post.id ? (
+                          <Select
+                            value={post.tone || "neutral"}
+                            onValueChange={(value) => {
+                              handleToneChange(post.id, value as any);
+                              setEditingTonePost(null);
+                            }}
+                          >
+                            <SelectTrigger className={`h-6 text-[10px] px-1 border-0 shadow-none ring-0 focus:ring-0 ${getToneColor(post.tone)} hover:opacity-80 transition-all rounded-md max-w-[70px] truncate`}>
+                              <SelectValue placeholder="" />
+                            </SelectTrigger>
+                            <SelectContent className="text-[11px]">
+                              <SelectItem value="positive">Positive</SelectItem>
+                              <SelectItem value="neutral">Neutral</SelectItem>
+                              <SelectItem value="negative">Negative</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge
+                            className={`${getToneColor(post.tone)} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none cursor-pointer`}
+                            onClick={() => setEditingTonePost(post)}
+                          >
+                            {(post.tone || "neutral").toUpperCase()}
                           </Badge>
                         )}
                       </TableCell>

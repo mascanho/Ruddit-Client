@@ -143,3 +143,16 @@ export function getSegmentColor(segment?: string) {
   const index = Math.abs(hash) % colors.length;
   return colors[index];
 }
+
+export function getToneColor(tone?: string) {
+  switch (tone) {
+    case "positive":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "neutral":
+      return "bg-slate-100 text-slate-800 border-slate-200";
+    case "negative":
+      return "bg-red-100 text-red-800 border-red-200";
+    default:
+      return "bg-slate-100 text-slate-600 border-slate-200";
+  }
+}
