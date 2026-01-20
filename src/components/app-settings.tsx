@@ -68,6 +68,7 @@ export function AppSettingsDialog({
   const [newCompetitorKeyword, setNewCompetitorKeyword] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [newBlacklistKeyword, setNewBlacklistKeyword] = useState("");
+  const [newBlacklistSubreddit, setNewBlacklistSubreddit] = useState("");
   const [newSegment, setNewSegment] = useState("");
 
   const handleReset = () => {
@@ -308,6 +309,38 @@ export function AppSettingsDialog({
     toast({
       title: "Blacklist keyword removed",
       description: `"${keyword}" removed from blacklist`,
+    });
+  };
+
+  const addBlacklistSubreddit = () => {
+    if (!newBlacklistSubreddit.trim()) return;
+    const cleaned = newBlacklistSubreddit.trim().toLowerCase().replace(/^r\//, "");
+    if ((settings.blacklistSubreddits || []).includes(cleaned)) {
+      toast({
+        title: "Already blacklisted",
+        description: `r/${cleaned} is already in your blacklist.`,
+      });
+      return;
+    }
+    updateSettings({
+      blacklistSubreddits: [...(settings.blacklistSubreddits || []), cleaned],
+    });
+    setNewBlacklistSubreddit("");
+    toast({
+      title: "Blacklist subreddit added",
+      description: `Posts from r/${cleaned} will be filtered out`,
+    });
+  };
+
+  const removeBlacklistSubreddit = (subreddit: string) => {
+    updateSettings({
+      blacklistSubreddits: (settings.blacklistSubreddits || []).filter(
+        (s) => s !== subreddit,
+      ),
+    });
+    toast({
+      title: "Blacklist subreddit removed",
+      description: `r/${subreddit} removed from blacklist`,
     });
   };
 
@@ -1043,61 +1076,61 @@ export function AppSettingsDialog({
                         </Badge>
                       ))}
                     </div>
-                   </div>
+                  </div>
 
-                   {/* Segments */}
-                   <div>
-                     <Label className="text-base font-semibold text-purple-500">
-                       Segments
-                     </Label>
-                     <p className="text-sm text-muted-foreground mb-3">
-                       Define custom segments to categorize and filter posts
-                     </p>
-                     <div className="flex gap-2 mb-3">
-                       <Input
-                         placeholder="e.g., Enterprise, SMB, Technical"
-                         value={newSegment}
-                         onChange={(e) => setNewSegment(e.target.value)}
-                         onKeyDown={(e) =>
-                           e.key === "Enter" && addSegment()
-                         }
-                       />
-                       <Button
-                         onClick={addSegment}
-                         size="icon"
-                         variant="default"
-                         className="bg-purple-600 hover:bg-purple-700"
-                       >
-                         <Plus className="h-4 w-4" />
-                       </Button>
-                     </div>
-                     <div className="flex flex-wrap gap-2">
-                       {(settings.monitoredSegments || []).map((segment) => (
-                         <Badge
-                           key={segment}
-                           className="px-3 py-1.5 bg-purple-100 text-purple-800 hover:bg-purple-200"
-                         >
-                           {segment}
-                           <Button
-                             variant="ghost"
-                             size="icon"
-                             className="h-4 w-4 ml-2 hover:bg-transparent text-purple-800"
-                             onClick={() => removeSegment(segment)}
-                           >
-                             <X className="h-3 w-3" />
-                           </Button>
-                         </Badge>
-                       ))}
-                       {(settings.monitoredSegments || []).length === 0 && (
-                         <p className="text-sm text-muted-foreground">
-                           No segments defined yet
-                         </p>
-                       )}
-                     </div>
-                   </div>
+                  {/* Segments */}
+                  <div>
+                    <Label className="text-base font-semibold text-purple-500">
+                      Segments
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Define custom segments to categorize and filter posts
+                    </p>
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        placeholder="e.g., Enterprise, SMB, Technical"
+                        value={newSegment}
+                        onChange={(e) => setNewSegment(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && addSegment()
+                        }
+                      />
+                      <Button
+                        onClick={addSegment}
+                        size="icon"
+                        variant="default"
+                        className="bg-purple-600 hover:bg-purple-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(settings.monitoredSegments || []).map((segment) => (
+                        <Badge
+                          key={segment}
+                          className="px-3 py-1.5 bg-purple-100 text-purple-800 hover:bg-purple-200"
+                        >
+                          {segment}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 ml-2 hover:bg-transparent text-purple-800"
+                            onClick={() => removeSegment(segment)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ))}
+                      {(settings.monitoredSegments || []).length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No segments defined yet
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-                   {/* Monitored Usernames */}
-                   <div>
+                  {/* Monitored Usernames */}
+                  <div>
                     <Label className="text-base font-semibold text-green-500">
                       Monitored Usernames
                     </Label>
@@ -1193,6 +1226,59 @@ export function AppSettingsDialog({
                       {(settings.blacklistKeywords || []).length === 0 && (
                         <p className="text-sm text-muted-foreground">
                           No blacklist keywords added yet
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Blacklist Subreddits */}
+                  <div>
+                    <Label className="text-base font-semibold text-red-500">
+                      Blacklist Subreddits
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Filter out posts from these subreddits from automation results
+                    </p>
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        placeholder="e.g., spam, nsfw, off-topic"
+                        value={newBlacklistSubreddit}
+                        onChange={(e) =>
+                          setNewBlacklistSubreddit(e.target.value)
+                        }
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && addBlacklistSubreddit()
+                        }
+                      />
+                      <Button
+                        onClick={addBlacklistSubreddit}
+                        size="icon"
+                        variant="default"
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(settings.blacklistSubreddits || []).map((subreddit) => (
+                        <Badge
+                          key={subreddit}
+                          className="px-3 py-1.5 bg-red-100 text-red-800 hover:bg-red-200"
+                        >
+                          r/{subreddit}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 ml-2 hover:bg-transparent text-red-800"
+                            onClick={() => removeBlacklistSubreddit(subreddit)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ))}
+                      {(settings.blacklistSubreddits || []).length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No blacklist subreddits added yet
                         </p>
                       )}
                     </div>

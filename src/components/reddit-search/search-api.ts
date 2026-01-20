@@ -9,6 +9,7 @@ export interface SearchParams {
     sortTypes: SortType[];
     brandKeywords: string[];
     competitorKeywords: string[];
+    blacklistSubreddits?: string[];
 }
 
 export async function performSearch(
@@ -20,8 +21,17 @@ export async function performSearch(
             query: params.query.trim(),
         });
 
+        const filteredPosts = params.blacklistSubreddits
+            ? fetchedPosts.filter(
+                (post) =>
+                    !params.blacklistSubreddits!.some(
+                        (sub) => post.subreddit?.toLowerCase() === sub.toLowerCase()
+                    )
+            )
+            : fetchedPosts;
+
         return mapPostsToResults(
-            fetchedPosts,
+            filteredPosts,
             params.brandKeywords,
             params.competitorKeywords
         );

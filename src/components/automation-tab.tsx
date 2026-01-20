@@ -109,6 +109,16 @@ export function AutomationTab() {
 
     const wordsToCheck = textToCheck.split(/\s+/); // Split into individual words
 
+    // Check for blacklisted subreddits
+    const blacklistSubreddits = settings.blacklistSubreddits || [];
+    if (
+      blacklistSubreddits.some(
+        (sub) => post.subreddit?.toLowerCase() === sub.toLowerCase(),
+      )
+    ) {
+      return true;
+    }
+
     // Check for exact keyword matches in the full text
     const exactMatch = blacklistKeywords.some((keyword) =>
       textToCheck.includes(keyword.toLowerCase()),
@@ -217,6 +227,21 @@ export function AutomationTab() {
 
     toast.success(`Now monitoring r/${cleaned}`);
   };
+
+  const addSubredditToBlacklist = (subreddit: string) => {
+    const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
+    if ((settings.blacklistSubreddits || []).includes(cleaned)) {
+      toast.info(`r/${cleaned} is already blacklisted`);
+      return;
+    }
+
+    updateSettings({
+      blacklistSubreddits: [...(settings.blacklistSubreddits || []), cleaned],
+    });
+
+    toast.success(`r/${cleaned} added to blacklist`);
+  };
+
 
   const addUsernameToMonitoring = (username: string) => {
     const cleaned = username.trim().toLowerCase();
@@ -643,7 +668,10 @@ export function AutomationTab() {
     },
     {
       title: "Blacklist",
-      keywords: settings.blacklistKeywords,
+      keywords: [
+        ...(settings.blacklistKeywords || []),
+        ...(settings.blacklistSubreddits || []).map((s) => `r/${s}`),
+      ],
       className: "bg-red-500/10 text-red-400 border border-red-500/20",
     },
   ];
@@ -696,9 +724,11 @@ export function AutomationTab() {
           trackedPostIds={trackedPostIds}
           keywordCategoriesForHighlighting={keywordCategoriesForHighlighting}
           addSubredditToMonitoring={addSubredditToMonitoring}
+          addSubredditToBlacklist={addSubredditToBlacklist}
           handleGetComments={handleGetComments}
           handleAddToTracking={handleAddToTracking}
           monitoredSubreddits={settings.monitoredSubreddits}
+          blacklistSubreddits={settings.blacklistSubreddits || []}
           monitoredUsernames={settings.monitoredUsernames || []}
           addUsernameToMonitoring={addUsernameToMonitoring}
         />

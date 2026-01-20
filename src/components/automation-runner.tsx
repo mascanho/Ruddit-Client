@@ -73,6 +73,12 @@ export function AutomationRunner() {
             })
             .filter(post => {
                 const text = (post.title + " " + (post.selftext || "")).toLowerCase();
+                const sub = post.subreddit.toLowerCase().replace(/^r\//, "");
+                const isBlacklisted = (currentSettings.blacklistSubreddits || [])
+                    .some(b => b.toLowerCase() === sub);
+
+                if (isBlacklisted) return false;
+
                 return allKeywords.some(k => text.includes(k.toLowerCase()));
             });
     };
@@ -143,6 +149,11 @@ export function AutomationRunner() {
 
         addLog(`Deep scanning ${monitoredSubreddits.length} subreddits...`, "info");
 
+        const blacklistSubreddits = currentSettings.blacklistSubreddits || [];
+        const filteredSubreddits = monitoredSubreddits.filter(
+            s => !blacklistSubreddits.some(b => b.toLowerCase() === s.toLowerCase())
+        );
+
         const allKeywords = [
             ...(currentSettings.brandKeywords || []),
             ...(currentSettings.competitorKeywords || []),
@@ -154,7 +165,7 @@ export function AutomationRunner() {
             return;
         }
 
-        for (const subreddit of monitoredSubreddits) {
+        for (const subreddit of filteredSubreddits) {
             if (!automationIntervalRef.current) break;
             addLog(`Scanning r/${subreddit} for all monitored keywords...`, "info");
 

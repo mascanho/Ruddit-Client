@@ -167,6 +167,24 @@ export function RedditTable({
     });
   };
 
+  const addSubredditToBlacklist = (subreddit: string) => {
+    const cleaned = subreddit.trim().toLowerCase().replace(/^r\//, "");
+    if ((settings.blacklistSubreddits || []).includes(cleaned)) {
+      toast.info(`r/${cleaned} is already blacklisted`, {
+        position: "bottom-center",
+      });
+      return;
+    }
+
+    updateSettings({
+      blacklistSubreddits: [...(settings.blacklistSubreddits || []), cleaned],
+    });
+
+    toast.success(`r/${cleaned} added to blacklist`, {
+      position: "bottom-center",
+    });
+  };
+
   const openUrl = useOpenUrl();
   const keywordsToHighlight = useMemo(() => {
     return [
@@ -937,35 +955,35 @@ export function RedditTable({
   return (
     <div className="flex-1 flex flex-col min-h-0 gap-3">
       <Card className="p-2 shadow-sm border-border/60 bg-white backdrop-blur-sm">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filters
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              subredditFilter={subredditFilter}
-              setSubredditFilter={setSubredditFilter}
-              relevanceFilter={relevanceFilter}
-              setRelevanceFilter={setRelevanceFilter}
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              engagementFilter={engagementFilter}
-              setEngagementFilter={setEngagementFilter}
-              segmentFilter={segmentFilter}
-              setSegmentFilter={setSegmentFilter}
-              subreddits={subreddits}
-              segments={segments}
-              onOpenSettings={onOpenSettings}
-            />
-            <Actions
-              filteredAndSortedDataLength={filteredAndSortedData.length}
-              onExportCsv={handleExportToCsv}
-              onExportJson={handleExportToJSON}
-              onImport={handleImportClick}
-              onClearTable={() => setShowClearTableDialog(true)}
-            />
-            <div className="text-[10px] uppercase font-bold tracking-widest opacity-60 px-2 border-l border-border/40 ml-2">
-              {filteredAndSortedData.length} / {data.length}
-            </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Filters
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            subredditFilter={subredditFilter}
+            setSubredditFilter={setSubredditFilter}
+            relevanceFilter={relevanceFilter}
+            setRelevanceFilter={setRelevanceFilter}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            engagementFilter={engagementFilter}
+            setEngagementFilter={setEngagementFilter}
+            segmentFilter={segmentFilter}
+            setSegmentFilter={setSegmentFilter}
+            subreddits={subreddits}
+            segments={segments}
+            onOpenSettings={onOpenSettings}
+          />
+          <Actions
+            filteredAndSortedDataLength={filteredAndSortedData.length}
+            onExportCsv={handleExportToCsv}
+            onExportJson={handleExportToJSON}
+            onImport={handleImportClick}
+            onClearTable={() => setShowClearTableDialog(true)}
+          />
+          <div className="text-[10px] uppercase font-bold tracking-widest opacity-60 px-2 border-l border-border/40 ml-2">
+            {filteredAndSortedData.length} / {data.length}
           </div>
+        </div>
       </Card>
 
       <Card className="p-0 m-0 flex-1 min-h-0 flex flex-col">
@@ -983,9 +1001,9 @@ export function RedditTable({
               <col className="w-[160px]" />
               <col className="w-[95px]" />
               <col className="w-[40px]" />
-               <col className="w-[45px]" />
-               <col className="w-[70px]" />
-               <col className="w-[60px]" />
+              <col className="w-[45px]" />
+              <col className="w-[70px]" />
+              <col className="w-[60px]" />
               <col className="w-[80px]" />
               <col className="w-[45px]" />
             </colgroup>
@@ -1100,7 +1118,10 @@ export function RedditTable({
                           <DropdownMenuTrigger asChild>
                             <Badge
                               variant="outline"
-                              className="font-mono text-[9px] py-0 h-4 px-2 cursor-pointer hover:bg-accent/50 selection:bg-transparent bg-background/50 border-muted-foreground/10 truncate max-w-full block"
+                              className={`font-mono text-[9px] py-0 h-4 px-2 cursor-pointer hover:bg-accent/50 selection:bg-transparent transition-colors truncate max-w-full block ${(settings.blacklistSubreddits || []).includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
+                                ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20"
+                                : "bg-background/50 border-muted-foreground/10"
+                                }`}
                               title={`r/${post.subreddit}`}
                             >
                               r/{post.subreddit}
@@ -1120,150 +1141,150 @@ export function RedditTable({
                         </DropdownMenu>
                       </TableCell>
 
-                       <TableCell className="px-1 min-w-[90px]">
-                         <Select
-                           value={post.status || "new"}
-                           onValueChange={(value) =>
-                             updateCrmData(post.id, { status: value as any })
-                           }
-                         >
-                           <SelectTrigger
-                             className={`w-full h-6 text-[10px] px-2 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(
-                               post.status,
-                             )} hover:opacity-80 transition-all font-bold rounded-md`}
-                           >
-                             <SelectValue />
-                           </SelectTrigger>
-                           <SelectContent className="text-[11px]">
-                             <SelectItem value="new">New</SelectItem>
-                             <SelectItem value="investigating">
-                               Research
-                             </SelectItem>
-                             <SelectItem value="replied">Replied</SelectItem>
-                             <SelectItem value="closed">Closed</SelectItem>
-                             <SelectItem value="ignored">Ignored</SelectItem>
-                           </SelectContent>
-                         </Select>
-                       </TableCell>
+                      <TableCell className="px-1 min-w-[90px]">
+                        <Select
+                          value={post.status || "new"}
+                          onValueChange={(value) =>
+                            updateCrmData(post.id, { status: value as any })
+                          }
+                        >
+                          <SelectTrigger
+                            className={`w-full h-6 text-[10px] px-2 border-0 shadow-none ring-0 focus:ring-0 ${getStatusColor(
+                              post.status,
+                            )} hover:opacity-80 transition-all font-bold rounded-md`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="text-[11px]">
+                            <SelectItem value="new">New</SelectItem>
+                            <SelectItem value="investigating">
+                              Research
+                            </SelectItem>
+                            <SelectItem value="replied">Replied</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                            <SelectItem value="ignored">Ignored</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
 
-                       <TableCell className="px-1 text-center">
-                         <Button
-                           variant="ghost"
-                           size="icon"
-                           className="h-6 w-6 rounded-full hover:bg-transparent shadow-none flex items-center justify-center"
-                           onClick={() =>
-                             handleEngagedToggle(post.id, post.engaged !== 1)
-                           }
-                         >
-                           {post.engaged === 1 ? (
-                             <CheckCircle2 className="h-4 w-4 text-green-500" />
-                           ) : (
-                             <Circle className="h-4 w-4 text-muted-foreground/20" />
-                           )}
-                         </Button>
-                       </TableCell>
-
-                       <TableCell className="px-1 text-center">
-                         <Select
-                           value={post.assignee || "unassigned"}
-                           onValueChange={(value) =>
-                             handleAssign(post.id, value)
-                           }
-                         >
-                           <SelectTrigger className="w-6 h-6 rounded-full mx-auto p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden transition-transform active:scale-95">
-                             <Avatar className="h-5 w-5 border border-muted-foreground/10">
-                               {post.assignee &&
-                                 post.assignee !== "unassigned" ? (
-                                 <>
-                                   <AvatarImage
-                                     src={`https://avatar.vercel.sh/${post.assignee}`}
-                                     alt={post.assignee}
-                                   />
-                                   <AvatarFallback className="bg-primary/5 text-primary text-[8px] font-bold">
-                                     {post.assignee.slice(0, 1).toUpperCase()}
-                                   </AvatarFallback>
-                                 </>
-                               ) : (
-                                 <AvatarFallback className="bg-transparent opacity-30 group-hover:opacity-70">
-                                   <UserPlus className="h-3 w-3" />
-                                 </AvatarFallback>
-                               )}
-                             </Avatar>
-                           </SelectTrigger>
-                           <SelectContent align="center" className="text-[11px]">
-                             <SelectItem value="unassigned">None</SelectItem>
-                             {teamMembers.map((member) => (
-                               <SelectItem key={member.id} value={member.name}>
-                                 {member.name}
-                               </SelectItem>
-                             ))}
-                           </SelectContent>
-                         </Select>
-                       </TableCell>
-
-                        <TableCell className="px-1 text-center">
-                          {editingSegmentPost?.id === post.id ? (
-                            <Select
-                              value={post.segment || "none"}
-                              onValueChange={(value) => {
-                                handleSegmentChange(post.id, value === "none" ? "" : value);
-                                setEditingSegmentPost(null);
-                              }}
-                            >
-                              <SelectTrigger className={`h-6 text-[10px] px-1 border-0 shadow-none ring-0 focus:ring-0 ${getSegmentColor(post.segment)} hover:opacity-80 transition-all rounded-md max-w-[60px] truncate`}>
-                                <SelectValue placeholder="" />
-                              </SelectTrigger>
-                              <SelectContent className="text-[11px]">
-                                <SelectItem value="none">None</SelectItem>
-                                {(settings.monitoredSegments || []).map((segment) => (
-                                  <SelectItem key={segment} value={segment}>
-                                    {segment.length > 10 ? `${segment.slice(0, 10)}...` : segment}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                      <TableCell className="px-1 text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 rounded-full hover:bg-transparent shadow-none flex items-center justify-center"
+                          onClick={() =>
+                            handleEngagedToggle(post.id, post.engaged !== 1)
+                          }
+                        >
+                          {post.engaged === 1 ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
                           ) : (
-                            <Badge
-                              className={`${getSegmentColor(post.segment)} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
-                              onClick={() => setEditingSegmentPost(post)}
-                            >
-                              {post.segment || "None"}
-                            </Badge>
+                            <Circle className="h-4 w-4 text-muted-foreground/20" />
                           )}
-                        </TableCell>
+                        </Button>
+                      </TableCell>
 
-                       <TableCell className="px-1 text-center">
-                         {post.intent && (
-                           <Badge
-                             className={`${getIntentColor(
-                               post.intent.toLowerCase(),
-                             )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
-                           >
-                             {post.intent.slice(0, 4).toUpperCase()}
-                           </Badge>
-                         )}
-                       </TableCell>
+                      <TableCell className="px-1 text-center">
+                        <Select
+                          value={post.assignee || "unassigned"}
+                          onValueChange={(value) =>
+                            handleAssign(post.id, value)
+                          }
+                        >
+                          <SelectTrigger className="w-6 h-6 rounded-full mx-auto p-0 border-0 ring-0 focus:ring-0 [&>svg]:hidden transition-transform active:scale-95">
+                            <Avatar className="h-5 w-5 border border-muted-foreground/10">
+                              {post.assignee &&
+                                post.assignee !== "unassigned" ? (
+                                <>
+                                  <AvatarImage
+                                    src={`https://avatar.vercel.sh/${post.assignee}`}
+                                    alt={post.assignee}
+                                  />
+                                  <AvatarFallback className="bg-primary/5 text-primary text-[8px] font-bold">
+                                    {post.assignee.slice(0, 1).toUpperCase()}
+                                  </AvatarFallback>
+                                </>
+                              ) : (
+                                <AvatarFallback className="bg-transparent opacity-30 group-hover:opacity-70">
+                                  <UserPlus className="h-3 w-3" />
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                          </SelectTrigger>
+                          <SelectContent align="center" className="text-[11px]">
+                            <SelectItem value="unassigned">None</SelectItem>
+                            {teamMembers.map((member) => (
+                              <SelectItem key={member.id} value={member.name}>
+                                {member.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
 
-                       <TableCell className="px-1 text-center">
-                         <div className="flex items-center justify-center gap-0">
-                           {[1, 2, 3, 4, 5].map((level) => (
-                             <Star
-                               key={level}
-                               className={`h-3 w-3 cursor-pointer transition-all ${(post.interest || 0) >= level
-                                 ? "fill-yellow-400 text-yellow-400"
-                                 : "text-muted-foreground/20 hover:text-yellow-400/50"
-                                 }`}
-                               onClick={() => {
-                                 const newLevel = post.interest === level ? level - 1 : level;
-                                 handleInterestChange(post.id, newLevel);
-                               }}
-                             />
-                           ))}
-                         </div>
-                       </TableCell>
+                      <TableCell className="px-1 text-center">
+                        {editingSegmentPost?.id === post.id ? (
+                          <Select
+                            value={post.segment || "none"}
+                            onValueChange={(value) => {
+                              handleSegmentChange(post.id, value === "none" ? "" : value);
+                              setEditingSegmentPost(null);
+                            }}
+                          >
+                            <SelectTrigger className={`h-6 text-[10px] px-1 border-0 shadow-none ring-0 focus:ring-0 ${getSegmentColor(post.segment)} hover:opacity-80 transition-all rounded-md max-w-[60px] truncate`}>
+                              <SelectValue placeholder="" />
+                            </SelectTrigger>
+                            <SelectContent className="text-[11px]">
+                              <SelectItem value="none">None</SelectItem>
+                              {(settings.monitoredSegments || []).map((segment) => (
+                                <SelectItem key={segment} value={segment}>
+                                  {segment.length > 10 ? `${segment.slice(0, 10)}...` : segment}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge
+                            className={`${getSegmentColor(post.segment)} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
+                            onClick={() => setEditingSegmentPost(post)}
+                          >
+                            {post.segment || "None"}
+                          </Badge>
+                        )}
+                      </TableCell>
 
-                       <TableCell className="px-1 text-center">
-                         <DropdownMenu>
+                      <TableCell className="px-1 text-center">
+                        {post.intent && (
+                          <Badge
+                            className={`${getIntentColor(
+                              post.intent.toLowerCase(),
+                            )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
+                          >
+                            {post.intent.slice(0, 4).toUpperCase()}
+                          </Badge>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="px-1 text-center">
+                        <div className="flex items-center justify-center gap-0">
+                          {[1, 2, 3, 4, 5].map((level) => (
+                            <Star
+                              key={level}
+                              className={`h-3 w-3 cursor-pointer transition-all ${(post.interest || 0) >= level
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-muted-foreground/20 hover:text-yellow-400/50"
+                                }`}
+                              onClick={() => {
+                                const newLevel = post.interest === level ? level - 1 : level;
+                                handleInterestChange(post.id, newLevel);
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="px-1 text-center">
+                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
@@ -1296,7 +1317,7 @@ export function RedditTable({
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                       </TableCell>
+                      </TableCell>
                     </TableRow>
                     {expandedRows.has(post.id.toString()) && (
                       <TableRow className="bg-muted/10">

@@ -55,8 +55,10 @@ interface AutomationResultsTableProps {
   handleGetComments: (post: PostDataWrapper, sortType: string) => void;
   handleAddToTracking: (post: PostDataWrapper) => void;
   monitoredSubreddits: string[];
+  blacklistSubreddits: string[];
   monitoredUsernames: string[];
   addUsernameToMonitoring: (username: string) => void;
+  addSubredditToBlacklist: (subreddit: string) => void;
 }
 
 export function AutomationResultsTable({
@@ -78,8 +80,10 @@ export function AutomationResultsTable({
   handleGetComments,
   handleAddToTracking,
   monitoredSubreddits,
+  blacklistSubreddits,
   monitoredUsernames,
   addUsernameToMonitoring,
+  addSubredditToBlacklist,
 }: AutomationResultsTableProps) {
   const openUrl = useOpenUrl();
   return (
@@ -303,7 +307,9 @@ export function AutomationResultsTable({
                           <span
                             className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${monitoredSubreddits.includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
                               ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
-                              : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
+                              : blacklistSubreddits.includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
+                                ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+                                : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
                               }`}
                           >
                             r/{post.subreddit}
@@ -316,8 +322,17 @@ export function AutomationResultsTable({
                               addSubredditToMonitoring(post.subreddit)
                             }
                           >
-                            <Radar className="h-4 w-4" />
+                            <Radar className="h-4 w-4 mr-2" />
                             Monitor r/{post.subreddit}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-xs text-destructive focus:text-destructive"
+                            onClick={() =>
+                              addSubredditToBlacklist(post.subreddit)
+                            }
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Blacklist r/{post.subreddit}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
