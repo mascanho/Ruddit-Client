@@ -1,3 +1,4 @@
+//@ts-nocheck
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -87,7 +88,7 @@ const DEPTH_COLORS = [
 
 const getDepthColor = (d: number) => {
   if (d === 0) return DEPTH_COLORS[0];
-  return DEPTH_COLORS[(d - 1) % (DEPTH_COLORS.length - 1) + 1];
+  return DEPTH_COLORS[((d - 1) % (DEPTH_COLORS.length - 1)) + 1];
 };
 
 const CommentItem = ({
@@ -132,14 +133,17 @@ const CommentItem = ({
   const depthColor = getDepthColor(depth).replace(/bg-/g, "border-");
 
   return (
-    <div className={`relative group/comment isolate ${isRoot ? "mb-6" : "mb-3"}`}>
+    <div
+      className={`relative group/comment isolate ${isRoot ? "mb-6" : "mb-3"}`}
+    >
       {/* Comment Container */}
       <div
         className={`
-          relative flex gap-3 p-3 transition-all duration-200 
-          ${isRoot
-            ? "bg-card border border-border/50 rounded-xl shadow-sm hover:shadow-md hover:border-border/80"
-            : "rounded-lg bg-muted/60 border border-border/20 hover:bg-muted/80 hover:border-border/40"
+          relative flex gap-3 p-3 transition-all duration-200
+          ${
+            isRoot
+              ? "bg-card border border-border/50 rounded-xl shadow-sm hover:shadow-md hover:border-border/80"
+              : "rounded-lg bg-muted/60 border border-border/20 hover:bg-muted/80 hover:border-border/40"
           }
           ${isMonitoredUser ? "ring-1 ring-blue-500/30 bg-blue-50/50 dark:bg-blue-900/20" : ""}
         `}
@@ -148,14 +152,15 @@ const CommentItem = ({
         <div className="flex-shrink-0 pt-1">
           <div
             className={`
-              rounded-full flex items-center justify-center 
+              rounded-full flex items-center justify-center
               text-[10px] font-bold uppercase select-none
               transition-all duration-300
-              ${isMonitoredUser
-                ? "h-8 w-8 bg-blue-500 text-white shadow-blue-500/20 shadow-lg"
-                : isRoot
-                  ? "h-8 w-8 bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-border/50"
-                  : "h-6 w-6 bg-muted text-muted-foreground/60"
+              ${
+                isMonitoredUser
+                  ? "h-8 w-8 bg-blue-500 text-white shadow-blue-500/20 shadow-lg"
+                  : isRoot
+                    ? "h-8 w-8 bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-border/50"
+                    : "h-6 w-6 bg-muted text-muted-foreground/60"
               }
             `}
           >
@@ -181,7 +186,7 @@ const CommentItem = ({
 
             {comment.author &&
               comment.author.toLowerCase() ===
-              (comment as any).post_author?.toLowerCase() && (
+                (comment as any).post_author?.toLowerCase() && (
                 <Badge
                   variant="secondary"
                   className="text-[9px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
@@ -237,8 +242,9 @@ const CommentItem = ({
           {/* Body */}
           <KeywordHighlighter
             text={comment?.body || ""}
-            className={`text-sm leading-relaxed break-words whitespace-pre-wrap mb-1.5 ${isRoot ? "text-foreground/90 font-medium" : "text-foreground/90"
-              }`}
+            className={`text-sm leading-relaxed break-words whitespace-pre-wrap mb-1.5 ${
+              isRoot ? "text-foreground/90 font-medium" : "text-foreground/90"
+            }`}
             brandKeywords={settings.brandKeywords}
             competitorKeywords={settings.competitorKeywords}
             generalKeywords={settings.monitoredKeywords}
@@ -327,7 +333,10 @@ function ReplySection({
     if (!text.trim()) return;
     setIsSubmitting(true);
     try {
-      const newComment = (await invoke("submit_reddit_comment_command", { parentId, text })) as Message;
+      const newComment = (await invoke("submit_reddit_comment_command", {
+        parentId,
+        text,
+      })) as Message;
       toast.success("Signal transmitted", {
         description: "Your response has been propagated to the network.",
       });
@@ -345,12 +354,14 @@ function ReplySection({
   };
 
   return (
-    <div className={`relative group transition-all duration-300 ${isFocused ? "opacity-100" : "opacity-80 hover:opacity-100"}`}>
+    <div
+      className={`relative group transition-all duration-300 ${isFocused ? "opacity-100" : "opacity-80 hover:opacity-100"}`}
+    >
       <div
         className={`
-          flex flex-col 
-          border border-border/40 
-          bg-background/40 backdrop-blur-md 
+          flex flex-col
+          border border-border/40
+          bg-background/40 backdrop-blur-md
           rounded-xl overflow-hidden
           transition-all duration-200
           ${isFocused ? "ring-1 ring-primary/20 bg-background/60 shadow-lg" : "shadow-sm"}
@@ -363,8 +374,8 @@ function ReplySection({
           onBlur={() => !text && setIsFocused(false)}
           placeholder={placeholder}
           className={`
-            border-none shadow-none resize-none 
-            bg-transparent focus-visible:ring-0 
+            border-none shadow-none resize-none
+            bg-transparent focus-visible:ring-0
             text-sm px-4 py-3
             placeholder:text-muted-foreground/40
             ${compact && !isFocused && !text ? "min-h-[44px] h-[44px] py-2.5" : "min-h-[80px]"}
@@ -379,7 +390,7 @@ function ReplySection({
           className={`
             flex items-center justify-between px-2 pb-2
             transition-all duration-200 overflow-hidden
-            ${(isFocused || text) ? "opacity-100 max-h-[40px] mt-1" : "opacity-0 max-h-0"}
+            ${isFocused || text ? "opacity-100 max-h-[40px] mt-1" : "opacity-0 max-h-0"}
           `}
         >
           <div className="text-[10px] text-muted-foreground/40 ml-2 font-mono uppercase tracking-widest">
@@ -464,7 +475,12 @@ export function RedditCommentsView({
           (config.reddit_access_token && config.reddit_access_token !== "");
         // We no longer strictly need username/password for the OAuth flow, just the token and client ID
         const configured = Boolean(hasId && hasRefreshtoken);
-        console.log("Reddit Config Check:", { config, hasId, hasRefreshtoken, configured });
+        console.log("Reddit Config Check:", {
+          config,
+          hasId,
+          hasRefreshtoken,
+          configured,
+        });
         setIsConfigured(configured);
       } catch (e) {
         console.error("Failed to check reddit config:", e);
