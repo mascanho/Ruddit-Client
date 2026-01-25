@@ -1,9 +1,14 @@
-/**
- * Filters component for the Reddit Table
- * Contains search input and filter dropdowns
- */
-
-import { Search, Filter, Layout, Activity, Flag, Shield, Smile, Tag, PlusCircle } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Layout,
+  Activity,
+  Flag,
+  Shield,
+  Smile,
+  Tag,
+  PlusCircle,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -74,7 +79,7 @@ export function Filters({
               <SelectValue placeholder="Community" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl">
+          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[160px]">
             <SelectItem value="all" className="text-[10px] font-bold uppercase">
               All r/subreddits
             </SelectItem>
@@ -91,20 +96,29 @@ export function Filters({
         </Select>
 
         <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
-          <SelectTrigger className="w-[110px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
+          <SelectTrigger className="w-[130px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
             <div className="flex items-center gap-2">
               <Flag className="h-3 w-3 text-primary/50" />
               <SelectValue placeholder="Intent" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl">
-            <SelectItem value="all" className="text-[10px] font-bold uppercase">
+          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[120px]">
+            <SelectItem
+              value="all"
+              className="text-[10px] font-bold uppercase w-full"
+            >
               All Intent
             </SelectItem>
-            <SelectItem value="high" className="text-[10px] font-bold uppercase">
+            <SelectItem
+              value="high"
+              className="text-[10px] font-bold uppercase"
+            >
               High Intent
             </SelectItem>
-            <SelectItem value="medium" className="text-[10px] font-bold uppercase">
+            <SelectItem
+              value="medium"
+              className="text-[10px] font-bold uppercase"
+            >
               Medium Intent
             </SelectItem>
             <SelectItem value="low" className="text-[10px] font-bold uppercase">
@@ -114,68 +128,126 @@ export function Filters({
         </Select>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[110px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
+          <SelectTrigger className="w-[130px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
             <div className="flex items-center gap-2">
               <Shield className="h-3 w-3 text-primary/50" />
               <SelectValue placeholder="Status" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl">
+          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[140px]">
             <SelectItem value="all" className="text-[10px] font-bold uppercase">
               All Status
             </SelectItem>
-            <SelectItem value="new" className="text-[10px] font-bold uppercase">New</SelectItem>
-            <SelectItem value="investigating" className="text-[10px] font-bold uppercase">Research</SelectItem>
-            <SelectItem value="replied" className="text-[10px] font-bold uppercase">Replied</SelectItem>
-            <SelectItem value="closed" className="text-[10px] font-bold uppercase">Closed</SelectItem>
-            <SelectItem value="ignored" className="text-[10px] font-bold uppercase">Ignored</SelectItem>
+            <SelectItem value="new" className="text-[10px] font-bold uppercase">
+              New
+            </SelectItem>
+            <SelectItem
+              value="investigating"
+              className="text-[10px] font-bold uppercase"
+            >
+              Research
+            </SelectItem>
+            <SelectItem
+              value="replied"
+              className="text-[10px] font-bold uppercase"
+            >
+              Replied
+            </SelectItem>
+            <SelectItem
+              value="closed"
+              className="text-[10px] font-bold uppercase"
+            >
+              Closed
+            </SelectItem>
+            <SelectItem
+              value="ignored"
+              className="text-[10px] font-bold uppercase"
+            >
+              Ignored
+            </SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={engagementFilter} onValueChange={setEngagementFilter}>
-          <SelectTrigger className="w-[140px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
+          <SelectTrigger className="w-[160px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
             <div className="flex items-center gap-2">
               <Activity className="h-3 w-3 text-primary/50" />
               <SelectValue placeholder="Engagement" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl">
-            <SelectItem value="all" className="text-[10px] font-bold uppercase">Any Engagement</SelectItem>
-            <SelectItem value="engaged" className="text-[10px] font-bold uppercase">Engaged</SelectItem>
-            <SelectItem value="not_engaged" className="text-[10px] font-bold uppercase">Not Engaged</SelectItem>
+          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[140px]">
+            <SelectItem value="all" className="text-[10px] font-bold uppercase">
+              Any Engagement
+            </SelectItem>
+            <SelectItem
+              value="engaged"
+              className="text-[10px] font-bold uppercase"
+            >
+              Engaged
+            </SelectItem>
+            <SelectItem
+              value="not_engaged"
+              className="text-[10px] font-bold uppercase"
+            >
+              Not Engaged
+            </SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={toneFilter} onValueChange={setToneFilter}>
-          <SelectTrigger className="w-[110px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
+          <SelectTrigger className="w-[130px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
             <div className="flex items-center gap-2">
               <Smile className="h-3 w-3 text-primary/50" />
               <SelectValue placeholder="Tone" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl">
-            <SelectItem value="all" className="text-[10px] font-bold uppercase">All Tones</SelectItem>
-            <SelectItem value="positive" className="text-[10px] font-bold uppercase text-green-600">Positive</SelectItem>
-            <SelectItem value="neutral" className="text-[10px] font-bold uppercase">Neutral</SelectItem>
-            <SelectItem value="negative" className="text-[10px] font-bold uppercase text-red-600">Negative</SelectItem>
+          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[120px]">
+            <SelectItem value="all" className="text-[10px] font-bold uppercase">
+              All Tones
+            </SelectItem>
+            <SelectItem
+              value="positive"
+              className="text-[10px] font-bold uppercase text-green-600"
+            >
+              Positive
+            </SelectItem>
+            <SelectItem
+              value="neutral"
+              className="text-[10px] font-bold uppercase"
+            >
+              Neutral
+            </SelectItem>
+            <SelectItem
+              value="negative"
+              className="text-[10px] font-bold uppercase text-red-600"
+            >
+              Negative
+            </SelectItem>
           </SelectContent>
         </Select>
 
-        <Select value={segmentFilter} onValueChange={(value) => {
-          if (value === "add_segment") {
-            onOpenSettings?.();
-            return;
-          }
-          setSegmentFilter(value);
-        }}>
-          <SelectTrigger className="w-[125px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
+        <Select
+          value={segmentFilter}
+          onValueChange={(value) => {
+            if (value === "add_segment") {
+              onOpenSettings?.();
+              return;
+            }
+            setSegmentFilter(value);
+          }}
+        >
+          <SelectTrigger className="w-[145px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
             <div className="flex items-center gap-2">
               <Tag className="h-3 w-3 text-primary/50" />
-              <SelectValue placeholder={segments.length === 0 ? "Add segment" : "Segment"} />
+              <SelectValue
+                placeholder={segments.length === 0 ? "Add segment" : "Segment"}
+              />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl">
-            <SelectItem value="all" className="text-[10px] font-bold uppercase">Any Segment</SelectItem>
+          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[140px]">
+            <SelectItem value="all" className="text-[10px] font-bold uppercase">
+              Any Segment
+            </SelectItem>
             {segments.map((segment) => (
               <SelectItem
                 key={segment}
@@ -200,4 +272,3 @@ export function Filters({
     </>
   );
 }
-
