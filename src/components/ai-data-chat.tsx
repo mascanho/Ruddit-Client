@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -24,13 +23,7 @@ type DataStats = {
   averageRelevance: number;
 };
 
-export function AIDataChat({
-  dataStats,
-  shouldScroll,
-}: {
-  dataStats: DataStats;
-  shouldScroll?: boolean;
-}) {
+export function AIDataChat({ dataStats, shouldScroll }: { dataStats: DataStats; shouldScroll?: boolean }) {
   const { messages, isLoading, addMessage, setIsLoading } = useAIChatStore();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -40,9 +33,7 @@ export function AIDataChat({
 
   const scrollToBottom = () => {
     setTimeout(() => {
-      const scrollViewport = scrollAreaRef.current?.querySelector(
-        "[data-radix-scroll-area-viewport]",
-      );
+      const scrollViewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
       if (scrollViewport) {
         scrollViewport.scrollTop = scrollViewport.scrollHeight;
       } else {
@@ -60,18 +51,16 @@ export function AIDataChat({
   useEffect(() => {
     if (shouldScroll) {
       const immediateScroll = () => {
-        const scrollViewport = scrollAreaRef.current?.querySelector(
-          "[data-radix-scroll-area-viewport]",
-        ) as HTMLElement;
+        const scrollViewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
         if (scrollViewport) {
           scrollViewport.scrollTop = scrollViewport.scrollHeight;
         }
       };
-
+      
       immediateScroll();
       const timeoutId = setTimeout(immediateScroll, 50);
       const timeoutId2 = setTimeout(immediateScroll, 200);
-
+      
       return () => {
         clearTimeout(timeoutId);
         clearTimeout(timeoutId2);
@@ -183,10 +172,7 @@ export function AIDataChat({
         </div>
       </div>
 
-      <ScrollArea
-        ref={scrollAreaRef}
-        className="flex-1 p-4 h-20 overflow-auto max-h-[calc(100vh-200px)]"
-      >
+      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 h-20 overflow-auto max-h-[calc(100vh-200px)]">
         <div className="space-y-6 max-w-3xl mx-auto">
           {messages.map((message, index) => (
             <div
@@ -200,11 +186,10 @@ export function AIDataChat({
               )}
 
               <div
-                className={`max-w-[100%] rounded-xl p-2.5 shadow-sm relative group ${
-                  message.role === "user"
-                    ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
-                    : "bg-muted/50 border border-border/50 rounded-tl-none"
-                }`}
+                className={`max-w-[100%] rounded-xl p-2.5 shadow-sm relative group ${message.role === "user"
+                  ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
+                  : "bg-muted/50 border border-border/50 rounded-tl-none"
+                  }`}
               >
                 <div
                   className={`text-[13px] leading-snug ${message.role === "user" ? "text-white/95" : "text-foreground"}`}
@@ -228,7 +213,7 @@ export function AIDataChat({
                         a: ({ node, href, ...props }) => {
                           // Convert Reddit relative URLs to absolute URLs
                           let processedHref = href;
-                          if (href && href.startsWith("/r/")) {
+                          if (href && href.startsWith('/r/')) {
                             processedHref = `https://reddit.com${href}`;
                           }
                           return (
@@ -305,11 +290,10 @@ export function AIDataChat({
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <p
-                    className={`text-[10px] font-medium ${
-                      message.role === "user"
-                        ? "text-white/60"
-                        : "text-muted-foreground"
-                    }`}
+                    className={`text-[10px] font-medium ${message.role === "user"
+                      ? "text-white/60"
+                      : "text-muted-foreground"
+                      }`}
                   >
                     {message.timestamp.toLocaleTimeString([], {
                       hour: "2-digit",
@@ -318,21 +302,14 @@ export function AIDataChat({
                   </p>
                   <button
                     onClick={() => handleCopy(message.content, index)}
-                    className={`opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-md hover:bg-black/10 ${
-                      message.role === "user"
-                        ? "hover:bg-white/20"
-                        : "hover:bg-black/10"
-                    }`}
+                    className={`opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-md hover:bg-black/10 ${message.role === "user" ? "hover:bg-white/20" : "hover:bg-black/10"
+                      }`}
                     title="Copy message"
                   >
                     {copiedIndex === index ? (
-                      <Check
-                        className={`h-3 w-3 ${message.role === "user" ? "text-white/80" : "text-muted-foreground"}`}
-                      />
+                      <Check className={`h-3 w-3 ${message.role === "user" ? "text-white/80" : "text-muted-foreground"}`} />
                     ) : (
-                      <Copy
-                        className={`h-3 w-3 ${message.role === "user" ? "text-white/60" : "text-muted-foreground"}`}
-                      />
+                      <Copy className={`h-3 w-3 ${message.role === "user" ? "text-white/60" : "text-muted-foreground"}`} />
                     )}
                   </button>
                 </div>
