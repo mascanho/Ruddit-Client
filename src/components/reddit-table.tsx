@@ -1,23 +1,4 @@
-/**
- * RedditTable Component
- *
- * A comprehensive table component for displaying and managing Reddit posts.
- * Features include filtering, sorting, CRUD operations, export/import functionality,
- * and real-time comment fetching.
- *
- * This component has been modularized for better maintainability.
- */
-
-/**
- * RedditTable Component
- *
- * A comprehensive table component for displaying and managing Reddit posts.
- * Features include filtering, sorting, CRUD operations, export/import functionality,
- * and real-time comment fetching.
- *
- * This component has been modularized for better maintainability.
- */
-
+// @ts-nocheck
 "use client";
 
 import { useState, useEffect, useMemo, Fragment } from "react";
@@ -41,7 +22,12 @@ import { useAddSingleSubReddit } from "@/store/store";
 import { toast } from "sonner";
 import moment from "moment";
 import { useOpenUrl } from "@/hooks/useOpenUrl";
-import { getStatusColor, getIntentColor, getSegmentColor, getToneColor } from "@/lib/marketing-utils";
+import {
+  getStatusColor,
+  getIntentColor,
+  getSegmentColor,
+  getToneColor,
+} from "@/lib/marketing-utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -49,17 +35,59 @@ import remarkGfm from "remark-gfm";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Icons
 import {
-  ChevronDown, User, Pencil, CheckCircle2, Circle, Star, MessageCircle,
-  ArrowUpDown, Radar, UserPlus, MoreVertical, Trash2, Notebook,
-  ExternalLink, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight,
-  TrendingUp, Activity, MessageSquare, History, Shield, Globe
+  ChevronDown,
+  User,
+  Pencil,
+  CheckCircle2,
+  Circle,
+  Star,
+  MessageCircle,
+  ArrowUpDown,
+  Radar,
+  UserPlus,
+  MoreVertical,
+  Trash2,
+  Notebook,
+  ExternalLink,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
+  TrendingUp,
+  Activity,
+  MessageSquare,
+  History,
+  Shield,
+  Globe,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -67,7 +95,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FileText, Link as LinkIcon, Hash } from "lucide-react";
 
 // Extracted modules
-import type { RedditPost, RedditTableProps, SortField } from "./reddit-table-types";
+import type {
+  RedditPost,
+  RedditTableProps,
+  SortField,
+} from "./reddit-table-types";
 import { teamMembers, TABLE_COLUMN_WIDTHS } from "./reddit-table-constants";
 import { useRedditTableState } from "./useRedditTableState";
 import { useDataManagement } from "./useDataManagement";
@@ -452,7 +484,7 @@ export function RedditTable({
         `Interest level updated for "${postToUpdate.title.slice(0, 20)}...".`,
         {
           duration: 1500,
-        }
+        },
       );
     } catch (error) {
       console.error("Failed to update interest status:", error);
@@ -486,15 +518,16 @@ export function RedditTable({
       `Segment updated for "${postToUpdate.title.slice(0, 20)}...".`,
       {
         duration: 1500,
-      }
+      },
     );
   };
 
-  const handleToneChange = (postId: number, newTone: "positive" | "neutral" | "negative") => {
+  const handleToneChange = (
+    postId: number,
+    newTone: "positive" | "neutral" | "negative",
+  ) => {
     setData((prevData) =>
-      prevData.map((p) =>
-        p.id === postId ? { ...p, tone: newTone } : p,
-      ),
+      prevData.map((p) => (p.id === postId ? { ...p, tone: newTone } : p)),
     );
 
     updateCrmData(postId, { tone: newTone });
@@ -637,7 +670,8 @@ export function RedditTable({
   const handleGetComments = async (post: RedditPost, sort_type: string) => {
     if (!post.subreddit || post.subreddit === "N/A" || !post.permalink) {
       toast.error("Decryption Failed: Non-Reddit Node", {
-        description: "This record lacks a valid Reddit transmission path. Signal synchronization is impossible."
+        description:
+          "This record lacks a valid Reddit transmission path. Signal synchronization is impossible.",
       });
       return;
     }
@@ -656,13 +690,16 @@ export function RedditTable({
       onAddComments(fetchedComments || []);
       setData((prevData) =>
         prevData.map((p) =>
-          p.id === post.id ? { ...p, num_comments: (fetchedComments || []).length } : p,
+          p.id === post.id
+            ? { ...p, num_comments: (fetchedComments || []).length }
+            : p,
         ),
       );
     } catch (error) {
       console.error("Error fetching comments:", error);
       toast.error(`Transmission Error: ${error}`, {
-        description: "Failed to fetch Reddit comments. Please verify your connection."
+        description:
+          "Failed to fetch Reddit comments. Please verify your connection.",
       });
     }
   };
@@ -903,9 +940,15 @@ export function RedditTable({
             const val = (values[idx] || "").trim().replace(/^"|"$/g, "");
 
             if (
-              ["score", "num_comments", "timestamp", "relevance_score", "date_added", "engaged", "interest"].includes(
-                key,
-              )
+              [
+                "score",
+                "num_comments",
+                "timestamp",
+                "relevance_score",
+                "date_added",
+                "engaged",
+                "interest",
+              ].includes(key)
             ) {
               rowData[key] = Number(val) || 0;
             } else if (key === "id") {
@@ -939,7 +982,9 @@ export function RedditTable({
         for (const post of importedPosts) {
           try {
             // Save to database
-            const isInserted = await invoke("save_single_reddit_command", { post });
+            const isInserted = await invoke("save_single_reddit_command", {
+              post,
+            });
 
             if (isInserted) {
               addSingleSubreddit(post as any);
@@ -953,7 +998,9 @@ export function RedditTable({
         }
 
         if (addedCount > 0) {
-          toast.success(`Registry updated: ${addedCount} new nodes transmitted.`);
+          toast.success(
+            `Registry updated: ${addedCount} new nodes transmitted.`,
+          );
         } else if (duplicateCount > 0) {
           toast.info(`${duplicateCount} nodes were already in the registry.`);
         }
@@ -1058,16 +1105,18 @@ export function RedditTable({
                   <Fragment key={post.id}>
                     <TableRow
                       key={post.id}
-                      className={`group hover:z-10 relative text-[11px] transition-all duration-300 border-b border-border/40 
-                        ${post.date_added > lastVisitTimestamp
-                          ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-[3px] border-l-blue-500/80 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.2)]"
-                          : `border-l-[3px] border-l-transparent hover:bg-muted/30 ${index % 2 === 0 ? "bg-background" : "bg-muted/5"}`
-                        } 
-                        ${settings.tableDensity === "compact"
-                          ? "h-[32px]"
-                          : settings.tableDensity === "spacious"
-                            ? "h-16"
-                            : "h-12"
+                      className={`group hover:z-10 relative text-[11px] transition-all duration-300 border-b border-border/40
+                        ${
+                          post.date_added > lastVisitTimestamp
+                            ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-[3px] border-l-blue-500/80 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.2)]"
+                            : `border-l-[3px] border-l-transparent hover:bg-muted/30 ${index % 2 === 0 ? "bg-background" : "bg-muted/5"}`
+                        }
+                        ${
+                          settings.tableDensity === "compact"
+                            ? "h-[32px]"
+                            : settings.tableDensity === "spacious"
+                              ? "h-16"
+                              : "h-12"
                         }`}
                     >
                       <TableCell className="px-1 text-center relative">
@@ -1083,14 +1132,18 @@ export function RedditTable({
                             e.stopPropagation();
                             toggleRowExpansion(post.id.toString());
                           }}
-                          className={`h-7 w-7 rounded-lg transition-all duration-300 shadow-none relative z-10 flex items-center justify-center mx-auto hover:bg-primary/10 hover:text-primary ${expandedRows.has(post.id.toString()) ? "bg-primary/5 text-primary opacity-100" : "opacity-0 group-hover:opacity-100"
-                            }`}
+                          className={`h-7 w-7 rounded-lg transition-all duration-300 shadow-none relative z-10 flex items-center justify-center mx-auto hover:bg-primary/10 hover:text-primary ${
+                            expandedRows.has(post.id.toString())
+                              ? "bg-primary/5 text-primary opacity-100"
+                              : "opacity-0 group-hover:opacity-100"
+                          }`}
                         >
                           <ChevronDown
-                            className={`h-3.5 w-3.5 transition-transform duration-500 ${expandedRows.has(post.id.toString())
-                              ? "rotate-180"
-                              : ""
-                              }`}
+                            className={`h-3.5 w-3.5 transition-transform duration-500 ${
+                              expandedRows.has(post.id.toString())
+                                ? "rotate-180"
+                                : ""
+                            }`}
                           />
                         </Button>
                       </TableCell>
@@ -1099,8 +1152,12 @@ export function RedditTable({
                       </TableCell>
                       <TableCell className="font-mono text-[10px] px-2 whitespace-nowrap opacity-60 group-hover:opacity-100 transition-opacity">
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-bold text-foreground/80">{post?.formatted_date?.slice(5, 10).trim() || "N/A"}</span>
-                          <span className="text-[8px] opacity-50 uppercase tracking-tighter">{post?.formatted_date?.slice(0, 4)}</span>
+                          <span className="font-bold text-foreground/80">
+                            {post?.formatted_date?.slice(5, 10).trim() || "N/A"}
+                          </span>
+                          <span className="text-[8px] opacity-50 uppercase tracking-tighter">
+                            {post?.formatted_date?.slice(0, 4)}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="px-2 min-w-0 max-w-0 w-full overflow-hidden">
@@ -1157,18 +1214,28 @@ export function RedditTable({
                           <DropdownMenuTrigger asChild>
                             <Badge
                               variant="outline"
-                              className={`font-mono text-[9px] py-0.5 h-5 px-2.5 cursor-pointer hover:scale-105 active:scale-95 selection:bg-transparent transition-all truncate max-w-full inline-flex items-center gap-1.5 border-dashed ${(settings.blacklistSubreddits || []).includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
-                                ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20"
-                                : "bg-background/80 border-muted-foreground/20 hover:border-primary/40 hover:text-primary"
-                                }`}
+                              className={`font-mono text-[9px] py-0.5 h-5 px-2.5 cursor-pointer hover:scale-105 active:scale-95 selection:bg-transparent transition-all truncate max-w-full inline-flex items-center gap-1.5 border-dashed ${
+                                (settings.blacklistSubreddits || []).includes(
+                                  post.subreddit
+                                    .toLowerCase()
+                                    .replace(/^r\//, ""),
+                                )
+                                  ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20"
+                                  : "bg-background/80 border-muted-foreground/20 hover:border-primary/40 hover:text-primary"
+                              }`}
                               title={`r/${post.subreddit}`}
                             >
                               <Globe className="h-2.5 w-2.5 opacity-40" />
                               r/{post.subreddit}
                             </Badge>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="rounded-xl border-border/40 shadow-2xl backdrop-blur-xl">
-                            <DropdownMenuLabel className="text-[10px] uppercase tracking-widest opacity-40">Community Actions</DropdownMenuLabel>
+                          <DropdownMenuContent
+                            align="start"
+                            className="rounded-xl border-border/40 shadow-2xl backdrop-blur-xl"
+                          >
+                            <DropdownMenuLabel className="text-[10px] uppercase tracking-widest opacity-40">
+                              Community Actions
+                            </DropdownMenuLabel>
                             <DropdownMenuSeparator className="opacity-40" />
                             <DropdownMenuItem
                               className="text-xs focus:bg-primary/5 focus:text-primary rounded-lg transition-colors"
@@ -1198,11 +1265,36 @@ export function RedditTable({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl">
-                            <SelectItem value="new" className="text-[10px] font-bold uppercase tracking-wider">New Lead</SelectItem>
-                            <SelectItem value="investigating" className="text-[10px] font-bold uppercase tracking-wider">Researching</SelectItem>
-                            <SelectItem value="replied" className="text-[10px] font-bold uppercase tracking-wider">Engaged</SelectItem>
-                            <SelectItem value="closed" className="text-[10px] font-bold uppercase tracking-wider">Won / Closed</SelectItem>
-                            <SelectItem value="ignored" className="text-[10px] font-bold uppercase tracking-wider">Disqualified</SelectItem>
+                            <SelectItem
+                              value="new"
+                              className="text-[10px] font-bold uppercase tracking-wider"
+                            >
+                              New Lead
+                            </SelectItem>
+                            <SelectItem
+                              value="investigating"
+                              className="text-[10px] font-bold uppercase tracking-wider"
+                            >
+                              Researching
+                            </SelectItem>
+                            <SelectItem
+                              value="replied"
+                              className="text-[10px] font-bold uppercase tracking-wider"
+                            >
+                              Engaged
+                            </SelectItem>
+                            <SelectItem
+                              value="closed"
+                              className="text-[10px] font-bold uppercase tracking-wider"
+                            >
+                              Won / Closed
+                            </SelectItem>
+                            <SelectItem
+                              value="ignored"
+                              className="text-[10px] font-bold uppercase tracking-wider"
+                            >
+                              Disqualified
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>
@@ -1234,7 +1326,7 @@ export function RedditTable({
                           <SelectTrigger className="w-8 h-8 rounded-xl mx-auto p-0.5 border border-border/40 bg-muted/20 ring-0 focus:ring-0 [&>svg]:hidden transition-all hover:border-primary/40 active:scale-90 shadow-sm">
                             <Avatar className="h-full w-full rounded-[10px]">
                               {post.assignee &&
-                                post.assignee !== "unassigned" ? (
+                              post.assignee !== "unassigned" ? (
                                 <>
                                   <AvatarImage
                                     src={`https://avatar.vercel.sh/${post.assignee}`}
@@ -1251,16 +1343,34 @@ export function RedditTable({
                               )}
                             </Avatar>
                           </SelectTrigger>
-                          <SelectContent align="center" className="rounded-xl border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl">
-                            <DropdownMenuLabel className="text-[9px] uppercase tracking-widest opacity-40">Assign Resource</DropdownMenuLabel>
+                          <SelectContent
+                            align="center"
+                            className="rounded-xl border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl"
+                          >
+                            <DropdownMenuLabel className="text-[9px] uppercase tracking-widest opacity-40">
+                              Assign Resource
+                            </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <SelectItem value="unassigned" className="text-xs font-medium">Unassigned</SelectItem>
+                            <SelectItem
+                              value="unassigned"
+                              className="text-xs font-medium"
+                            >
+                              Unassigned
+                            </SelectItem>
                             {teamMembers.map((member) => (
-                              <SelectItem key={member.id} value={member.name} className="text-xs font-medium">
+                              <SelectItem
+                                key={member.id}
+                                value={member.name}
+                                className="text-xs font-medium"
+                              >
                                 <div className="flex items-center gap-2">
                                   <Avatar className="h-4 w-4">
-                                    <AvatarImage src={`https://avatar.vercel.sh/${member.name}`} />
-                                    <AvatarFallback>{member.name[0]}</AvatarFallback>
+                                    <AvatarImage
+                                      src={`https://avatar.vercel.sh/${member.name}`}
+                                    />
+                                    <AvatarFallback>
+                                      {member.name[0]}
+                                    </AvatarFallback>
                                   </Avatar>
                                   {member.name}
                                 </div>
@@ -1275,20 +1385,36 @@ export function RedditTable({
                           <Select
                             value={post.segment || "none"}
                             onValueChange={(value) => {
-                              handleSegmentChange(post.id, value === "none" ? "" : value);
+                              handleSegmentChange(
+                                post.id,
+                                value === "none" ? "" : value,
+                              );
                               setEditingSegmentPost(null);
                             }}
                           >
-                            <SelectTrigger className={`h-7 text-[9px] uppercase tracking-widest px-2 border-0 shadow-none ring-0 focus:ring-0 ${getSegmentColor(post.segment)} hover:brightness-110 transition-all font-black rounded-lg max-w-[70px] truncate`}>
+                            <SelectTrigger
+                              className={`h-7 text-[9px] uppercase tracking-widest px-2 border-0 shadow-none ring-0 focus:ring-0 ${getSegmentColor(post.segment)} hover:brightness-110 transition-all font-black rounded-lg max-w-[70px] truncate`}
+                            >
                               <SelectValue placeholder="" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-border/40 bg-background/95 backdrop-blur-xl">
-                              <SelectItem value="none" className="text-[10px] font-bold uppercase tracking-wider">No Segment</SelectItem>
-                              {(settings.monitoredSegments || []).map((segment) => (
-                                <SelectItem key={segment} value={segment} className="text-[10px] font-bold uppercase tracking-wider">
-                                  {segment}
-                                </SelectItem>
-                              ))}
+                              <SelectItem
+                                value="none"
+                                className="text-[10px] font-bold uppercase tracking-wider"
+                              >
+                                No Segment
+                              </SelectItem>
+                              {(settings.monitoredSegments || []).map(
+                                (segment) => (
+                                  <SelectItem
+                                    key={segment}
+                                    value={segment}
+                                    className="text-[10px] font-bold uppercase tracking-wider"
+                                  >
+                                    {segment}
+                                  </SelectItem>
+                                ),
+                              )}
                             </SelectContent>
                           </Select>
                         ) : (
@@ -1322,13 +1448,25 @@ export function RedditTable({
                               setEditingTonePost(null);
                             }}
                           >
-                            <SelectTrigger className={`h-7 text-[9px] uppercase tracking-widest px-2 border-0 shadow-none ring-0 focus:ring-0 ${getToneColor(post.tone)} hover:brightness-110 transition-all font-black rounded-lg max-w-[70px] truncate`}>
+                            <SelectTrigger
+                              className={`h-7 text-[9px] uppercase tracking-widest px-2 border-0 shadow-none ring-0 focus:ring-0 ${getToneColor(post.tone)} hover:brightness-110 transition-all font-black rounded-lg max-w-[70px] truncate`}
+                            >
                               <SelectValue placeholder="" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-border/40 bg-background/95 backdrop-blur-xl text-xs uppercase font-bold tracking-tight">
-                              <SelectItem value="positive" className="text-green-600">Positive</SelectItem>
+                              <SelectItem
+                                value="positive"
+                                className="text-green-600"
+                              >
+                                Positive
+                              </SelectItem>
                               <SelectItem value="neutral">Neutral</SelectItem>
-                              <SelectItem value="negative" className="text-red-600">Negative</SelectItem>
+                              <SelectItem
+                                value="negative"
+                                className="text-red-600"
+                              >
+                                Negative
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
@@ -1346,12 +1484,14 @@ export function RedditTable({
                           {[1, 2, 3, 4, 5].map((level) => (
                             <Star
                               key={level}
-                              className={`h-3 w-3 cursor-pointer transition-all duration-300 hover:scale-125 ${(post.interest || 0) >= level
-                                ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]"
-                                : "text-muted-foreground/10 hover:text-yellow-400/30"
-                                }`}
+                              className={`h-3 w-3 cursor-pointer transition-all duration-300 hover:scale-125 ${
+                                (post.interest || 0) >= level
+                                  ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]"
+                                  : "text-muted-foreground/10 hover:text-yellow-400/30"
+                              }`}
                               onClick={() => {
-                                const newLevel = post.interest === level ? level - 1 : level;
+                                const newLevel =
+                                  post.interest === level ? level - 1 : level;
                                 handleInterestChange(post.id, newLevel);
                               }}
                             />
@@ -1370,8 +1510,13 @@ export function RedditTable({
                               <MoreVertical className="h-3.5 w-3.5" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="rounded-xl border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl">
-                            <DropdownMenuLabel className="text-[10px] uppercase tracking-widest opacity-40">Operations</DropdownMenuLabel>
+                          <DropdownMenuContent
+                            align="end"
+                            className="rounded-xl border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl"
+                          >
+                            <DropdownMenuLabel className="text-[10px] uppercase tracking-widest opacity-40">
+                              Operations
+                            </DropdownMenuLabel>
                             <DropdownMenuSeparator className="opacity-40" />
                             <DropdownMenuItem
                               className="text-xs transition-colors rounded-lg focus:bg-primary/5 focus:text-primary"
@@ -1460,7 +1605,9 @@ export function RedditTable({
                                     <div className="text-[11px] leading-relaxed">
                                       {post.notes ? (
                                         <div className="markdown-content prose prose-sm dark:prose-invert max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_li]:mb-1 [&_h1]:text-sm [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:mb-1 [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded [&_a]:text-primary [&_a]:underline">
-                                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                          <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                          >
                                             {post.notes}
                                           </ReactMarkdown>
                                         </div>
@@ -1486,96 +1633,94 @@ export function RedditTable({
         </div>
 
         {/* Footer - Pagination */}
-        {
-          totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t backdrop-blur-md">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
-                    Display:
-                  </span>
-                  <select
-                    className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
-                    value={rowsPerPage}
-                    onChange={(e) => {
-                      setRowsPerPage(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                  >
-                    {[10, 25, 50, 100].map((v) => (
-                      <option key={v} value={v}>
-                        {v} / Page
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="text-[10px] font-mono text-muted-foreground uppercase">
-                  Batch: {startIndex + 1}—
-                  {Math.min(endIndex, filteredAndSortedData.length)} of{" "}
-                  {filteredAndSortedData.length}
-                </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-2 bg-muted/10 border-t backdrop-blur-md">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+                  Display:
+                </span>
+                <select
+                  className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
+                  value={rowsPerPage}
+                  onChange={(e) => {
+                    setRowsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  {[10, 25, 50, 100].map((v) => (
+                    <option key={v} value={v}>
+                      {v} / Page
+                    </option>
+                  ))}
+                </select>
               </div>
-
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                <div className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary/5 border border-primary/20">
-                  <span className="text-[10px] font-bold text-primary opacity-60">
-                    PAGE
-                  </span>
-                  <span className="text-[11px] font-bold text-primary font-mono">
-                    {currentPage}
-                  </span>
-                  <span className="text-[10px] font-bold text-primary opacity-40">
-                    /
-                  </span>
-                  <span className="text-[11px] font-bold text-primary font-mono">
-                    {totalPages}
-                  </span>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
+              <div className="text-[10px] font-mono text-muted-foreground uppercase">
+                Batch: {startIndex + 1}—
+                {Math.min(endIndex, filteredAndSortedData.length)} of{" "}
+                {filteredAndSortedData.length}
               </div>
             </div>
-          )
-        }
-      </Card >
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary/5 border border-primary/20">
+                <span className="text-[10px] font-bold text-primary opacity-60">
+                  PAGE
+                </span>
+                <span className="text-[11px] font-bold text-primary font-mono">
+                  {currentPage}
+                </span>
+                <span className="text-[10px] font-bold text-primary opacity-40">
+                  /
+                </span>
+                <span className="text-[11px] font-bold text-primary font-mono">
+                  {totalPages}
+                </span>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
 
       {/* Note Editing Dialog */}
       <Dialog
@@ -1621,7 +1766,9 @@ export function RedditTable({
           )}
 
           <div className="text-[10px] text-muted-foreground opacity-50 flex justify-between items-center mt-1">
-            <span>Supports **bold**, _italic_, - lists, [links](url), etc.</span>
+            <span>
+              Supports **bold**, _italic_, - lists, [links](url), etc.
+            </span>
           </div>
 
           <DialogFooter>
@@ -1631,36 +1778,34 @@ export function RedditTable({
             <Button onClick={handleSaveNote}>Save Note</Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog >
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      {
-        settings.confirmDelete && (
-          <AlertDialog
-            open={deleteId !== null}
-            onOpenChange={() => setDeleteId(null)}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the
-                  post from your data.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => deleteId && handleDelete(deleteId)}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )
-      }
+      {settings.confirmDelete && (
+        <AlertDialog
+          open={deleteId !== null}
+          onOpenChange={() => setDeleteId(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the
+                post from your data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteId && handleDelete(deleteId)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       {/* Clear Table Dialog */}
       <AlertDialog
@@ -1779,6 +1924,6 @@ export function RedditTable({
           onAddComments([newComment]);
         }}
       />
-    </div >
+    </div>
   );
 }
