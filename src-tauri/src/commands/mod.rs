@@ -36,17 +36,12 @@ pub async fn get_reddit_results(
         AppConfig::default()
     });
 
-    let api_keys = config.api_keys;
-    let client_id = api_keys.reddit_api_id;
-    let client_secret = api_keys.reddit_api_secret;
+    let client_id = config.api_keys.reddit_api_id.clone();
+    let client_secret = config.api_keys.reddit_api_secret.clone();
 
-    // Get token
-    let token = match get_access_token(client_id, client_secret).await {
-        Ok(t) if !t.is_empty() => t,
-        Ok(_) => {
-            eprintln!("Empty access token received");
-            return Err("Reddit API returned an empty token. Please check your Client ID and Secret in settings.".into());
-        }
+    // Get valid token (handles caching internally)
+    let token = match crate::models::search::get_valid_token(&client_id, &client_secret).await {
+        Ok(t) => t,
         Err(e) => {
             eprintln!("Failed to retrieve access token: {:?}", e);
             return Err(format!("Reddit Authentication Failed: {}. Please check your API credentials in settings.", e));

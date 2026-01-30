@@ -98,6 +98,31 @@ impl From<reqwest::Error> for RedditError {
     }
 }
 
+pub async fn get_valid_token(
+    client_id: &str,
+    client_secret: &str,
+) -> Result<String, RedditError> {
+    // Read config to check for cached token
+    let config = api_keys::ConfigDirs::read_config().unwrap_or_default();
+    let current_time = chrono::Utc::now().timestamp();
+    
+    if !config.api_keys.reddit_access_token.is_empty() && config.api_keys.reddit_access_token_expires_at > current_time + 60 {
+        return Ok(config.api_keys.reddit_access_token);
+    }
+
+    println!("Reddit access token expired or missing. Requesting new token...");
+    match get_access_token(client_id.to_string(), client_secret.to_string()).await {
+        Ok((token, expires_in)) => {
+            let mut new_config = api_keys::ConfigDirs::read_config().unwrap_or_default();
+            new_config.api_keys.reddit_access_token = token.clone();
+            new_config.api_keys.reddit_access_token_expires_at = current_time + expires_in;
+            let _ = api_keys::ConfigDirs::save_config(&new_config);
+            Ok(token)
+        }
+        Err(e) => Err(e),
+    }
+}
+
 impl From<&str> for RedditError {
     fn from(s: &str) -> Self {
         RedditError::ParseError(s.to_string())
@@ -143,7 +168,7 @@ impl AppState {
 pub async fn get_access_token(
     client_id: String,
     client_secret: String,
-) -> Result<String, RedditError> {
+) -> Result<(String, i64), RedditError> {
     if client_id == "CHANGE_ME" || client_secret == "CHANGE_ME" {
         let missing = if client_id == "CHANGE_ME" && client_secret == "CHANGE_ME" {
             "Client ID and Secret"
@@ -171,7 +196,9 @@ pub async fn get_access_token(
     let json: serde_json::Value = response.json().await?;
 
     if let Some(token) = json["access_token"].as_str() {
-        Ok(token.to_string())
+        let expires_in = json["expires_in"].as_i64().unwrap_or(3600);
+        println!("Reddit Access Token retrieved successfully. Expires in {}s", expires_in);
+        Ok((token.to_string(), expires_in))
     } else {
         eprintln!("Reddit Token Error (HTTP {}): {:?}", status, json);
         Err(RedditError::TokenExtraction)
@@ -520,11 +547,8 @@ pub async fn get_post_comments(
     let client_secret = api_keys.reddit_api_secret;
 
     // Get token
-    let token = match get_access_token(client_id, client_secret).await {
-        Ok(t) if !t.is_empty() => t,
-        Ok(_) => {
-            return Err("Authorization Error: Reddit API returned an empty buffer. Check your credentials.".into());
-        }
+    let token = match get_valid_token(&client_id, &client_secret).await {
+        Ok(t) => t,
         Err(e) => {
             return Err(format!("Network Protocol Error: Failed to secure access token: {}", e).into());
         }

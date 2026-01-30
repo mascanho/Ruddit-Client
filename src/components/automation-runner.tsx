@@ -101,7 +101,7 @@ export function AutomationRunner() {
         const discoveredSubreddits = new Set<string>();
         const existingSubreddits = new Set((currentSettings.monitoredSubreddits || []).map(s => s.toLowerCase()));
 
-        const chunkSize = 5;
+        const chunkSize = 10;
         for (let i = 0; i < allKeywords.length; i += chunkSize) {
             const chunk = allKeywords.slice(i, i + chunkSize);
             const query = chunk.map(k => `"${k.term}"`).join(" OR ");
@@ -110,7 +110,7 @@ export function AutomationRunner() {
 
             try {
                 const results: PostDataWrapper[] = await invoke("get_reddit_results", {
-                    sortTypes: ["new", "relevance"],
+                    sortTypes: ["new"],
                     query: query
                 });
 
@@ -131,7 +131,7 @@ export function AutomationRunner() {
                 addLog(`Global search failed: ${error}`, "error");
             }
             if (!automationIntervalRef.current) break;
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise(r => setTimeout(r, 3000));
         }
 
         if (discoveredSubreddits.size > 0) {
@@ -169,7 +169,7 @@ export function AutomationRunner() {
             if (!automationIntervalRef.current) break;
             addLog(`Scanning r/${subreddit} for all monitored keywords...`, "info");
 
-            const chunkSize = 8;
+            const chunkSize = 20;
             for (let i = 0; i < allKeywords.length; i += chunkSize) {
                 if (!automationIntervalRef.current) break;
                 const chunk = allKeywords.slice(i, i + chunkSize);
@@ -177,7 +177,7 @@ export function AutomationRunner() {
 
                 try {
                     const results: PostDataWrapper[] = await invoke("get_reddit_results", {
-                        sortTypes: ["new", "relevance"],
+                        sortTypes: ["new"],
                         query: query
                     });
                     const relevantPosts = processAndFilterPosts(results, `r/${subreddit} search`);
@@ -189,7 +189,7 @@ export function AutomationRunner() {
                     console.error(`Search failed for ${query}`, error);
                     addLog(`Search failed in r/${subreddit}: ${error}`, "error");
                 }
-                await new Promise(r => setTimeout(r, 1500));
+                await new Promise(r => setTimeout(r, 3000));
             }
         }
     };

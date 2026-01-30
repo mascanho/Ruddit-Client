@@ -74,6 +74,9 @@ pub struct ApiKeys {
     #[serde(default)]
     #[serde(alias = "REDDIT_ACCESS_TOKEN")]
     pub reddit_access_token: String,
+    #[serde(default)]
+    #[serde(alias = "REDDIT_ACCESS_TOKEN_EXPIRES_AT")]
+    pub reddit_access_token_expires_at: i64,
 
     #[serde(default)]
     #[serde(alias = "REPLY_PREAMBLE")]
@@ -116,6 +119,7 @@ impl Default for ApiKeys {
             reddit_password: "".to_string(),
             reddit_refresh_token: "".to_string(),
             reddit_access_token: "".to_string(),
+            reddit_access_token_expires_at: 0,
             reply_preamble: "You are a helpful and knowledgeable assistant. Draft a helpful, relevant, and polite reply to the following Reddit post.".to_string(),
         }
     }
