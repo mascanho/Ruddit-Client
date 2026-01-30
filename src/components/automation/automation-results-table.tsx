@@ -10,7 +10,7 @@ import {
   User,
   UserPlus,
   Radar,
-  MessageCircle,
+  MessageSquare,
   ExternalLink,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -63,6 +63,7 @@ interface AutomationResultsTableProps {
 
 const MemoizedResultRow = React.memo(({
   post,
+  index,
   isSelected,
   isTracked,
   togglePostSelection,
@@ -78,6 +79,7 @@ const MemoizedResultRow = React.memo(({
   keywordCategoriesForHighlighting
 }: {
   post: PostDataWrapper;
+  index: number;
   isSelected: boolean;
   isTracked: boolean;
   togglePostSelection: (id: number) => void;
@@ -93,7 +95,7 @@ const MemoizedResultRow = React.memo(({
   keywordCategoriesForHighlighting: KeywordCategory[];
 }) => {
   return (
-    <tr className="border-b hover:bg-muted/50 transition-colors group">
+    <tr className={`border-b transition-colors group ${index % 2 === 0 ? "bg-muted/30" : "bg-background"} hover:bg-muted/50`}>
       <td className="w-8 pl-3 pr-1">
         <Checkbox
           checked={isSelected}
@@ -250,14 +252,14 @@ const MemoizedResultRow = React.memo(({
               handleGetComments(post, post.sort_type)
             }
             title="View Comments"
-            className="h-6 w-6 p-0 justify-center hover:bg-blue-500 hover:text-white text-muted-foreground"
+            className="h-6 w-6 p-0 justify-center hover:bg-primary/10 hover:text-primary text-muted-foreground/60 transition-colors"
           >
-            <MessageCircle className="h-4 w-4" />
+            <MessageSquare className="h-4 w-4" />
           </CustomButton>
           <CustomButton
             onClick={() => handleAddToTracking(post)}
             title="Add to Tracking"
-            className="h-6 w-6 p-0 justify-center hover:bg-primary hover:text-primary-foreground text-muted-foreground"
+            className="h-6 w-6 p-0 justify-center hover:bg-primary/10 hover:text-primary text-muted-foreground/60 transition-colors"
           >
             <Plus className="h-4 w-4" />
           </CustomButton>
@@ -397,10 +399,11 @@ export function AutomationResultsTable({
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSortedPosts.map((post) => (
+                {filteredAndSortedPosts.map((post, index) => (
                   <MemoizedResultRow
                     key={post.id}
                     post={post}
+                    index={index}
                     isSelected={selectedPostIds.has(post.id)}
                     isTracked={trackedPostIds.has(post.id)}
                     togglePostSelection={togglePostSelection}
