@@ -13,19 +13,19 @@ use crate::{
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RedditPost {
-    id: String,
-    title: String,
-    url: String,
-    created_utc: f64,
-    subreddit: String,
-    permalink: String,
-    selftext: Option<String>,
-    name: String,
-    author: String,
-    score: i64,
-    thumbnail: Option<String>,
-    is_self: bool,
-    num_comments: i64,
+    pub id: String,
+    pub title: String,
+    pub url: String,
+    pub created_utc: f64,
+    pub subreddit: String,
+    pub permalink: String,
+    pub selftext: Option<String>,
+    pub name: String,
+    pub author: String,
+    pub score: i64,
+    pub thumbnail: Option<String>,
+    pub is_self: bool,
+    pub num_comments: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -37,30 +37,36 @@ pub enum RedditData {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RedditComment {
-    id: String,
-    body: String,
-    author: String,
-    created_utc: f64,
-    score: i32,
-    permalink: String,
-    parent_id: String,
+    pub id: String,
+    pub body: String,
+    pub author: String,
+    pub created_utc: f64,
+    pub score: i32,
+    pub permalink: String,
+    pub parent_id: String,
     #[serde(default)]
-    replies: serde_json::Value,
+    pub replies: serde_json::Value,
+    // Search result fields
+    pub subreddit: Option<String>,
+    pub link_title: Option<String>,
+    pub link_url: Option<String>,
+    pub link_id: Option<String>,
+    pub link_author: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 struct RedditListingData {
-    children: Vec<RedditListingChild>,
+    pub children: Vec<RedditListingChild>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct RedditListingChild {
-    data: RedditData,
+    pub data: RedditData,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct RedditListing {
-    data: RedditListingData,
+    pub data: RedditListingData,
 }
 
 // Define a custom error type for better error handling
@@ -291,24 +297,42 @@ pub async fn get_subreddit_posts(
 pub async fn search_subreddit_posts(
     access_token: &str,
     query: &str,
-    sort_type: &str, // Renamed from relevance
+    sort_type: &str,
+) -> Result<Vec<PostDataWrapper>, RedditError> {
+    search_reddit(access_token, query, sort_type, None).await
+}
+
+pub async fn search_reddit(
+    access_token: &str,
+    query: &str,
+    sort_type: &str,
+    subreddit: Option<&str>,
 ) -> Result<Vec<PostDataWrapper>, RedditError> {
     let client = Client::new();
     let config = api_keys::ConfigDirs::read_config().unwrap_or_default();
 
-    // Include the sort parameter in the URL
+    let url = match subreddit {
+        Some(sub) => format!(
+            "https://oauth.reddit.com/r/{}/search",
+            sub.trim_start_matches("r/")
+        ),
+        None => "https://oauth.reddit.com/search".to_string(),
+    };
 
-    let url = "https://oauth.reddit.com/search";
-
-    println!("Making request to: {} with q='{}'", url, query); // Debug log
+    println!(
+        "Making search request to: {} with q='{}' type=link,comment",
+        url, query
+    );
 
     let response = client
-        .get(url)
+        .get(&url)
         .query(&[
             ("q", query),
             ("sort", sort_type),
             ("limit", "100"),
             ("t", "all"),
+            ("type", "link,comment"),
+            ("restrict_sr", if subreddit.is_some() { "1" } else { "0" }),
         ])
         .header("Authorization", format!("Bearer {}", access_token))
         .header("User-Agent", "Atalaia/0.1.0 (by /u/Atalaia)")
@@ -317,19 +341,12 @@ pub async fn search_subreddit_posts(
 
     let listing: RedditListing = response.json().await?;
 
-    // Debug: print how many posts were returned
-    println!(
-        "API returned {} posts for sort: {}",
-        listing.data.children.len(),
-        sort_type // Use sort_type here
-    );
-
     let posts: Vec<PostDataWrapper> = listing
         .data
         .children
         .into_iter()
-        .filter_map(|child| {
-            if let RedditData::Post(post) = &child.data {
+        .filter_map(|child| match child.data {
+            RedditData::Post(post) => {
                 let intent = config
                     .api_keys
                     .calculate_intent(&post.title, post.selftext.as_deref());
@@ -340,8 +357,8 @@ pub async fn search_subreddit_posts(
                     timestamp: post.created_utc as i64,
                     formatted_date: database::adding::DB::format_timestamp(post.created_utc as i64)
                         .expect("Failed to format timestamp"),
-                    sort_type: sort_type.to_string(), // Use sort_type
-                    relevance_score: 0, // Default to 0 as no score is available in RedditPost
+                    sort_type: sort_type.to_string(),
+                    relevance_score: 0,
                     subreddit: post.subreddit.clone(),
                     permalink: format!("https://reddit.com{}", post.permalink.clone()),
                     engaged: 0,
@@ -358,16 +375,51 @@ pub async fn search_subreddit_posts(
                     date_added: 0,
                     interest: 0,
                 })
-            } else {
-                None
+            }
+            RedditData::Comment(comment) => {
+                let full_body = comment.body.clone();
+                let intent = config.api_keys.calculate_intent(
+                    &comment.link_title.clone().unwrap_or_default(),
+                    Some(&full_body),
+                );
+
+                Some(PostDataWrapper {
+                    id: i64::from_str_radix(&comment.id, 36).unwrap_or(0),
+                    title: format!(
+                        "Comment on: {}",
+                        comment.link_title.unwrap_or_else(|| "Reddit Post".to_string())
+                    ),
+                    url: comment
+                        .link_url
+                        .unwrap_or_else(|| format!("https://reddit.com{}", comment.permalink)),
+                    timestamp: comment.created_utc as i64,
+                    formatted_date: database::adding::DB::format_timestamp(
+                        comment.created_utc as i64,
+                    )
+                    .expect("Failed to format timestamp"),
+                    sort_type: sort_type.to_string(),
+                    relevance_score: 0,
+                    subreddit: comment.subreddit.unwrap_or_default(),
+                    permalink: format!("https://reddit.com{}", comment.permalink),
+                    engaged: 0,
+                    assignee: "".to_string(),
+                    notes: "".to_string(),
+                    name: format!("t1_{}", comment.id),
+                    selftext: Some(full_body),
+                    author: comment.author.clone(),
+                    score: comment.score as i64,
+                    thumbnail: None,
+                    is_self: true,
+                    num_comments: 0,
+                    intent,
+                    date_added: 0,
+                    interest: 0,
+                })
             }
         })
         .collect();
 
-    println!("Processed {} posts for sort: {}", posts.len(), sort_type);
-    if !posts.is_empty() {
-        println!("Post: {:#?}", &posts[0]);
-    }
+    println!("Processed {} items from search", posts.len());
     Ok(posts)
 }
 

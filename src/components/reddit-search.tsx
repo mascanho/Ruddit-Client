@@ -703,8 +703,8 @@ export function RedditSearch({
                     <div
                       key={result.id}
                       className={`group relative p-3 rounded-lg border transition-all duration-200 h-full ${isTracked
-                          ? "bg-blue-500/5 border-blue-500/30 shadow-[0_0_15px_-5px_rgba(59,130,246,0.1)]"
-                          : "border-border/40 bg-background/50 hover:bg-background hover:border-border/80"
+                        ? "bg-blue-500/5 border-blue-500/30 shadow-[0_0_15px_-5px_rgba(59,130,246,0.1)]"
+                        : "border-border/40 bg-background/50 hover:bg-background hover:border-border/80"
                         }`}
                     >
                       <div className="flex flex-col h-full">
@@ -747,14 +747,6 @@ export function RedditSearch({
                                 </DropdownMenuContent>
                               </DropdownMenu>
 
-                              {isTracked && (
-                                <Badge
-                                  variant="secondary"
-                                  className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[9px] h-4 px-1.5 uppercase font-bold tracking-tighter"
-                                >
-                                  Tracked
-                                </Badge>
-                              )}
                             </div>
 
                             <div className="flex gap-1">
@@ -887,6 +879,15 @@ export function RedditSearch({
                                 </span>
                               </div>
                             </div>
+
+                            {isTracked && (
+                              <Badge
+                                variant="secondary"
+                                className="ml-auto bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[9px] h-4 px-1.5 uppercase font-bold tracking-tighter"
+                              >
+                                Tracked
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>

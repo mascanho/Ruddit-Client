@@ -66,28 +66,50 @@ pub async fn get_reddit_results(
 
         let posts_for_this_sort: Vec<PostDataWrapper>;
 
-        // if query contains "r/" then it's a subreddit search
+        // if query starts with "r/" then it's a subreddit targeted action
         if query.starts_with("r/") {
-            let result = get_subreddit_posts(&token, &query, &sort_type).await;
-            match result {
-                Ok(posts) => {
-                    println!("Found {} posts for sort type: {}", posts.len(), sort_type);
-                    posts_for_this_sort = posts;
-                }
-                Err(e) => {
-                    eprintln!("Failed to fetch {} posts: {:?}", sort_type, e);
-                    continue;
-                }
-            };
+            let parts: Vec<&str> = query.split_whitespace().collect();
+            if parts.len() > 1 {
+                // Specific search within subreddit: "r/sub query"
+                let subreddit = parts[0].trim_start_matches("r/");
+                let sub_query = parts[1..].join(" ");
+                println!("Detected targeted search: Subreddit={}, Query={}", subreddit, sub_query);
+                
+                let result = search::search_reddit(&token, &sub_query, &sort_type, Some(subreddit)).await;
+                match result {
+                    Ok(posts) => {
+                        println!("Found {} results for sort type: {} in r/{}", posts.len(), sort_type, subreddit);
+                        posts_for_this_sort = posts;
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to fetch {} search results in r/{}: {:?}", sort_type, subreddit, e);
+                        continue;
+                    }
+                };
+            } else {
+                // Simple listing fetch: "r/sub"
+                let result = get_subreddit_posts(&token, &query, &sort_type).await;
+                match result {
+                    Ok(posts) => {
+                        println!("Found {} posts for sort type: {}", posts.len(), sort_type);
+                        posts_for_this_sort = posts;
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to fetch {} listing posts: {:?}", sort_type, e);
+                        continue;
+                    }
+                };
+            }
         } else {
+            // Global search
             let result = search_subreddit_posts(&token, &query, &sort_type).await;
             match result {
                 Ok(posts) => {
-                    println!("Found {} posts for sort type: {}", posts.len(), sort_type);
+                    println!("Found {} global results for sort type: {}", posts.len(), sort_type);
                     posts_for_this_sort = posts;
                 }
                 Err(e) => {
-                    eprintln!("Failed to fetch {} posts: {:?}", sort_type, e);
+                    eprintln!("Failed to fetch global {} search results: {:?}", sort_type, e);
                     continue;
                 }
             };
