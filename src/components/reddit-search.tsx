@@ -682,183 +682,199 @@ export function RedditSearch({
                         : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
                   }`}
               >
-                {paginatedResults.map((result) => (
-                  <div
-                    key={result.id}
-                    className="group relative p-3 rounded-lg border border-border/40 bg-background/50 hover:bg-background hover:border-border/80 transition-all duration-200 h-full"
-                  >
-                    <div className="flex flex-col h-full">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Badge
-                                variant="outline"
-                                className={`font-mono text-[9px] py-0 h-4 px-1.5 cursor-pointer hover:bg-accent/50 selection:bg-transparent transition-colors ${(settings.blacklistSubreddits || []).includes(result.subreddit.toLowerCase().replace(/^r\//, ""))
-                                    ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20"
-                                    : "bg-background/50 border-muted-foreground/10"
-                                  }`}
-                              >
-                                r/{result.subreddit}
-                              </Badge>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              <DropdownMenuItem
-                                className="text-xs"
-                                onClick={() =>
-                                  addSubredditToMonitoring(result.subreddit)
-                                }
-                              >
-                                <Radar className="h-4 w-4 mr-2" />
-                                Monitor r/{result.subreddit}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-xs text-destructive focus:text-destructive"
-                                onClick={() =>
-                                  addSubredditToBlacklist(result.subreddit)
-                                }
-                              >
-                                <Plus className="h-4 w-4 mr-2 rotate-45" />
-                                Blacklist r/{result.subreddit}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                {paginatedResults.map((result) => {
+                  const isTracked = subRedditsSaved.some(
+                    (p) => p.id === parseInt(result.id, 10),
+                  );
+                  return (
+                    <div
+                      key={result.id}
+                      className="group relative p-3 rounded-lg border border-border/40 bg-background/50 hover:bg-background hover:border-border/80 transition-all duration-200 h-full"
+                    >
+                      <div className="flex flex-col h-full">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Badge
+                                    variant="outline"
+                                    className={`font-mono text-[9px] py-0 h-4 px-1.5 cursor-pointer hover:bg-accent/50 selection:bg-transparent transition-colors ${(settings.blacklistSubreddits || []).includes(result.subreddit.toLowerCase().replace(/^r\//, ""))
+                                      ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20"
+                                      : "bg-background/50 border-muted-foreground/10"
+                                      }`}
+                                  >
+                                    r/{result.subreddit}
+                                  </Badge>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                  <DropdownMenuItem
+                                    className="text-xs"
+                                    onClick={() =>
+                                      addSubredditToMonitoring(result.subreddit)
+                                    }
+                                  >
+                                    <Radar className="h-4 w-4 mr-2" />
+                                    Monitor r/{result.subreddit}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-xs text-destructive focus:text-destructive"
+                                    onClick={() =>
+                                      addSubredditToBlacklist(result.subreddit)
+                                    }
+                                  >
+                                    <Plus className="h-4 w-4 mr-2 rotate-45" />
+                                    Blacklist r/{result.subreddit}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
 
-                          <div className="flex gap-1">
-                            {result.sort_type?.split(",").map((type) => (
-                              <div
-                                key={type}
-                                className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider text-white ${type === "hot"
-                                  ? "bg-gradient-to-r from-red-500 to-red-600"
-                                  : type === "top"
-                                    ? "bg-gradient-to-r from-blue-500 to-blue-600"
-                                    : "bg-gradient-to-r from-green-500 to-green-600"
-                                  }`}
-                              >
-                                {type}
+                              {isTracked && (
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 text-[9px] h-4 px-1.5 uppercase font-bold tracking-tighter"
+                                >
+                                  Tracked
+                                </Badge>
+                              )}
+                            </div>
+
+                            <div className="flex gap-1">
+                              {result.sort_type?.split(",").map((type) => (
+                                <div
+                                  key={type}
+                                  className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider text-white ${type === "hot"
+                                    ? "bg-gradient-to-r from-red-500 to-red-600"
+                                    : type === "top"
+                                      ? "bg-gradient-to-r from-blue-500 to-blue-600"
+                                      : "bg-gradient-to-r from-green-500 to-green-600"
+                                    }`}
+                                >
+                                  {type}
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center gap-1.5 ml-auto">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+                                      onClick={() =>
+                                        handleGetComments(
+                                          result,
+                                          sortTypeForComments,
+                                        )
+                                      }
+                                    >
+                                      <MessageSquare className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>View Comments</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+                                      onClick={() =>
+                                        handleOpenInBrowser(result.url)
+                                      }
+                                    >
+                                      <ExternalLink className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Open in Browser</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+                                      onClick={() => addToTable(result)}
+                                    >
+                                      <Plus className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Add to Tracking</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <div className="text-[10px] text-muted-foreground/50 font-mono">
+                                {moment(result.formatted_date).fromNow()}
                               </div>
-                            ))}
-                          </div>
-
-                          <div className="flex items-center gap-1.5 ml-auto">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
-                                    onClick={() =>
-                                      handleGetComments(
-                                        result,
-                                        sortTypeForComments,
-                                      )
-                                    }
-                                  >
-                                    <MessageSquare className="h-3.5 w-3.5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>View Comments</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
-                                    onClick={() =>
-                                      handleOpenInBrowser(result.url)
-                                    }
-                                  >
-                                    <ExternalLink className="h-3.5 w-3.5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Open in Browser</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
-                                    onClick={() => addToTable(result)}
-                                  >
-                                    <Plus className="h-3.5 w-3.5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Add to Tracking</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-
-                            <div className="text-[10px] text-muted-foreground/50 font-mono">
-                              {moment(result.formatted_date).fromNow()}
                             </div>
                           </div>
-                        </div>
 
-                        <h4
-                          className="font-bold text-sm leading-tight group-hover:text-primary transition-colors cursor-pointer line-clamp-3"
-                          onClick={() => handleOpenInBrowser(result.url)}
-                        >
-                          <KeywordHighlighter
-                            text={result.title}
-                            searchQuery={query}
-                            brandKeywords={settings.brandKeywords}
-                            competitorKeywords={settings.competitorKeywords}
-                            generalKeywords={settings.monitoredKeywords}
-                          />
-                        </h4>
+                          <h4
+                            className="font-bold text-sm leading-tight group-hover:text-primary transition-colors cursor-pointer line-clamp-3"
+                            onClick={() => handleOpenInBrowser(result.url)}
+                          >
+                            <KeywordHighlighter
+                              text={result.title}
+                              searchQuery={query}
+                              brandKeywords={settings.brandKeywords}
+                              competitorKeywords={settings.competitorKeywords}
+                              generalKeywords={settings.monitoredKeywords}
+                            />
+                          </h4>
 
-                        {result.snippet && (
-                          <p className="text-[11px] text-muted-foreground/70 line-clamp-2 mb-2 leading-relaxed">
-                            {result.snippet}
-                          </p>
-                        )}
-
-                        <div className="flex items-center gap-2.5 mt-1.5">
-                          {result.intent && (
-                            <Badge
-                              className={`${getIntentColor(
-                                result.intent.toLowerCase(),
-                              )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
-                            >
-                              {result.intent.toUpperCase()}
-                            </Badge>
+                          {result.snippet && (
+                            <p className="text-[11px] text-muted-foreground/70 line-clamp-2 mb-2 leading-relaxed">
+                              {result.snippet}
+                            </p>
                           )}
 
-                          <div className="flex items-center gap-3 text-[10px] font-medium text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full border border-border/30">
-                            <div className="flex items-center gap-1">
-                              <ArrowUpDown className="h-2.5 w-2.5" />
-                              <span>{result.score}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Plus className="h-2.5 w-2.5 opacity-50" />
-                              <span>{result.num_comments}</span>
-                            </div>
-                            <div className="flex items-center gap-1 border-l pl-2 border-border/40">
-                              <span className="opacity-50">BY:</span>
-                              <span className="text-foreground/80">
-                                {result.author}
-                              </span>
+                          <div className="flex items-center gap-2.5 mt-1.5">
+                            {result.intent && (
+                              <Badge
+                                className={`${getIntentColor(
+                                  result.intent.toLowerCase(),
+                                )} text-[9px] h-4.5 px-1 font-bold border-0 shadow-none`}
+                              >
+                                {result.intent.toUpperCase()}
+                              </Badge>
+                            )}
+
+                            <div className="flex items-center gap-3 text-[10px] font-medium text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full border border-border/30">
+                              <div className="flex items-center gap-1">
+                                <ArrowUpDown className="h-2.5 w-2.5" />
+                                <span>{result.score}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Plus className="h-2.5 w-2.5 opacity-50" />
+                                <span>{result.num_comments}</span>
+                              </div>
+                              <div className="flex items-center gap-1 border-l pl-2 border-border/40">
+                                <span className="opacity-50">BY:</span>
+                                <span className="text-foreground/80">
+                                  {result.author}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 opacity-30">
