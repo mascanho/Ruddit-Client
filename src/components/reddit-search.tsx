@@ -171,7 +171,8 @@ export function RedditSearch({
   // Stores
   const { settings, updateSettings } = useAppSettings();
   const { setSubreddits, subreddits } = useSubredditsStore();
-  const { addSingleSubreddit, subRedditsSaved } = useAddSingleSubReddit();
+  const { addSingleSubreddit, subRedditsSaved, setSingleSubreddit } =
+    useAddSingleSubReddit();
 
   // Persist state to localStorage
   useEffect(() => {
@@ -248,6 +249,16 @@ export function RedditSearch({
       }
     };
     loadPersistedResults();
+
+    const loadTrackedPosts = async () => {
+      try {
+        const trackedPosts: any = await invoke("get_all_posts");
+        setSingleSubreddit(trackedPosts);
+      } catch (error) {
+        console.error("Error loading tracked posts:", error);
+      }
+    };
+    loadTrackedPosts();
   }, []);
 
   // Handlers
@@ -684,7 +695,9 @@ export function RedditSearch({
               >
                 {paginatedResults.map((result) => {
                   const isTracked = subRedditsSaved.some(
-                    (p) => p.id === parseInt(result.id, 10),
+                    (p) =>
+                      String(p.id) === String(result.id) ||
+                      p.url === result.url,
                   );
                   return (
                     <div
