@@ -61,6 +61,214 @@ interface AutomationResultsTableProps {
   addSubredditToBlacklist: (subreddit: string) => void;
 }
 
+const MemoizedResultRow = React.memo(({
+  post,
+  isSelected,
+  isTracked,
+  togglePostSelection,
+  openUrl,
+  handleGetComments,
+  handleAddToTracking,
+  monitoredUsernames,
+  monitoredSubreddits,
+  blacklistSubreddits,
+  addUsernameToMonitoring,
+  addSubredditToMonitoring,
+  addSubredditToBlacklist,
+  keywordCategoriesForHighlighting
+}: {
+  post: PostDataWrapper;
+  isSelected: boolean;
+  isTracked: boolean;
+  togglePostSelection: (id: number) => void;
+  openUrl: (url: string) => void;
+  handleGetComments: (post: PostDataWrapper, sort: string) => void;
+  handleAddToTracking: (post: PostDataWrapper) => void;
+  monitoredUsernames: string[];
+  monitoredSubreddits: string[];
+  blacklistSubreddits: string[];
+  addUsernameToMonitoring: (user: string) => void;
+  addSubredditToMonitoring: (sub: string) => void;
+  addSubredditToBlacklist: (sub: string) => void;
+  keywordCategoriesForHighlighting: KeywordCategory[];
+}) => {
+  return (
+    <tr className="border-b hover:bg-muted/50 transition-colors group">
+      <td className="w-8 pl-3 pr-1">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => togglePostSelection(post.id)}
+          aria-label={`Select ${post.title}`}
+          className="translate-y-[2px]"
+        />
+      </td>
+      <td className="px-1 w-20">
+        <div className="flex flex-col gap-0.5">
+          <span
+            className={`w-fit text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}
+          >
+            {post.intent}
+          </span>
+          {post.category && post.category !== "general" && (
+            <span className="w-fit text-[9px] py-0 px-1 rounded-full bg-secondary text-secondary-foreground">
+              {post.category}
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="p-1.5 font-medium overflow-hidden">
+        <Tooltip delayDuration={300}>
+          <TooltipTrigger asChild>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                post.url && openUrl(post.url);
+              }}
+              className="hover:underline inline-block truncate max-w-full"
+            >
+              {post.title}
+              {isTracked && (
+                <KeywordBadge className="bg-blue-500/10 text-blue-400 border border-blue-500/20 ml-2">
+                  Tracking
+                </KeywordBadge>
+              )}
+            </a>
+          </TooltipTrigger>
+          <TooltipContent
+            className="max-w-md p-3 bg-stone-50 border shadow"
+            side="bottom"
+            align="start"
+          >
+            <div className="text-sm font-semibold text-black ">
+              <HighlightedText
+                text={post.title}
+                categories={keywordCategoriesForHighlighting}
+              />
+            </div>
+            {post.selftext && (
+              <div className="mt-2 border-t border-border pt-2">
+                <p className="text-sm text-foreground/80 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scroll">
+                  <HighlightedText
+                    text={post.selftext}
+                    categories={keywordCategoriesForHighlighting}
+                  />
+                </p>
+              </div>
+            )}
+            <div className="mt-2 border-t border-border pt-2 flex justify-between items-center text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <User className="h-3 w-3" />
+                <span>u/{post.author || "unknown"}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Radar className="h-3 w-3" />
+                <span>r/{post.subreddit}</span>
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </td>
+      <td className="p-1.5 text-muted-foreground text-xs w-36">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <span
+              className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${monitoredUsernames.includes(post.author?.toLowerCase() || "")
+                ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
+                : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
+                }`}
+              title={`u/${post.author || "unknown"}`}
+            >
+              u/{post.author || "unknown"}
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem
+              className="text-xs"
+              onClick={() =>
+                openUrl(`https://www.reddit.com/user/${post.author}/`)
+              }
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              <span>View Profile</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-xs"
+              onClick={() =>
+                post.author && addUsernameToMonitoring(post.author)
+              }
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              <span>Monitor User</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </td>
+      <td className="p-1.5 text-muted-foreground text-xs w-36">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <span
+              className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${monitoredSubreddits.includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
+                ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
+                : blacklistSubreddits.includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+                  : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
+                }`}
+            >
+              r/{post.subreddit}
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem
+              className="text-xs"
+              onClick={() =>
+                addSubredditToMonitoring(post.subreddit)
+              }
+            >
+              <Radar className="h-4 w-4 mr-2" />
+              Monitor r/{post.subreddit}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-xs text-destructive focus:text-destructive"
+              onClick={() =>
+                addSubredditToBlacklist(post.subreddit)
+              }
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Blacklist r/{post.subreddit}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </td>
+      <td className="p-1.5 text-muted-foreground text-xs w-28 whitespace-nowrap">
+        {formatElapsedTime(post.timestamp)}
+      </td>
+      <td className="p-1.5 text-right w-12">
+        <div className="flex items-center justify-end gap-1">
+          <CustomButton
+            onClick={() =>
+              handleGetComments(post, post.sort_type)
+            }
+            title="View Comments"
+            className="h-6 w-6 p-0 justify-center hover:bg-blue-500 hover:text-white text-muted-foreground"
+          >
+            <MessageCircle className="h-4 w-4" />
+          </CustomButton>
+          <CustomButton
+            onClick={() => handleAddToTracking(post)}
+            title="Add to Tracking"
+            className="h-6 w-6 p-0 justify-center hover:bg-primary hover:text-primary-foreground text-muted-foreground"
+          >
+            <Plus className="h-4 w-4" />
+          </CustomButton>
+        </div>
+      </td>
+    </tr>
+  );
+});
+
+MemoizedResultRow.displayName = "MemoizedResultRow";
+
 export function AutomationResultsTable({
   filteredAndSortedPosts,
   searchQuery,
@@ -144,7 +352,7 @@ export function AutomationResultsTable({
           </div>
         ) : (
           <div className="overflow-y-auto flex-1 flex flex-col custom-scroll border rounded-none">
-            <table className="w-full text-xs text-left table-fixed rounded-none">
+            <table className="w-full text-xs text-left table-fixed border-separate border-spacing-0 isolate transform-gpu">
               <thead className="sticky top-0 bg-background z-40 border-b border-border/50">
                 <tr className="border-b font-bold">
                   <th className="w-8 pl-3 pr-1">
@@ -163,17 +371,17 @@ export function AutomationResultsTable({
                   {["Intent", "Title", "Author", "Subreddit"].map((h) => (
                     <th
                       key={h}
-                      className={`p-1.5 font-bold text-xs text-muted-foreground ${h === "Subreddit" ? "w-36" :
-                        h === "Author" ? "w-36" :
+                      className={`p-1.5 font-bold text-xs text-muted-foreground sticky top-0 bg-background z-40 border-b border-border/50 whitespace-nowrap ${h === "Subreddit" ? "w-32" :
+                        h === "Author" ? "w-32" :
                           h === "Intent" ? "w-20" :
-                            h === "Title" ? "w-[40%]" : ""
+                            h === "Title" ? "w-auto" : ""
                         }`}
                     >
                       {h}
                     </th>
                   ))}
                   <th
-                    className="p-1.5 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground w-28"
+                    className="p-1.5 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground w-28 sticky top-0 bg-background z-40 border-b border-border/50"
                     onClick={handleDateSort}
                   >
                     <div className="flex items-center gap-1 font-bold">
@@ -185,182 +393,28 @@ export function AutomationResultsTable({
                       )}
                     </div>
                   </th>
-                  <th className="w-12"></th>
+                  <th className="w-12 sticky top-0 bg-background z-40 border-b border-border/50"></th>
                 </tr>
               </thead>
               <tbody>
                 {filteredAndSortedPosts.map((post) => (
-                  <tr key={post.id} className="border-b hover:bg-muted/50 relative z-0">
-                    <td className="w-8 pl-3 pr-1">
-                      <Checkbox
-                        checked={selectedPostIds.has(post.id)}
-                        onCheckedChange={() => togglePostSelection(post.id)}
-                        aria-label={`Select ${post.title}`}
-                        className="translate-y-[2px]"
-                      />
-                    </td>
-                    <td className="px-1 w-20">
-                      <div className="flex flex-col gap-0.5">
-                        <span
-                          className={`w-fit text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}
-                        >
-                          {post.intent}
-                        </span>
-                        {post.category && post.category !== "general" && (
-                          <span className="w-fit text-[9px] py-0 px-1 rounded-full bg-secondary text-secondary-foreground">
-                            {post.category}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-1.5 font-medium w-full overflow-hidden">
-                      <Tooltip delayDuration={300}>
-                        <TooltipTrigger asChild>
-                          <a
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              post.url && openUrl(post.url);
-                            }}
-                            className="hover:underline inline-block truncate"
-                          >
-                            {post.title}
-                            {trackedPostIds.has(post.id) && (
-                              <KeywordBadge className="bg-blue-500/10 text-blue-400 border border-blue-500/20 ml-2">
-                                Tracking
-                              </KeywordBadge>
-                            )}
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          className="max-w-md p-3 bg-stone-50 border shadow"
-                          side="bottom"
-                          align="start"
-                        >
-                          <div className="text-sm font-semibold text-black ">
-                            <HighlightedText
-                              text={post.title}
-                              categories={keywordCategoriesForHighlighting}
-                            />
-                          </div>
-                          {post.selftext && (
-                            <div className="mt-2 border-t border-border pt-2">
-                              <p className="text-sm text-foreground/80 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scroll">
-                                <HighlightedText
-                                  text={post.selftext}
-                                  categories={keywordCategoriesForHighlighting}
-                                />
-                              </p>
-                            </div>
-                          )}
-                          <div className="mt-2 border-t border-border pt-2 flex justify-between items-center text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              <span>u/{post.author || "unknown"}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Radar className="h-3 w-3" />
-                              <span>r/{post.subreddit}</span>
-                            </div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </td>
-                    <td className="p-1.5 text-muted-foreground text-xs w-36">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <span
-                            className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${monitoredUsernames.includes(post.author?.toLowerCase() || "")
-                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
-                              : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
-                              }`}
-                            title={`u/${post.author || "unknown"}`}
-                          >
-                            u/{post.author || "unknown"}
-                          </span>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem
-                            className="text-xs"
-                            onClick={() =>
-                              openUrl(`https://www.reddit.com/user/${post.author}/`)
-                            }
-                          >
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            <span>View Profile</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-xs"
-                            onClick={() =>
-                              post.author && addUsernameToMonitoring(post.author)
-                            }
-                          >
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            <span>Monitor User</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                    <td className="p-1.5 text-muted-foreground text-xs w-36">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <span
-                            className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${monitoredSubreddits.includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
-                              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
-                              : blacklistSubreddits.includes(post.subreddit.toLowerCase().replace(/^r\//, ""))
-                                ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
-                                : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
-                              }`}
-                          >
-                            r/{post.subreddit}
-                          </span>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem
-                            className="text-xs"
-                            onClick={() =>
-                              addSubredditToMonitoring(post.subreddit)
-                            }
-                          >
-                            <Radar className="h-4 w-4 mr-2" />
-                            Monitor r/{post.subreddit}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-xs text-destructive focus:text-destructive"
-                            onClick={() =>
-                              addSubredditToBlacklist(post.subreddit)
-                            }
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Blacklist r/{post.subreddit}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                    <td className="p-1.5 text-muted-foreground text-xs w-28 whitespace-nowrap">
-                      {formatElapsedTime(post.timestamp)}
-                    </td>
-                    <td className="p-1.5 text-right w-12">
-                      <div className="flex items-center justify-end gap-1">
-                        <CustomButton
-                          onClick={() =>
-                            handleGetComments(post, post.sort_type)
-                          }
-                          title="View Comments"
-                          className="h-6 w-6 p-0 justify-center hover:bg-blue-500 hover:text-white text-muted-foreground"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                        </CustomButton>
-                        <CustomButton
-                          onClick={() => handleAddToTracking(post)}
-                          title="Add to Tracking"
-                          className="h-6 w-6 p-0 justify-center hover:bg-primary hover:text-primary-foreground text-muted-foreground"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </CustomButton>
-                      </div>
-                    </td>
-                  </tr>
+                  <MemoizedResultRow
+                    key={post.id}
+                    post={post}
+                    isSelected={selectedPostIds.has(post.id)}
+                    isTracked={trackedPostIds.has(post.id)}
+                    togglePostSelection={togglePostSelection}
+                    openUrl={openUrl}
+                    handleGetComments={handleGetComments}
+                    handleAddToTracking={handleAddToTracking}
+                    monitoredUsernames={monitoredUsernames}
+                    monitoredSubreddits={monitoredSubreddits}
+                    blacklistSubreddits={blacklistSubreddits}
+                    addUsernameToMonitoring={addUsernameToMonitoring}
+                    addSubredditToMonitoring={addSubredditToMonitoring}
+                    addSubredditToBlacklist={addSubredditToBlacklist}
+                    keywordCategoriesForHighlighting={keywordCategoriesForHighlighting}
+                  />
                 ))}
               </tbody>
             </table>
