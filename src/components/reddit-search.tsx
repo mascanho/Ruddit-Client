@@ -702,7 +702,10 @@ export function RedditSearch({
                   return (
                     <div
                       key={result.id}
-                      className="group relative p-3 rounded-lg border border-border/40 bg-background/50 hover:bg-background hover:border-border/80 transition-all duration-200 h-full"
+                      className={`group relative p-3 rounded-lg border transition-all duration-200 h-full ${isTracked
+                          ? "bg-blue-500/5 border-blue-500/30 shadow-[0_0_15px_-5px_rgba(59,130,246,0.1)]"
+                          : "border-border/40 bg-background/50 hover:bg-background hover:border-border/80"
+                        }`}
                     >
                       <div className="flex flex-col h-full">
                         <div className="flex-1 min-w-0">
@@ -714,7 +717,9 @@ export function RedditSearch({
                                     variant="outline"
                                     className={`font-mono text-[9px] py-0 h-4 px-1.5 cursor-pointer hover:bg-accent/50 selection:bg-transparent transition-colors ${(settings.blacklistSubreddits || []).includes(result.subreddit.toLowerCase().replace(/^r\//, ""))
                                       ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20"
-                                      : "bg-background/50 border-muted-foreground/10"
+                                      : isTracked
+                                        ? "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400"
+                                        : "bg-background/50 border-muted-foreground/10"
                                       }`}
                                   >
                                     r/{result.subreddit}
@@ -745,7 +750,7 @@ export function RedditSearch({
                               {isTracked && (
                                 <Badge
                                   variant="secondary"
-                                  className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 text-[9px] h-4 px-1.5 uppercase font-bold tracking-tighter"
+                                  className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[9px] h-4 px-1.5 uppercase font-bold tracking-tighter"
                                 >
                                   Tracked
                                 </Badge>
