@@ -70,6 +70,9 @@ export function AutomationTab() {
   const [manualBulkComment, setManualBulkComment] = useState("");
   const [bulkProgress, setBulkProgress] = useState(0);
   const [processingStatus, setProcessingStatus] = useState("");
+  const [intentFilter, setIntentFilter] = useState<string[]>(["High", "Medium", "Low"]);
+  const [authorFilter, setAuthorFilter] = useState("");
+
 
   const trackedPostIds = useMemo(
     () => new Set(subRedditsSaved.map((p) => p.id)),
@@ -193,6 +196,20 @@ export function AutomationTab() {
       );
     }
 
+    // Filter by Intent
+    if (intentFilter.length < 3) {
+      postsToProcess = postsToProcess.filter(post =>
+        intentFilter.some(f => f.toLowerCase() === (post.intent || "Low").toLowerCase())
+      );
+    }
+
+    // Filter by Author
+    if (authorFilter) {
+      postsToProcess = postsToProcess.filter(post =>
+        (post.author || "").toLowerCase().includes(authorFilter.toLowerCase())
+      );
+    }
+
     postsToProcess.sort((a, b) => {
       const aVal = a.timestamp || 0;
       const bVal = b.timestamp || 0;
@@ -206,7 +223,7 @@ export function AutomationTab() {
     });
 
     return postsToProcess;
-  }, [foundPosts, sortConfig, searchQuery, settings.blacklistKeywords]);
+  }, [foundPosts, sortConfig, searchQuery, settings.blacklistKeywords, settings.blacklistUsernames, settings.blacklistSubreddits, intentFilter, authorFilter]);
 
   const handleDateSort = () => {
     setSortConfig((currentConfig) => ({
@@ -759,6 +776,10 @@ export function AutomationTab() {
           blacklistUsernames={settings.blacklistUsernames || []}
           addUsernameToMonitoring={addUsernameToMonitoring}
           addUsernameToBlacklist={addUsernameToBlacklist}
+          intentFilter={intentFilter}
+          setIntentFilter={setIntentFilter}
+          authorFilter={authorFilter}
+          setAuthorFilter={setAuthorFilter}
         />
       </div>
       <RedditCommentsView

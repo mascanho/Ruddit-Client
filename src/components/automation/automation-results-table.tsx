@@ -12,6 +12,7 @@ import {
   Radar,
   MessageSquare,
   ExternalLink,
+  Filter,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -61,6 +62,10 @@ interface AutomationResultsTableProps {
   addSubredditToBlacklist: (subreddit: string) => void;
   addUsernameToBlacklist: (username: string) => void;
   blacklistUsernames: string[];
+  intentFilter: string[];
+  setIntentFilter: (filter: string[]) => void;
+  authorFilter: string;
+  setAuthorFilter: (filter: string) => void;
 }
 
 const MemoizedResultRow = React.memo(({
@@ -101,7 +106,7 @@ const MemoizedResultRow = React.memo(({
   keywordCategoriesForHighlighting: KeywordCategory[];
 }) => {
   return (
-    <tr className={`border-b transition-colors group ${index % 2 === 0 ? "bg-muted/30" : "bg-background"} hover:bg-muted/50`}>
+    <tr className={`border-b transition-colors group ${index % 2 === 0 ? "bg-muted/50" : "bg-background"} hover:bg-muted/70`}>
       <td className="w-8 pl-3 pr-1">
         <Checkbox
           checked={isSelected}
@@ -313,6 +318,10 @@ export function AutomationResultsTable({
   addSubredditToBlacklist,
   blacklistUsernames,
   addUsernameToBlacklist,
+  intentFilter,
+  setIntentFilter,
+  authorFilter,
+  setAuthorFilter,
 }: AutomationResultsTableProps) {
   const openUrl = useOpenUrl();
   return (
@@ -389,18 +398,59 @@ export function AutomationResultsTable({
                       className="translate-y-[1px]"
                     />
                   </th>
-                  {["Intent", "Title", "Author", "Subreddit"].map((h) => (
-                    <th
-                      key={h}
-                      className={`p-1.5 font-bold text-xs text-muted-foreground sticky top-0 bg-background z-40 border-b border-border/50 whitespace-nowrap ${h === "Subreddit" ? "w-32" :
-                        h === "Author" ? "w-32" :
-                          h === "Intent" ? "w-20" :
-                            h === "Title" ? "w-auto" : ""
-                        }`}
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  <th className="p-1.5 font-bold text-xs text-muted-foreground sticky top-0 bg-background z-40 border-b border-border/50 w-20">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="flex items-center gap-1 hover:text-foreground transition-colors focus:outline-none">
+                        Intent
+                        <Filter className={`h-3 w-3 ${intentFilter.length < 3 ? "text-primary fill-primary/20" : "opacity-50"}`} />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        {["High", "Medium", "Low"].map((level) => (
+                          <DropdownMenuItem
+                            key={level}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (intentFilter.includes(level)) {
+                                setIntentFilter(intentFilter.filter((l) => l !== level));
+                              } else {
+                                setIntentFilter([...intentFilter, level]);
+                              }
+                            }}
+                            className="text-xs flex items-center gap-2"
+                          >
+                            <Checkbox checked={intentFilter.includes(level)} className="w-3.5 h-3.5" />
+                            {level}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
+                  <th className="p-1.5 font-bold text-xs text-muted-foreground sticky top-0 bg-background z-40 border-b border-border/50 w-auto">
+                    Title
+                  </th>
+                  <th className="p-1.5 font-bold text-xs text-muted-foreground sticky top-0 bg-background z-40 border-b border-border/50 w-36">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="flex items-center gap-1 hover:text-foreground transition-colors focus:outline-none w-full">
+                        Author
+                        <Filter className={`h-3 w-3 ${authorFilter ? "text-primary fill-primary/20" : "opacity-50"}`} />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="p-2 w-48">
+                        <div className="flex items-center gap-2 border rounded-md px-2 py-1 bg-background">
+                          <Search className="h-3 w-3 opacity-50" />
+                          <input
+                            autoFocus
+                            className="flex-1 bg-transparent border-none text-xs focus:outline-none h-6"
+                            placeholder="Filter authors..."
+                            value={authorFilter}
+                            onChange={(e) => setAuthorFilter(e.target.value)}
+                          />
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
+                  <th className="p-1.5 font-bold text-xs text-muted-foreground sticky top-0 bg-background z-40 border-b border-border/50 w-32">
+                    Subreddit
+                  </th>
                   <th
                     className="p-1.5 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground w-28 sticky top-0 bg-background z-40 border-b border-border/50"
                     onClick={handleDateSort}
