@@ -69,6 +69,7 @@ export function AppSettingsDialog({
   const [newUsername, setNewUsername] = useState("");
   const [newBlacklistKeyword, setNewBlacklistKeyword] = useState("");
   const [newBlacklistSubreddit, setNewBlacklistSubreddit] = useState("");
+  const [newBlacklistUsername, setNewBlacklistUsername] = useState("");
   const [newSegment, setNewSegment] = useState("");
 
   const handleReset = () => {
@@ -341,6 +342,38 @@ export function AppSettingsDialog({
     toast({
       title: "Blacklist subreddit removed",
       description: `r/${subreddit} removed from blacklist`,
+    });
+  };
+
+  const addBlacklistUsername = () => {
+    if (!newBlacklistUsername.trim()) return;
+    const cleaned = newBlacklistUsername.trim().toLowerCase();
+    if ((settings.blacklistUsernames || []).includes(cleaned)) {
+      toast({
+        title: "Already blacklisted",
+        description: `u/${cleaned} is already in your blacklist.`,
+      });
+      return;
+    }
+    updateSettings({
+      blacklistUsernames: [...(settings.blacklistUsernames || []), cleaned],
+    });
+    setNewBlacklistUsername("");
+    toast({
+      title: "Blacklist user added",
+      description: `Posts from u/${cleaned} will be filtered out`,
+    });
+  };
+
+  const removeBlacklistUsername = (username: string) => {
+    updateSettings({
+      blacklistUsernames: (settings.blacklistUsernames || []).filter(
+        (u) => u !== username,
+      ),
+    });
+    toast({
+      title: "Blacklist user removed",
+      description: `u/${username} removed from blacklist`,
     });
   };
 
@@ -1279,6 +1312,59 @@ export function AppSettingsDialog({
                       {(settings.blacklistSubreddits || []).length === 0 && (
                         <p className="text-sm text-muted-foreground">
                           No blacklist subreddits added yet
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Blacklist Usernames */}
+                  <div>
+                    <Label className="text-base font-semibold text-red-500">
+                      Blacklist Users
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Filter out posts from these users from all tables
+                    </p>
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        placeholder="e.g., spammer, bot_account"
+                        value={newBlacklistUsername}
+                        onChange={(e) =>
+                          setNewBlacklistUsername(e.target.value)
+                        }
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && addBlacklistUsername()
+                        }
+                      />
+                      <Button
+                        onClick={addBlacklistUsername}
+                        size="icon"
+                        variant="default"
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(settings.blacklistUsernames || []).map((username) => (
+                        <Badge
+                          key={username}
+                          className="px-3 py-1.5 bg-red-100 text-red-800 hover:bg-red-200"
+                        >
+                          u/{username}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 ml-2 hover:bg-transparent text-red-800"
+                            onClick={() => removeBlacklistUsername(username)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ))}
+                      {(settings.blacklistUsernames || []).length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No blacklist users added yet
                         </p>
                       )}
                     </div>

@@ -301,6 +301,9 @@ export function RedditSearch({
     viewFilters,
     viewIntentFilters,
     filterQuery,
+    blacklistUsernames: settings.blacklistUsernames || [],
+    blacklistSubreddits: settings.blacklistSubreddits || [],
+    blacklistKeywords: settings.blacklistKeywords || [],
   });
 
   const handleExportCSV = () => exportToCSV(sortedSubreddits as any);

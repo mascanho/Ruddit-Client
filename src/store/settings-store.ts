@@ -35,6 +35,7 @@ export type AppSettings = {
   monitoredUsernames: string[];
   blacklistKeywords: string[];
   blacklistSubreddits: string[];
+  blacklistUsernames: string[];
 };
 
 const defaultSettings: AppSettings = {
@@ -60,6 +61,7 @@ const defaultSettings: AppSettings = {
   monitoredUsernames: [],
   blacklistKeywords: [],
   blacklistSubreddits: [],
+  blacklistUsernames: [],
 };
 
 const SETTINGS_STORAGE_KEY = "app-settings";

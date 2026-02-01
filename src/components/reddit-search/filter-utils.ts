@@ -14,6 +14,9 @@ export interface FilterOptions {
     viewFilters: SortType[];
     viewIntentFilters: string[];
     filterQuery: string;
+    blacklistUsernames?: string[];
+    blacklistSubreddits?: string[];
+    blacklistKeywords?: string[];
 }
 
 export function filterAndSortResults(
@@ -22,6 +25,35 @@ export function filterAndSortResults(
 ): SearchResult[] {
     return [...results]
         .filter((item) => {
+            // Blacklist filtering - exclude posts from blacklisted users
+            if (options.blacklistUsernames && options.blacklistUsernames.length > 0) {
+                const isUserBlacklisted = options.blacklistUsernames.some(
+                    (user) => item.author?.toLowerCase() === user.toLowerCase()
+                );
+                if (isUserBlacklisted) return false;
+            }
+
+            // Blacklist filtering - exclude posts from blacklisted subreddits
+            if (options.blacklistSubreddits && options.blacklistSubreddits.length > 0) {
+                const isSubredditBlacklisted = options.blacklistSubreddits.some(
+                    (sub) => item.subreddit?.toLowerCase() === sub.toLowerCase()
+                );
+                if (isSubredditBlacklisted) return false;
+            }
+
+            // Blacklist filtering - exclude posts containing blacklisted keywords
+            if (options.blacklistKeywords && options.blacklistKeywords.length > 0) {
+                const textToCheck = [
+                    item.title || "",
+                    item.selftext || "",
+                ].join(" ").toLowerCase();
+
+                const containsBlacklistedKeyword = options.blacklistKeywords.some(
+                    (keyword) => textToCheck.includes(keyword.toLowerCase())
+                );
+                if (containsBlacklistedKeyword) return false;
+            }
+
             const types = (item.sort_type || "").split(",");
             const sortTypeMatch = options.viewFilters.some((filter) =>
                 types.includes(filter)

@@ -96,6 +96,17 @@ export function AutomationTab() {
   // Function to check if post should be filtered out by blacklist
   const isPostBlacklisted = (post: any) => {
     const blacklistKeywords = settings.blacklistKeywords || [];
+    const blacklistUsernames = settings.blacklistUsernames || [];
+
+    // Check for blacklisted users
+    if (
+      blacklistUsernames.some(
+        (user) => post.author?.toLowerCase() === user.toLowerCase(),
+      )
+    ) {
+      return true;
+    }
+
     if (blacklistKeywords.length === 0) return false;
 
     const textToCheck = [
@@ -255,6 +266,20 @@ export function AutomationTab() {
     });
 
     toast.success(`Now monitoring u/${cleaned}`);
+  };
+
+  const addUsernameToBlacklist = (username: string) => {
+    const cleaned = username.trim().toLowerCase();
+    if ((settings.blacklistUsernames || []).includes(cleaned)) {
+      toast.info(`u/${cleaned} is already blacklisted`);
+      return;
+    }
+
+    updateSettings({
+      blacklistUsernames: [...(settings.blacklistUsernames || []), cleaned],
+    });
+
+    toast.success(`u/${cleaned} added to blacklist`);
   };
 
   const savePostToDb = async (post: PostDataWrapper) => {
@@ -671,6 +696,7 @@ export function AutomationTab() {
       keywords: [
         ...(settings.blacklistKeywords || []),
         ...(settings.blacklistSubreddits || []).map((s) => `r/${s}`),
+        ...(settings.blacklistUsernames || []).map((u) => `u/${u}`),
       ],
       className: "bg-red-500/10 text-red-400 border border-red-500/20",
     },
@@ -730,7 +756,9 @@ export function AutomationTab() {
           monitoredSubreddits={settings.monitoredSubreddits}
           blacklistSubreddits={settings.blacklistSubreddits || []}
           monitoredUsernames={settings.monitoredUsernames || []}
+          blacklistUsernames={settings.blacklistUsernames || []}
           addUsernameToMonitoring={addUsernameToMonitoring}
+          addUsernameToBlacklist={addUsernameToBlacklist}
         />
       </div>
       <RedditCommentsView

@@ -59,6 +59,8 @@ interface AutomationResultsTableProps {
   monitoredUsernames: string[];
   addUsernameToMonitoring: (username: string) => void;
   addSubredditToBlacklist: (subreddit: string) => void;
+  addUsernameToBlacklist: (username: string) => void;
+  blacklistUsernames: string[];
 }
 
 const MemoizedResultRow = React.memo(({
@@ -73,9 +75,11 @@ const MemoizedResultRow = React.memo(({
   monitoredUsernames,
   monitoredSubreddits,
   blacklistSubreddits,
+  blacklistUsernames,
   addUsernameToMonitoring,
   addSubredditToMonitoring,
   addSubredditToBlacklist,
+  addUsernameToBlacklist,
   keywordCategoriesForHighlighting
 }: {
   post: PostDataWrapper;
@@ -92,6 +96,8 @@ const MemoizedResultRow = React.memo(({
   addUsernameToMonitoring: (user: string) => void;
   addSubredditToMonitoring: (sub: string) => void;
   addSubredditToBlacklist: (sub: string) => void;
+  addUsernameToBlacklist: (user: string) => void;
+  blacklistUsernames: string[];
   keywordCategoriesForHighlighting: KeywordCategory[];
 }) => {
   return (
@@ -175,9 +181,11 @@ const MemoizedResultRow = React.memo(({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <span
-              className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${monitoredUsernames.includes(post.author?.toLowerCase() || "")
-                ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
-                : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
+              className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${blacklistUsernames.includes(post.author?.toLowerCase() || "")
+                ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+                : monitoredUsernames.includes(post.author?.toLowerCase() || "")
+                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
+                  : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
                 }`}
               title={`u/${post.author || "unknown"}`}
             >
@@ -202,6 +210,15 @@ const MemoizedResultRow = React.memo(({
             >
               <UserPlus className="mr-2 h-4 w-4" />
               <span>Monitor User</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-xs text-destructive focus:text-destructive"
+              onClick={() =>
+                post.author && addUsernameToBlacklist(post.author)
+              }
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              <span>Blacklist User</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -294,6 +311,8 @@ export function AutomationResultsTable({
   monitoredUsernames,
   addUsernameToMonitoring,
   addSubredditToBlacklist,
+  blacklistUsernames,
+  addUsernameToBlacklist,
 }: AutomationResultsTableProps) {
   const openUrl = useOpenUrl();
   return (
@@ -413,9 +432,11 @@ export function AutomationResultsTable({
                     monitoredUsernames={monitoredUsernames}
                     monitoredSubreddits={monitoredSubreddits}
                     blacklistSubreddits={blacklistSubreddits}
+                    blacklistUsernames={blacklistUsernames}
                     addUsernameToMonitoring={addUsernameToMonitoring}
                     addSubredditToMonitoring={addSubredditToMonitoring}
                     addSubredditToBlacklist={addSubredditToBlacklist}
+                    addUsernameToBlacklist={addUsernameToBlacklist}
                     keywordCategoriesForHighlighting={keywordCategoriesForHighlighting}
                   />
                 ))}
