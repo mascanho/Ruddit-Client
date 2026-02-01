@@ -106,7 +106,7 @@ const MemoizedResultRow = React.memo(({
   keywordCategoriesForHighlighting: KeywordCategory[];
 }) => {
   return (
-    <tr className={`border-b transition-colors group ${index % 2 === 0 ? "bg-muted/50" : "bg-background"} hover:bg-muted/70`}>
+    <tr className={`border-b transition-colors group ${index % 2 === 0 ? "bg-black/[0.02] dark:bg-white/[0.04]" : "bg-background"} hover:bg-muted/80`}>
       <td className="w-8 pl-3 pr-1">
         <Checkbox
           checked={isSelected}
