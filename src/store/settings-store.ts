@@ -36,6 +36,8 @@ export type AppSettings = {
   blacklistKeywords: string[];
   blacklistSubreddits: string[];
   blacklistUsernames: string[];
+  highIntentKeywords: string[];
+  mediumIntentKeywords: string[];
 };
 
 const defaultSettings: AppSettings = {
@@ -62,6 +64,17 @@ const defaultSettings: AppSettings = {
   blacklistKeywords: [],
   blacklistSubreddits: [],
   blacklistUsernames: [],
+  highIntentKeywords: [
+    "looking for", "need", "seeking", "in the market for", "shortlist",
+    "recommend", "suggest", "alternative to", "vs", "versus", "comparison",
+    "review", "best", "top", "pricing", "price", "cost", "budget",
+    "license", "subscription", "SaaS", "demo", "trial", "RFP", "RFQ",
+    "business case", "vendor", "provider"
+  ],
+  mediumIntentKeywords: [
+    "issues with", "problem", "error", "question", "anyone used",
+    "thoughts on", "experience with"
+  ],
 };
 
 const SETTINGS_STORAGE_KEY = "app-settings";

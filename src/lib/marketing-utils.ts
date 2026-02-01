@@ -1,61 +1,33 @@
 export type IntentLevel = "high" | "medium" | "low";
 export type KeywordCategory = "brand" | "competitor" | "general";
 
-const HIGH_INTENT_PATTERNS = [
-  // Explicit buying intent
-  /looking for/i,
-  /need (a|an|some)?/i,
-  /seeking/i,
-  /in the market for/i,
-  /shortlist/i,
-
-  // Evaluation & comparison
-  /recommend/i,
-  /suggest/i,
-  /alternative(s)? to/i,
-  /\bvs\b|\bversus\b/i,
-  /comparison/i,
-  /review(s)?/i,
-  /best/i,
-  /top\s?\d+/i,
-
-  // Commercial intent
-  /pricing/i,
-  /price(s)?/i,
-  /cost/i,
-  /budget/i,
-  /licen[cs]e/i,
-  /subscription/i,
-  /SaaS/i,
-
-  // Sales process signals
-  /demo/i,
-  /trial/i,
-  /RFP/i,
-  /RFQ/i,
-  /business case/i,
-  /vendor(s)?/i,
-  /provider(s)?/i,
-];
-
-const MEDIUM_INTENT_PATTERNS = [
-  /issues with/i,
-  /problem/i,
-  /error/i,
-  /question/i,
-  /anyone used/i,
-  /thoughts on/i,
-  /experience with/i,
-];
-
-export function calculateIntent(text: string): IntentLevel {
+export function calculateIntent(
+  text: string,
+  highIntentKeywords: string[],
+  mediumIntentKeywords: string[]
+): IntentLevel {
   const lowerText = text.toLowerCase();
 
-  if (HIGH_INTENT_PATTERNS.some((pattern) => pattern.test(lowerText))) {
+  // Helper to check against keywords with word boundaries
+  const matchesAny = (keywords: string[]) => {
+    return keywords.some((keyword) => {
+      try {
+        const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        // Use word boundaries for cleaner matching
+        const regex = new RegExp(`\\b${escaped}\\b`, "i");
+        return regex.test(lowerText);
+      } catch (e) {
+        // Fallback to simple include if regex fails (shouldn't happen with escape)
+        return lowerText.includes(keyword.toLowerCase());
+      }
+    });
+  };
+
+  if (matchesAny(highIntentKeywords)) {
     return "high";
   }
 
-  if (MEDIUM_INTENT_PATTERNS.some((pattern) => pattern.test(lowerText))) {
+  if (matchesAny(mediumIntentKeywords)) {
     return "medium";
   }
 

@@ -33,6 +33,7 @@ import {
   UserCog,
   Sparkles,
   AlertCircle,
+  Target,
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useToast } from "@/hooks/use-toast";
@@ -70,6 +71,8 @@ export function AppSettingsDialog({
   const [newBlacklistKeyword, setNewBlacklistKeyword] = useState("");
   const [newBlacklistSubreddit, setNewBlacklistSubreddit] = useState("");
   const [newBlacklistUsername, setNewBlacklistUsername] = useState("");
+  const [newHighIntent, setNewHighIntent] = useState("");
+  const [newMediumIntent, setNewMediumIntent] = useState("");
   const [newSegment, setNewSegment] = useState("");
 
   const handleReset = () => {
@@ -377,6 +380,70 @@ export function AppSettingsDialog({
     });
   };
 
+  const addHighIntentKeyword = () => {
+    if (!newHighIntent.trim()) return;
+    const cleaned = newHighIntent.trim().toLowerCase();
+    if ((settings.highIntentKeywords || []).includes(cleaned)) {
+      toast({
+        title: "Already exists",
+        description: `"${cleaned}" is already a high intent keyword.`,
+      });
+      return;
+    }
+    updateSettings({
+      highIntentKeywords: [...(settings.highIntentKeywords || []), cleaned],
+    });
+    setNewHighIntent("");
+    toast({
+      title: "High Intent Keyword Added",
+      description: `"${cleaned}" added to high intent keywords`,
+    });
+  };
+
+  const removeHighIntentKeyword = (keyword: string) => {
+    updateSettings({
+      highIntentKeywords: (settings.highIntentKeywords || []).filter(
+        (k) => k !== keyword,
+      ),
+    });
+    toast({
+      title: "Removed",
+      description: `"${keyword}" removed from high intent keywords`,
+    });
+  };
+
+  const addMediumIntentKeyword = () => {
+    if (!newMediumIntent.trim()) return;
+    const cleaned = newMediumIntent.trim().toLowerCase();
+    if ((settings.mediumIntentKeywords || []).includes(cleaned)) {
+      toast({
+        title: "Already exists",
+        description: `"${cleaned}" is already a medium intent keyword.`,
+      });
+      return;
+    }
+    updateSettings({
+      mediumIntentKeywords: [...(settings.mediumIntentKeywords || []), cleaned],
+    });
+    setNewMediumIntent("");
+    toast({
+      title: "Medium Intent Keyword Added",
+      description: `"${cleaned}" added to medium intent keywords`,
+    });
+  };
+
+  const removeMediumIntentKeyword = (keyword: string) => {
+    updateSettings({
+      mediumIntentKeywords: (settings.mediumIntentKeywords || []).filter(
+        (k) => k !== keyword,
+      ),
+    });
+    toast({
+      title: "Removed",
+      description: `"${keyword}" removed from medium intent keywords`,
+    });
+  };
+
   // API Keys Logic
   const [apiKeys, setApiKeys] = useState({
     reddit_api_id: "",
@@ -520,7 +587,7 @@ export function AppSettingsDialog({
           onValueChange={setActiveTab}
           className="flex-1 overflow-hidden flex flex-col"
         >
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             {/* <TabsTrigger value="appearance" className="text-xs sm:text-sm"> */}
             {/*   <Palette className="h-4 w-4 mr-1.5" /> */}
             {/*   Appearance */}
@@ -540,6 +607,10 @@ export function AppSettingsDialog({
             <TabsTrigger value="monitoring" className="text-xs sm:text-sm">
               <Radar className="h-4 w-4 mr-1.5" />
               Monitor
+            </TabsTrigger>
+            <TabsTrigger value="intent" className="text-xs sm:text-sm">
+              <Target className="h-4 w-4 mr-1.5" />
+              Intent
             </TabsTrigger>
             <TabsTrigger value="llm" className="text-xs sm:text-sm">
               <Sparkles className="h-4 w-4 mr-1.5" />
@@ -1376,6 +1447,114 @@ export function AppSettingsDialog({
                       main page to discover new subreddits and keywords based on
                       your monitored items.
                     </p>
+                  </div>
+                </div>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="intent" className="space-y-6 mt-0">
+              <Card className="p-4">
+                <div className="space-y-6">
+                  {/* High Intent Keywords */}
+                  <div>
+                    <Label className="text-base font-semibold text-rose-500">
+                      High Intent Keywords
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Keywords that indicate strong buying intent or immediate need.
+                    </p>
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        placeholder="e.g., looking for, pricing, vs"
+                        value={newHighIntent}
+                        onChange={(e) => setNewHighIntent(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && addHighIntentKeyword()
+                        }
+                      />
+                      <Button
+                        onClick={addHighIntentKeyword}
+                        size="icon"
+                        variant="default"
+                        className="bg-rose-500 hover:bg-rose-600"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(settings.highIntentKeywords || []).map((keyword) => (
+                        <Badge
+                          key={keyword}
+                          className="px-3 py-1.5 bg-rose-100 text-rose-800 hover:bg-rose-200"
+                        >
+                          {keyword}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 ml-2 hover:bg-transparent text-rose-800"
+                            onClick={() => removeHighIntentKeyword(keyword)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ))}
+                      {(settings.highIntentKeywords || []).length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No high intent keywords defined
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Medium Intent Keywords */}
+                  <div>
+                    <Label className="text-base font-semibold text-orange-500">
+                      Medium Intent Keywords
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Keywords that indicate consideration or problem-solving.
+                    </p>
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        placeholder="e.g., problem with, how to"
+                        value={newMediumIntent}
+                        onChange={(e) => setNewMediumIntent(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && addMediumIntentKeyword()
+                        }
+                      />
+                      <Button
+                        onClick={addMediumIntentKeyword}
+                        size="icon"
+                        variant="default"
+                        className="bg-orange-500 hover:bg-orange-600"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(settings.mediumIntentKeywords || []).map((keyword) => (
+                        <Badge
+                          key={keyword}
+                          className="px-3 py-1.5 bg-orange-100 text-orange-800 hover:bg-orange-200"
+                        >
+                          {keyword}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 ml-2 hover:bg-transparent text-orange-800"
+                            onClick={() => removeMediumIntentKeyword(keyword)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ))}
+                      {(settings.mediumIntentKeywords || []).length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No medium intent keywords defined
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </Card>

@@ -68,7 +68,11 @@ export function AutomationRunner() {
         return posts
             .map(post => {
                 const category = categorizePost(post.title, currentSettings.brandKeywords, currentSettings.competitorKeywords);
-                const intent = calculateIntent(post.title);
+                const intent = calculateIntent(
+                    post.title,
+                    currentSettings.highIntentKeywords || [],
+                    currentSettings.mediumIntentKeywords || []
+                );
                 return { ...post, category, intent: intent.charAt(0).toUpperCase() + intent.slice(1) };
             })
             .filter(post => {
