@@ -14,6 +14,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { KeywordCategory } from "./automation/automation-utils";
+import { calculateIntent, categorizePost } from "@/lib/marketing-utils";
 import { AutomationControlPanel } from "./automation/automation-control-panel";
 import { AutomationSensorsPanel } from "./automation/automation-sensors-panel";
 import {
@@ -147,7 +148,24 @@ export function AutomationTab() {
   };
 
   const filteredAndSortedPosts = useMemo(() => {
-    let postsToProcess = [...foundPosts];
+    let postsToProcess = foundPosts.map(post => {
+      const combinedText = (post.title + " " + (post.selftext || "")).toLowerCase();
+      const intent = calculateIntent(
+        combinedText,
+        settings.highIntentKeywords || [],
+        settings.mediumIntentKeywords || []
+      );
+      const category = categorizePost(
+        combinedText,
+        settings.brandKeywords || [],
+        settings.competitorKeywords || []
+      );
+      return {
+        ...post,
+        intent: intent.charAt(0).toUpperCase() + intent.slice(1),
+        category: category !== "general" ? category : undefined
+      };
+    });
 
     // Filter out blacklisted posts
     postsToProcess = postsToProcess.filter((post) => !isPostBlacklisted(post));
@@ -223,7 +241,20 @@ export function AutomationTab() {
     });
 
     return postsToProcess;
-  }, [foundPosts, sortConfig, searchQuery, settings.blacklistKeywords, settings.blacklistUsernames, settings.blacklistSubreddits, intentFilter, authorFilter]);
+  }, [
+    foundPosts,
+    sortConfig,
+    searchQuery,
+    settings.blacklistKeywords,
+    settings.blacklistUsernames,
+    settings.blacklistSubreddits,
+    settings.highIntentKeywords,
+    settings.mediumIntentKeywords,
+    settings.brandKeywords,
+    settings.competitorKeywords,
+    intentFilter,
+    authorFilter
+  ]);
 
   const handleDateSort = () => {
     setSortConfig((currentConfig) => ({
