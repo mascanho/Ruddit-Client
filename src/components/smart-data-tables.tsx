@@ -116,6 +116,20 @@ export function SmartDataTables() {
     setAllSavedPosts(subRedditsSaved);
   }, [subRedditsSaved]);
 
+  // Handle Ctrl+Shift+R to clear localStorage
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.shiftKey && event.key === "R") {
+        event.preventDefault();
+        localStorage.clear();
+        toast.success("Atalaia was reset to its initial state.");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const handleAddComments = (comments: Message[]) => {
     setMessages((prev) => [...prev, ...comments]);
   };
