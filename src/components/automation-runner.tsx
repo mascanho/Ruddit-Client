@@ -52,6 +52,7 @@ export function AutomationRunner() {
     const runAutomationCycle = async () => {
         addLog("Starting automation cycle...", "info");
         await runMonitoredSubredditScan();
+        await runMonitoredUserScan(); // New: Scan for specific users
         await runGlobalKeywordSearch();
         setLastRun(Date.now());
         addLog("Cycle complete. Waiting for next interval.", "success");
@@ -67,24 +68,74 @@ export function AutomationRunner() {
 
         return posts
             .map(post => {
-                const category = categorizePost(post.title, currentSettings.brandKeywords, currentSettings.competitorKeywords);
+                const combinedText = (post.title + " " + (post.selftext || "")).toLowerCase();
+                const category = categorizePost(combinedText, currentSettings.brandKeywords, currentSettings.competitorKeywords);
                 const intent = calculateIntent(
-                    post.title,
+                    combinedText,
                     currentSettings.highIntentKeywords || [],
                     currentSettings.mediumIntentKeywords || []
                 );
                 return { ...post, category, intent: intent.charAt(0).toUpperCase() + intent.slice(1) };
             })
             .filter(post => {
-                const text = (post.title + " " + (post.selftext || "")).toLowerCase();
+                const combinedText = (post.title + " " + (post.selftext || "")).toLowerCase();
                 const sub = post.subreddit.toLowerCase().replace(/^r\//, "");
-                const isBlacklisted = (currentSettings.blacklistSubreddits || [])
+                const author = (post.author || "").toLowerCase();
+
+                // 1. Blacklist Check: Subreddits
+                const isSubBlacklisted = (currentSettings.blacklistSubreddits || [])
                     .some(b => b.toLowerCase() === sub);
+                if (isSubBlacklisted) return false;
 
-                if (isBlacklisted) return false;
+                // 2. Blacklist Check: Usernames
+                const isAuthorBlacklisted = (currentSettings.blacklistUsernames || [])
+                    .some(u => u.toLowerCase() === author);
+                if (isAuthorBlacklisted) return false;
 
-                return allKeywords.some(k => text.includes(k.toLowerCase()));
+                // 3. Blacklist Check: Keywords (If any keyword in blacklist is found, drop post)
+                const containsBlacklistKeyword = (currentSettings.blacklistKeywords || [])
+                    .some(k => combinedText.includes(k.toLowerCase()));
+                if (containsBlacklistKeyword) return false;
+
+                // 4. Inclusion Check: Must contain at least one monitored keyword
+                // (Note: If we are scanning a monitored user specifically, we might relax this, 
+                // but usually automation is keyword-driven)
+                return allKeywords.some(k => combinedText.includes(k.toLowerCase()));
             });
+    };
+
+    const runMonitoredUserScan = async () => {
+        const currentSettings = settingsRef.current;
+        const monitoredUsernames = currentSettings.monitoredUsernames || [];
+        if (monitoredUsernames.length === 0) return;
+
+        addLog(`Checking signals for ${monitoredUsernames.length} monitored users...`, "info");
+
+        for (const username of monitoredUsernames) {
+            if (!automationIntervalRef.current) break;
+
+            // Search for author's recent activity
+            // We search for both posts and comments if possible, but the API handles searching by author
+            const query = `author:${username}`;
+
+            try {
+                const results: PostDataWrapper[] = await invoke("get_reddit_results", {
+                    sortTypes: ["new"], // For users, we mostly want their "newest" content
+                    query: query,
+                    limitPages: 2
+                });
+
+                const relevantPosts = processAndFilterPosts(results, `u/${username} monitoring`);
+
+                if (relevantPosts.length > 0) {
+                    addFoundPosts(relevantPosts);
+                    addLog(`Found ${relevantPosts.length} new signals from monitored user u/${username}.`, "success");
+                }
+            } catch (error) {
+                addLog(`Failed to scan user u/${username}: ${error}`, "error");
+            }
+            await new Promise(r => setTimeout(r, 2000));
+        }
     };
 
     const runGlobalKeywordSearch = async () => {
@@ -105,17 +156,20 @@ export function AutomationRunner() {
         const discoveredSubreddits = new Set<string>();
         const existingSubreddits = new Set((currentSettings.monitoredSubreddits || []).map(s => s.toLowerCase()));
 
-        const chunkSize = 10;
+        const chunkSize = 5; // Reduced chunk size to give more surface area to each keyword
         for (let i = 0; i < allKeywords.length; i += chunkSize) {
             const chunk = allKeywords.slice(i, i + chunkSize);
-            const query = chunk.map(k => `"${k.term}"`).join(" OR ");
+            // Remove forced quotes to allow broader matching
+            const query = chunk.map(k => k.term).join(" OR ");
 
             addLog(`Searching Globally for: ${chunk.map(k => k.term).join(", ")}...`, "info");
 
             try {
+                // Expanded sort types and added pagination
                 const results: PostDataWrapper[] = await invoke("get_reddit_results", {
-                    sortTypes: ["new"],
-                    query: query
+                    sortTypes: ["relevance", "new", "top", "comments"],
+                    query: query,
+                    limitPages: 3 // Fetch 3 pages (up to 300 results per sort)
                 });
 
                 results.forEach(post => {
@@ -173,16 +227,18 @@ export function AutomationRunner() {
             if (!automationIntervalRef.current) break;
             addLog(`Scanning r/${subreddit} for all monitored keywords...`, "info");
 
-            const chunkSize = 20;
+            const chunkSize = 10; // Reduced chunk size for more thorough subreddit scans
             for (let i = 0; i < allKeywords.length; i += chunkSize) {
                 if (!automationIntervalRef.current) break;
                 const chunk = allKeywords.slice(i, i + chunkSize);
-                const query = `subreddit:${subreddit} (${chunk.map(k => `"${k}"`).join(" OR ")})`;
+                // Remove forced quotes
+                const query = `subreddit:${subreddit} (${chunk.join(" OR ")})`;
 
                 try {
                     const results: PostDataWrapper[] = await invoke("get_reddit_results", {
-                        sortTypes: ["new"],
-                        query: query
+                        sortTypes: ["relevance", "new", "top", "comments"],
+                        query: query,
+                        limitPages: 3
                     });
                     const relevantPosts = processAndFilterPosts(results, `r/${subreddit} search`);
                     if (relevantPosts.length > 0) {

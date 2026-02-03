@@ -19,6 +19,7 @@ export async function performSearch(
         const fetchedPosts: PostDataWrapper[] = await invoke("get_reddit_results", {
             sortTypes: params.sortTypes,
             query: params.query.trim(),
+            limitPages: 1, // Default to 1 page for manual search
         });
 
         const filteredPosts = params.blacklistSubreddits

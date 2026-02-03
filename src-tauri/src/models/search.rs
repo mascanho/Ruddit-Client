@@ -57,6 +57,7 @@ pub struct RedditComment {
 #[derive(Deserialize, Debug, Clone)]
 struct RedditListingData {
     pub children: Vec<RedditListingChild>,
+    pub after: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -224,7 +225,8 @@ struct SubredditChild {
 pub async fn get_subreddit_posts(
     access_token: &str,
     subreddit: &str,
-    sort_type: &str, // Renamed from relevance
+    sort_type: &str,
+    after: Option<&str>,
 ) -> Result<Vec<PostDataWrapper>, RedditError> {
     let client = Client::new();
     let config = api_keys::ConfigDirs::read_config().unwrap_or_default();
@@ -233,9 +235,10 @@ pub async fn get_subreddit_posts(
     let subreddit_clean = subreddit.trim_start_matches("r/");
 
     let url = format!(
-        "https://oauth.reddit.com/r/{}/{}?limit=100",
+        "https://oauth.reddit.com/r/{}/{}?limit=100{}",
         subreddit_clean,
-        sort_type // Use sort_type here
+        sort_type,
+        if let Some(after) = after { format!("&after={}", after) } else { "".to_string() }
     );
 
     println!("Fetching from URL: {}", url);
@@ -326,7 +329,16 @@ pub async fn search_subreddit_posts(
     query: &str,
     sort_type: &str,
 ) -> Result<Vec<PostDataWrapper>, RedditError> {
-    search_reddit(access_token, query, sort_type, None).await
+    search_reddit(access_token, query, sort_type, None, None).await
+}
+
+pub async fn search_reddit_posts_paginated(
+    access_token: &str,
+    query: &str,
+    sort_type: &str,
+    after: Option<&str>,
+) -> Result<(Vec<PostDataWrapper>, Option<String>), RedditError> {
+    search_reddit_paginated(access_token, query, sort_type, None, after).await
 }
 
 pub async fn search_reddit(
@@ -334,7 +346,19 @@ pub async fn search_reddit(
     query: &str,
     sort_type: &str,
     subreddit: Option<&str>,
+    after: Option<&str>,
 ) -> Result<Vec<PostDataWrapper>, RedditError> {
+    let (posts, _) = search_reddit_paginated(access_token, query, sort_type, subreddit, after).await?;
+    Ok(posts)
+}
+
+pub async fn search_reddit_paginated(
+    access_token: &str,
+    query: &str,
+    sort_type: &str,
+    subreddit: Option<&str>,
+    after: Option<&str>,
+) -> Result<(Vec<PostDataWrapper>, Option<String>), RedditError> {
     let client = Client::new();
     let config = api_keys::ConfigDirs::read_config().unwrap_or_default();
 
@@ -360,6 +384,7 @@ pub async fn search_reddit(
             ("t", "all"),
             ("type", "link,comment"),
             ("restrict_sr", if subreddit.is_some() { "1" } else { "0" }),
+            ("after", after.unwrap_or("")),
         ])
         .header("Authorization", format!("Bearer {}", access_token))
         .header("User-Agent", "Atalaia/0.1.0 (by /u/Atalaia)")
@@ -367,6 +392,8 @@ pub async fn search_reddit(
         .await?;
 
     let listing: RedditListing = response.json().await?;
+
+    let after_token = listing.data.after;
 
     let posts: Vec<PostDataWrapper> = listing
         .data
@@ -447,7 +474,7 @@ pub async fn search_reddit(
         .collect();
 
     println!("Processed {} items from search", posts.len());
-    Ok(posts)
+    Ok((posts, after_token))
 }
 
 #[derive(Debug, Deserialize)]

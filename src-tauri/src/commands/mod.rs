@@ -21,13 +21,14 @@ impl From<reqwest::Error> for RedditError {
 
 #[tauri::command]
 pub async fn get_reddit_results(
-    sortTypes: Vec<String>, // Changed parameter name
+    sortTypes: Vec<String>,
     query: String,
+    limit_pages: Option<i32>,
 ) -> Result<Vec<PostDataWrapper>, String> {
-    // Changed return type
+    let pages_to_fetch = limit_pages.unwrap_or(1);
     println!(
-        "Querying Reddit for: '{}' with sortTypes: {:?}",
-        query, sortTypes
+        "Querying Reddit for: '{}' with sortTypes: {:?} (pages={})",
+        query, sortTypes, pages_to_fetch
     );
 
     // Read config
@@ -39,7 +40,7 @@ pub async fn get_reddit_results(
     let client_id = config.api_keys.reddit_api_id.clone();
     let client_secret = config.api_keys.reddit_api_secret.clone();
 
-    // Get valid token (handles caching internally)
+    // Get valid token
     let token = match crate::models::search::get_valid_token(&client_id, &client_secret).await {
         Ok(t) => t,
         Err(e) => {
@@ -48,110 +49,104 @@ pub async fn get_reddit_results(
         }
     };
 
-    // Clear the current search results ONCE before populating with new filtered results
     database::adding::DB::clear_current_search_results().unwrap();
 
     let mut unique_posts_map: std::collections::HashMap<i64, PostDataWrapper> =
         std::collections::HashMap::new();
 
-    // Query Reddit for each sort type - ONE REQUEST PER SORT TYPE
     for sort_type in sortTypes {
-        // Use sortTypes here
         println!("Querying with sort type: {}", sort_type);
 
-        let posts_for_this_sort: Vec<PostDataWrapper>;
-
-        // if query starts with "r/" then it's a subreddit targeted action
-        if query.starts_with("r/") {
-            let parts: Vec<&str> = query.split_whitespace().collect();
-            if parts.len() > 1 {
-                // Specific search within subreddit: "r/sub query"
-                let subreddit = parts[0].trim_start_matches("r/");
-                let sub_query = parts[1..].join(" ");
-                println!("Detected targeted search: Subreddit={}, Query={}", subreddit, sub_query);
-                
-                let result = search::search_reddit(&token, &sub_query, &sort_type, Some(subreddit)).await;
-                match result {
-                    Ok(posts) => {
-                        println!("Found {} results for sort type: {} in r/{}", posts.len(), sort_type, subreddit);
-                        posts_for_this_sort = posts;
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to fetch {} search results in r/{}: {:?}", sort_type, subreddit, e);
-                        continue;
-                    }
-                };
-            } else {
-                // Simple listing fetch: "r/sub"
-                let result = get_subreddit_posts(&token, &query, &sort_type).await;
-                match result {
-                    Ok(posts) => {
-                        println!("Found {} posts for sort type: {}", posts.len(), sort_type);
-                        posts_for_this_sort = posts;
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to fetch {} listing posts: {:?}", sort_type, e);
-                        continue;
-                    }
-                };
+        let mut after_token: Option<String> = None;
+        for page in 0..pages_to_fetch {
+            if page > 0 && after_token.is_none() {
+                break; // No more pages
             }
-        } else {
-            // Global search
-            let result = search_subreddit_posts(&token, &query, &sort_type).await;
-            match result {
-                Ok(posts) => {
-                    println!("Found {} global results for sort type: {}", posts.len(), sort_type);
-                    posts_for_this_sort = posts;
-                }
-                Err(e) => {
-                    eprintln!("Failed to fetch global {} search results: {:?}", sort_type, e);
-                    continue;
-                }
-            };
-        }
+            
+            println!("Fetching page {} for sort type: {}", page + 1, sort_type);
 
-        // Merge logic
-        for mut post in posts_for_this_sort {
-            match unique_posts_map.get_mut(&post.id) {
-                Some(existing_post) => {
-                    // Append sort_type if not already present
-                    // We check purely string containment for simplicity given "hot", "new", "top" don't overlap as substrings
-                    if !existing_post.sort_type.contains(&sort_type) {
-                        existing_post.sort_type =
-                            format!("{},{}", existing_post.sort_type, sort_type);
+            let posts_for_this_page: Vec<PostDataWrapper>;
+            let next_after: Option<String>;
+
+            if query.starts_with("r/") {
+                let parts: Vec<&str> = query.split_whitespace().collect();
+                if parts.len() > 1 {
+                    let subreddit = parts[0].trim_start_matches("r/");
+                    let sub_query = parts[1..].join(" ");
+                    let result = search::search_reddit_paginated(&token, &sub_query, &sort_type, Some(subreddit), after_token.as_deref()).await;
+                    match result {
+                        Ok((posts, after)) => {
+                            posts_for_this_page = posts;
+                            next_after = after;
+                        }
+                        Err(e) => {
+                            eprintln!("Failed search in r/{}: {:?}", subreddit, e);
+                            break;
+                        }
+                    }
+                } else {
+                    let result = get_subreddit_posts(&token, &query, &sort_type, after_token.as_deref()).await;
+                    match result {
+                        Ok(posts) => {
+                            posts_for_this_page = posts;
+                            // get_subreddit_posts listing doesn't return after token in its current simple wrapper
+                            // but we could update it if needed. for now, let's just break after 1 page for non-search listings.
+                            next_after = None; 
+                        }
+                        Err(e) => {
+                            eprintln!("Failed listing fetch: {:?}", e);
+                            break;
+                        }
                     }
                 }
-                None => {
-                    // Ensure the sort_type for the new post is set correctly
-                    post.sort_type = sort_type.clone();
-                    unique_posts_map.insert(post.id, post);
+            } else {
+                let result = search::search_reddit_paginated(&token, &query, &sort_type, None, after_token.as_deref()).await;
+                match result {
+                    Ok((posts, after)) => {
+                        posts_for_this_page = posts;
+                        next_after = after;
+                    }
+                    Err(e) => {
+                        eprintln!("Failed global search: {:?}", e);
+                        break;
+                    }
                 }
+            }
+
+            after_token = next_after;
+
+            for mut post in posts_for_this_page {
+                match unique_posts_map.get_mut(&post.id) {
+                    Some(existing_post) => {
+                        if !existing_post.sort_type.contains(&sort_type) {
+                            existing_post.sort_type = format!("{},{}", existing_post.sort_type, sort_type);
+                        }
+                    }
+                    None => {
+                        post.sort_type = sort_type.clone();
+                        unique_posts_map.insert(post.id, post);
+                    }
+                }
+            }
+            
+            // Small delay between page fetches to be kind to Reddit
+            if pages_to_fetch > 1 && page < pages_to_fetch - 1 {
+                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
             }
         }
     }
 
     let all_fetched_posts: Vec<PostDataWrapper> = unique_posts_map.into_values().collect();
 
-    // HANDLE DB CREATION
     let mut db = database::adding::DB::new().unwrap();
-
     if !all_fetched_posts.is_empty() {
-        // Save to subreddit_search table so it persists for the view
         match db.replace_current_results(&all_fetched_posts) {
-            Ok(_) => {
-                println!(
-                    "Successfully added {} merged unique posts to subreddit_search database",
-                    all_fetched_posts.len()
-                );
-            }
-            Err(e) => {
-                eprintln!("Failed to save posts to database: {}", e);
-            }
+            Ok(_) => println!("Successfully added {} merged unique posts to database", all_fetched_posts.len()),
+            Err(e) => eprintln!("Failed to save posts: {}", e),
         }
     }
 
-    println!("Total posts added to database: {}", all_fetched_posts.len());
-    Ok(all_fetched_posts) // Return the fetched posts
+    Ok(all_fetched_posts)
 }
 
 #[tauri::command]
