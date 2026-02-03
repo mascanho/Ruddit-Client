@@ -140,10 +140,9 @@ const CommentItem = ({
       <div
         className={`
           relative flex gap-3 p-3 transition-all duration-200
-          ${
-            isRoot
-              ? "bg-card border border-border/50 rounded-xl shadow-sm hover:shadow-md hover:border-border/80"
-              : "rounded-lg bg-muted/60 border border-border/20 hover:bg-muted/80 hover:border-border/40"
+          ${isRoot
+            ? "bg-card border border-border/50 rounded-xl shadow-sm hover:shadow-md hover:border-border/80"
+            : "rounded-lg bg-muted/60 border border-border/20 hover:bg-muted/80 hover:border-border/40"
           }
           ${isMonitoredUser ? "ring-1 ring-blue-500/30 bg-blue-50/50 dark:bg-blue-900/20" : ""}
         `}
@@ -155,12 +154,11 @@ const CommentItem = ({
               rounded-full flex items-center justify-center
               text-[10px] font-bold uppercase select-none
               transition-all duration-300
-              ${
-                isMonitoredUser
-                  ? "h-8 w-8 bg-blue-500 text-white shadow-blue-500/20 shadow-lg"
-                  : isRoot
-                    ? "h-8 w-8 bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-border/50"
-                    : "h-6 w-6 bg-muted text-muted-foreground/60"
+              ${isMonitoredUser
+                ? "h-8 w-8 bg-blue-500 text-white shadow-blue-500/20 shadow-lg"
+                : isRoot
+                  ? "h-8 w-8 bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-border/50"
+                  : "h-6 w-6 bg-muted text-muted-foreground/60"
               }
             `}
           >
@@ -181,12 +179,12 @@ const CommentItem = ({
                 openUrl(`https://www.reddit.com/user/${comment.author}/`)
               }
             >
-              u/{comment?.author || "[deleted]"}
+              u/{String(comment?.author || "[deleted]")}
             </span>
 
             {comment.author &&
               comment.author.toLowerCase() ===
-                (comment as any).post_author?.toLowerCase() && (
+              (comment as any).post_author?.toLowerCase() && (
                 <Badge
                   variant="secondary"
                   className="text-[9px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
@@ -242,9 +240,8 @@ const CommentItem = ({
           {/* Body */}
           <KeywordHighlighter
             text={comment?.body || ""}
-            className={`text-sm leading-relaxed break-words whitespace-pre-wrap mb-1.5 ${
-              isRoot ? "text-foreground/90 font-medium" : "text-foreground/90"
-            }`}
+            className={`text-sm leading-relaxed break-words whitespace-pre-wrap mb-1.5 ${isRoot ? "text-foreground/90 font-medium" : "text-foreground/90"
+              }`}
             brandKeywords={settings.brandKeywords}
             competitorKeywords={settings.competitorKeywords}
             generalKeywords={settings.monitoredKeywords}
@@ -504,7 +501,7 @@ export function RedditCommentsView({
                   className="truncate cursor-pointer hover:underline"
                   onClick={() => post?.url && openUrl(post.url)}
                 >
-                  {post?.title}
+                  {String(post?.title || "Reddit Post")}
                 </span>
               </DialogTitle>
               {post && (
@@ -515,7 +512,7 @@ export function RedditCommentsView({
                         variant="outline"
                         className="font-mono text-[10px] py-0 h-5"
                       >
-                        r/{post.subreddit}
+                        r/{String(post.subreddit)}
                       </Badge>
                       {post.author && (
                         <div
@@ -527,7 +524,7 @@ export function RedditCommentsView({
                           }
                         >
                           <User className="h-3 w-3" />
-                          u/{post.author}
+                          u/{String(post.author)}
                         </div>
                       )}
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">

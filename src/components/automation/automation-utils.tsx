@@ -102,7 +102,7 @@ export const HighlightedText = ({
     // Sort matches by start position and then by length (longer first)
     matches.sort((a, b) => {
         if (a.start !== b.start) return a.start - b.start;
-        return b.end - b.end; // Longer matches first
+        return (b.end - b.start) - (a.end - a.start); // Fixed: Longer matches first
     });
 
     // Build highlighted text
@@ -110,18 +110,21 @@ export const HighlightedText = ({
     let lastIndex = 0;
 
     for (const match of matches) {
+        // Skip overlapping matches
+        if (match.start < lastIndex) continue;
+
         // Add text before match
         if (match.start > lastIndex) {
-            parts.push(text.slice(lastIndex, match.start));
+            parts.push(String(text.slice(lastIndex, match.start)));
         }
 
         // Add highlighted match
-        const matchedText = text.slice(match.start, match.end);
+        const matchedText = String(text.slice(match.start, match.end));
         const className = keywordStyleMap.get(match.keyword);
         if (className) {
             parts.push(
                 <mark
-                    key={match.start}
+                    key={`${match.start}-${match.end}`}
                     className={`${className} text-current px-0.5 rounded-sm`}
                 >
                     {matchedText}
@@ -136,7 +139,7 @@ export const HighlightedText = ({
 
     // Add remaining text
     if (lastIndex < text.length) {
-        parts.push(text.slice(lastIndex));
+        parts.push(String(text.slice(lastIndex)));
     }
 
     return <>{parts}</>;

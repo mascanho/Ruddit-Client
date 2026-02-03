@@ -67,12 +67,12 @@ export function AutomationSensorsPanel({
                                                 .slice(0, visibleKeywords)
                                                 .map((k) => (
                                                     <KeywordBadge
-                                                        key={k}
+                                                        key={String(k)}
                                                         className={`${category.className} text-[9px] font-bold px-1.5 py-0 rounded transition-all hover:scale-105`}
                                                         onClick={handleKeywordClick}
-                                                        keyword={k}
+                                                        keyword={String(k)}
                                                     >
-                                                        {k}
+                                                        {String(k)}
                                                     </KeywordBadge>
                                                 ))}
                                             {category.keywords.length > visibleKeywords && (

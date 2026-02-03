@@ -189,10 +189,10 @@ export function AutomationSelectionDialog({
                         <span
                           className={`text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}
                         >
-                          {post.intent}
+                          {String(post.intent || "Low")}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
-                          r/{post.subreddit}
+                          r/{String(post.subreddit)}
                         </span>
                       </div>
                       <a
@@ -203,7 +203,7 @@ export function AutomationSelectionDialog({
                         }}
                         className="text-sm font-medium hover:underline block truncate"
                       >
-                        {post.title}
+                        {String(post.title)}
                       </a>
                       {generatedReplies.has(post.id) && (
                         <div className="mt-2 p-2 bg-muted/30 rounded border border-border/40">

@@ -85,34 +85,29 @@ interface AppSettingsStore {
   resetSettings: () => void;
 }
 
-const useAppSettingsStore = create<AppSettingsStore>((set) => {
-  // Initial load logic
-  let initialSettings = defaultSettings;
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    if (stored) {
-      try {
-        initialSettings = { ...defaultSettings, ...JSON.parse(stored) };
-      } catch (e) {
-        console.error("Failed to parse settings", e);
-      }
-    }
-  }
-
+const useAppSettingsStore = create<AppSettingsStore>((set, get) => {
   return {
-    settings: initialSettings,
-    updateSettings: (newSettings) =>
-      set((state) => {
-        const updated = { ...state.settings, ...newSettings };
-        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
-        return { settings: updated };
-      }),
+    settings: defaultSettings, // Always start with defaults on server
+    updateSettings: (newSettings) => {
+      const currentSettings = get().settings;
+      const updatedSettings = { ...currentSettings, ...newSettings };
+      
+      // Only access localStorage on client
+      if (typeof window !== "undefined") {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updatedSettings));
+      }
+      
+      set({ settings: updatedSettings });
+    },
     resetSettings: () => {
-      localStorage.setItem(
-        SETTINGS_STORAGE_KEY,
-        JSON.stringify(defaultSettings),
-      );
-      return { settings: defaultSettings };
+      // Only access localStorage on client
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          SETTINGS_STORAGE_KEY,
+          JSON.stringify(defaultSettings),
+        );
+      }
+      set({ settings: defaultSettings });
     },
   };
 });
@@ -120,9 +115,19 @@ const useAppSettingsStore = create<AppSettingsStore>((set) => {
 export function useAppSettings() {
   const store = useAppSettingsStore();
 
-  // Hydration fix / Storage listener for multi-tab sync (optional but good)
+  // Hydration fix - load from localStorage only on client side
   useEffect(() => {
-    // Optional: listen to storage events if we wanted multi-tab sync
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsedSettings = JSON.parse(stored);
+          store.updateSettings(parsedSettings);
+        } catch (e) {
+          console.error("Failed to parse settings", e);
+        }
+      }
+    }
   }, []);
 
   return store;

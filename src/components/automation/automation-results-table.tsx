@@ -120,11 +120,11 @@ const MemoizedResultRow = React.memo(({
           <span
             className={`w-fit text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}
           >
-            {post.intent}
+            {String(post.intent || "Low")}
           </span>
           {post.category && post.category !== "general" && (
             <span className="w-fit text-[9px] py-0 px-1 rounded-full bg-secondary text-secondary-foreground">
-              {post.category}
+              {String(post.category)}
             </span>
           )}
         </div>
@@ -140,7 +140,7 @@ const MemoizedResultRow = React.memo(({
               }}
               className="hover:underline inline-block truncate max-w-full"
             >
-              {post.title}
+              {String(post.title)}
               {isTracked && (
                 <KeywordBadge className="bg-blue-500/10 text-blue-400 border border-blue-500/20 ml-2">
                   Tracking
@@ -172,11 +172,11 @@ const MemoizedResultRow = React.memo(({
             <div className="mt-2 border-t border-border pt-2 flex justify-between items-center text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 <User className="h-3 w-3" />
-                <span>u/{post.author || "unknown"}</span>
+                <span>u/{String(post.author || "unknown")}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Radar className="h-3 w-3" />
-                <span>r/{post.subreddit}</span>
+                <span>r/{String(post.subreddit)}</span>
               </div>
             </div>
           </TooltipContent>
@@ -194,7 +194,7 @@ const MemoizedResultRow = React.memo(({
                 }`}
               title={`u/${post.author || "unknown"}`}
             >
-              u/{post.author || "unknown"}
+              u/{String(post.author || "unknown")}
             </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -239,7 +239,7 @@ const MemoizedResultRow = React.memo(({
                   : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
                 }`}
             >
-              r/{post.subreddit}
+              r/{String(post.subreddit)}
             </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">

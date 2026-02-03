@@ -67,7 +67,7 @@ export function SmartDataTables() {
   const [redditPosts, setRedditPosts] = useState<RedditPost[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsDefaultTab, setSettingsDefaultTab] = useState("appearance");
-  const { settings } = useAppSettings();
+  const { settings, resetSettings } = useAppSettings();
 
   const [subredditsModified, setSubredditsModified] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
@@ -116,19 +116,25 @@ export function SmartDataTables() {
     setAllSavedPosts(subRedditsSaved);
   }, [subRedditsSaved]);
 
-  // Handle Ctrl+Shift+R to clear localStorage
+  // Handle Ctrl+Shift+R to clear localStorage and reset app settings
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.ctrlKey && event.shiftKey && event.key === "R") {
         event.preventDefault();
         localStorage.clear();
+        resetSettings();
         toast.success("Atalaia was reset to its initial state.");
+        
+        // Reload the page to apply all changes
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [resetSettings]);
 
   const handleAddComments = (comments: Message[]) => {
     setMessages((prev) => [...prev, ...comments]);

@@ -57,7 +57,7 @@ export function AutomationLogsPanel({
                 className={`flex-1 leading-relaxed ${log.type === "error" ? "text-red-500 font-bold" : log.type === "success" ? "text-green-500" : log.type === "warning" ? "text-yellow-500" : "text-foreground/70"}`}
               >
                 <span className="opacity-40 mr-1">{">"}</span>
-                {log.message}
+                {typeof log.message === 'string' ? log.message : JSON.stringify(log.message)}
               </span>
             </div>
           ))

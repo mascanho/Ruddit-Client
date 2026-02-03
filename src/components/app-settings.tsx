@@ -36,7 +36,8 @@ import {
   Target,
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-import { toast } from "sonner";
+import { toast as sonnerToast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,7 @@ export function AppSettingsDialog({
   defaultTab?: string;
 }) {
   const { settings, updateSettings, resetSettings } = useAppSettings();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   // Update active tab when defaultTab changes
@@ -93,9 +95,9 @@ export function AppSettingsDialog({
       setNewHighIntent("");
       setNewMediumIntent("");
       setNewSegment("");
-      toast.success("Settings reset successfully");
+      sonnerToast.success("Settings reset successfully");
     } catch {
-      toast.error("Failed to reset settings");
+      sonnerToast.error("Failed to reset settings");
     }
   };
 
@@ -1041,7 +1043,7 @@ export function AppSettingsDialog({
                           variant="secondary"
                           className="px-3 py-1.5"
                         >
-                          <span className="font-mono">r/{subreddit}</span>
+                          <span className="font-mono">r/{String(subreddit)}</span>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1088,7 +1090,7 @@ export function AppSettingsDialog({
                           variant="secondary"
                           className="px-3 py-1.5"
                         >
-                          {keyword}
+                          {String(keyword)}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1139,7 +1141,7 @@ export function AppSettingsDialog({
                           key={keyword}
                           className="px-3 py-1.5 bg-blue-100 text-blue-800 hover:bg-blue-200"
                         >
-                          {keyword}
+                          {String(keyword)}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1187,7 +1189,7 @@ export function AppSettingsDialog({
                           key={keyword}
                           className="px-3 py-1.5 bg-orange-100 text-orange-800 hover:bg-orange-200"
                         >
-                          {keyword}
+                          {String(keyword)}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1231,7 +1233,7 @@ export function AppSettingsDialog({
                           key={segment}
                           className="px-3 py-1.5 bg-purple-100 text-purple-800 hover:bg-purple-200"
                         >
-                          {segment}
+                          {String(segment)}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1280,7 +1282,7 @@ export function AppSettingsDialog({
                           key={username}
                           className="px-3 py-1.5 bg-green-100 text-green-800 hover:bg-green-200"
                         >
-                          {username}
+                          {String(username)}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1332,7 +1334,7 @@ export function AppSettingsDialog({
                           key={keyword}
                           className="px-3 py-1.5 bg-red-100 text-red-800 hover:bg-red-200"
                         >
-                          {keyword}
+                          {String(keyword)}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1386,7 +1388,7 @@ export function AppSettingsDialog({
                           key={subreddit}
                           className="px-3 py-1.5 bg-red-100 text-red-800 hover:bg-red-200"
                         >
-                          r/{subreddit}
+                          r/{String(subreddit)}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1439,7 +1441,7 @@ export function AppSettingsDialog({
                           key={username}
                           className="px-3 py-1.5 bg-red-100 text-red-800 hover:bg-red-200"
                         >
-                          u/{username}
+                          u/{String(username)}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1505,7 +1507,7 @@ export function AppSettingsDialog({
                           key={keyword}
                           className="px-3 py-1.5 bg-rose-100 text-rose-800 hover:bg-rose-200"
                         >
-                          {keyword}
+                          {String(keyword)}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1556,7 +1558,7 @@ export function AppSettingsDialog({
                           key={keyword}
                           className="px-3 py-1.5 bg-orange-100 text-orange-800 hover:bg-orange-200"
                         >
-                          {keyword}
+                          {String(keyword)}
                           <Button
                             variant="ghost"
                             size="icon"
