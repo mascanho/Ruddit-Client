@@ -15,8 +15,8 @@
         "title": "Atalaia - 0.0.1",
         "minWidth": 1200,
         "minHeight": 800,
-        "width": 1200,
-        "height": 1100,
+        "width": 1100,
+        "height": 900,
         "resizable": true,
         "fullscreen": false
       }
