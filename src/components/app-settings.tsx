@@ -36,8 +36,7 @@ import {
   Target,
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-import { useToast } from "@/hooks/use-toast";
-import { toast as sonnerToast } from "sonner";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +55,6 @@ export function AppSettingsDialog({
   defaultTab?: string;
 }) {
   const { settings, updateSettings, resetSettings } = useAppSettings();
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   // Update active tab when defaultTab changes
@@ -76,11 +74,29 @@ export function AppSettingsDialog({
   const [newSegment, setNewSegment] = useState("");
 
   const handleReset = () => {
-    resetSettings();
-    toast({
-      title: "Settings reset",
-      description: "All settings have been restored to defaults.",
-    });
+    try {
+      resetSettings();
+      setNewBrandKeyword("");
+      setNewCompetitorKeyword("");
+      setNewUsername("");
+      setNewBlacklistKeyword("");
+      setNewBlacklistSubreddit("");
+      setNewBlacklistUsername("");
+      setNewHighIntent("");
+      setNewMediumIntent("");
+      setNewSegment("");
+
+      setNewUsername("");
+      setNewBlacklistKeyword("");
+      setNewBlacklistSubreddit("");
+      setNewBlacklistUsername("");
+      setNewHighIntent("");
+      setNewMediumIntent("");
+      setNewSegment("");
+      toast.success("Settings reset successfully");
+    } catch {
+      toast.error("Failed to reset settings");
+    }
   };
 
   const addSubreddit = () => {
@@ -318,7 +334,10 @@ export function AppSettingsDialog({
 
   const addBlacklistSubreddit = () => {
     if (!newBlacklistSubreddit.trim()) return;
-    const cleaned = newBlacklistSubreddit.trim().toLowerCase().replace(/^r\//, "");
+    const cleaned = newBlacklistSubreddit
+      .trim()
+      .toLowerCase()
+      .replace(/^r\//, "");
     if ((settings.blacklistSubreddits || []).includes(cleaned)) {
       toast({
         title: "Already blacklisted",
@@ -1195,9 +1214,7 @@ export function AppSettingsDialog({
                         placeholder="e.g., Enterprise, SMB, Technical"
                         value={newSegment}
                         onChange={(e) => setNewSegment(e.target.value)}
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && addSegment()
-                        }
+                        onKeyDown={(e) => e.key === "Enter" && addSegment()}
                       />
                       <Button
                         onClick={addSegment}
@@ -1288,15 +1305,14 @@ export function AppSettingsDialog({
                       Blacklist Keywords
                     </Label>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Filter out posts containing these keywords from automation results
+                      Filter out posts containing these keywords from automation
+                      results
                     </p>
                     <div className="flex gap-2 mb-3">
                       <Input
                         placeholder="e.g., spam, nsfw, off-topic"
                         value={newBlacklistKeyword}
-                        onChange={(e) =>
-                          setNewBlacklistKeyword(e.target.value)
-                        }
+                        onChange={(e) => setNewBlacklistKeyword(e.target.value)}
                         onKeyDown={(e) =>
                           e.key === "Enter" && addBlacklistKeyword()
                         }
@@ -1341,7 +1357,8 @@ export function AppSettingsDialog({
                       Blacklist Subreddits
                     </Label>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Filter out posts from these subreddits from automation results
+                      Filter out posts from these subreddits from automation
+                      results
                     </p>
                     <div className="flex gap-2 mb-3">
                       <Input
@@ -1461,7 +1478,8 @@ export function AppSettingsDialog({
                       High Intent Keywords
                     </Label>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Keywords that indicate strong buying intent or immediate need.
+                      Keywords that indicate strong buying intent or immediate
+                      need.
                     </p>
                     <div className="flex gap-2 mb-3">
                       <Input
@@ -1658,7 +1676,10 @@ export function AppSettingsDialog({
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select Model" />
                           </SelectTrigger>
-                          <SelectContent position="popper" className="!z-[10000]">
+                          <SelectContent
+                            position="popper"
+                            className="!z-[10000]"
+                          >
                             {availableModels.map((model) => (
                               <SelectItem key={model} value={model}>
                                 {model}
@@ -1740,7 +1761,10 @@ export function AppSettingsDialog({
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select Model" />
                           </SelectTrigger>
-                          <SelectContent position="popper" className="!z-[10000]">
+                          <SelectContent
+                            position="popper"
+                            className="!z-[10000]"
+                          >
                             {availableModels.map((model) => (
                               <SelectItem key={model} value={model}>
                                 {model}
@@ -1762,7 +1786,8 @@ export function AppSettingsDialog({
                       Reply Preamble
                     </Label>
                     <p className="text-sm text-muted-foreground mb-3">
-                      System instruction used when generating replies to Reddit posts. This guides the AI's tone and approach.
+                      System instruction used when generating replies to Reddit
+                      posts. This guides the AI's tone and approach.
                     </p>
                     <Textarea
                       placeholder="You are a helpful and knowledgeable assistant..."
@@ -1879,11 +1904,15 @@ function RedditAuthConfig() {
     <Card className="p-4 space-y-4">
       <Alert className="bg-blue-500/15 border-blue-500/20 text-blue-700 dark:text-blue-400">
         <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-        <AlertTitle className="text-blue-700 dark:text-blue-400 mb-2">Configuration Update</AlertTitle>
+        <AlertTitle className="text-blue-700 dark:text-blue-400 mb-2">
+          Configuration Update
+        </AlertTitle>
         <AlertDescription>
-          For optimal compatibility, please ensure your Reddit App is set to <strong>"web app"</strong> type.
+          For optimal compatibility, please ensure your Reddit App is set to{" "}
+          <strong>"web app"</strong> type.
           <br />
-          Set Redirect URI to: <code className="bg-muted px-1 rounded">http://localhost:8989</code>
+          Set Redirect URI to:{" "}
+          <code className="bg-muted px-1 rounded">http://localhost:8989</code>
         </AlertDescription>
       </Alert>
 
@@ -1929,7 +1958,12 @@ function RedditAuthConfig() {
               />
             </div>
             {/* Save basic credentials first before auth flow */}
-            <Button onClick={handleSave} disabled={isSaving} className="w-full" variant="secondary">
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="w-full"
+              variant="secondary"
+            >
               {isSaving ? "Saving..." : "Update Credentials"}
             </Button>
           </div>
@@ -1961,29 +1995,44 @@ function RedditAuthConfig() {
                 // Save first to ensure backend has latest ID/Secret
                 await handleSave();
                 try {
-                  toast({ title: "Opening Browser...", description: "Please log in on Reddit." });
+                  toast({
+                    title: "Opening Browser...",
+                    description: "Please log in on Reddit.",
+                  });
                   await invoke("start_reddit_auth_flow_command");
-                  toast({ title: "Success", description: "Account connected successfully!" });
+                  toast({
+                    title: "Success",
+                    description: "Account connected successfully!",
+                  });
                   await loadConfig(); // Reload to see connected status
-                  setConfig((prev: any) => ({ ...prev, reddit_refresh_token: "CONNECTED" })); // Force optimistic UI update
+                  setConfig((prev: any) => ({
+                    ...prev,
+                    reddit_refresh_token: "CONNECTED",
+                  })); // Force optimistic UI update
                 } catch (e: any) {
-                  toast({ title: "Authentication Failed", description: e.toString(), variant: "destructive" });
+                  toast({
+                    title: "Authentication Failed",
+                    description: e.toString(),
+                    variant: "destructive",
+                  });
                 }
               }}
               className="w-full"
             >
-              {config?.reddit_refresh_token ? "Reconnect Account" : "Login with Reddit"}
+              {config?.reddit_refresh_token
+                ? "Reconnect Account"
+                : "Login with Reddit"}
             </Button>
           </div>
         </div>
 
         <div className="bg-muted/50 p-4 rounded-lg">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Note: This uses OAuth2 Authorization Code flow. Your password is never stored in this app.
+            Note: This uses OAuth2 Authorization Code flow. Your password is
+            never stored in this app.
           </p>
         </div>
       </div>
     </Card>
   );
 }
-
