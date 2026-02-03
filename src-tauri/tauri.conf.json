@@ -13,8 +13,9 @@
     "windows": [
       {
         "title": "Atalaia - 0.0.1",
-        "minWidth": 1700,
-        "width": 1700,
+        "minWidth": 1200,
+        "minHeight": 800,
+        "width": 1200,
         "height": 1100,
         "resizable": true,
         "fullscreen": false
