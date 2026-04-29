@@ -152,34 +152,38 @@ const MemoizedResultRow = React.memo(
               </a>
             </TooltipTrigger>
             <TooltipContent
-              className="max-w-2xl min-h-96 h-96 p-3 bg-stone-50 border shadow"
+              className="max-w-2xl h-96 p-3 bg-stone-50 border shadow"
               side="bottom"
               align="start"
             >
-              <div className="text-sm font-semibold text-black ">
-                <HighlightedText
-                  text={post.title}
-                  categories={keywordCategoriesForHighlighting}
-                />
-              </div>
-              {post.selftext && (
-                <div className="mt-2 border-t border-border pt-2 h-74">
-                  <p className="text-sm text-foreground/80 whitespace-pre-wrap h-72  overflow-y-auto custom-scroll">
+              <div className="flex flex-col h-full">
+                <div className="shrink-0 border-b border-border pb-2">
+                  <div className="text-sm font-semibold text-black">
                     <HighlightedText
-                      text={post.selftext}
+                      text={post.title}
                       categories={keywordCategoriesForHighlighting}
                     />
-                  </p>
+                  </div>
                 </div>
-              )}
-              <div className="mt-2 border-t border-border pt-2 flex justify-between items-center text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  <span>u/{String(post.author || "unknown")}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Radar className="h-3 w-3" />
-                  <span>r/{String(post.subreddit)}</span>
+                {post.selftext && (
+                  <div className="flex-1 overflow-y-auto custom-scroll py-2 min-h-0">
+                    <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                      <HighlightedText
+                        text={post.selftext}
+                        categories={keywordCategoriesForHighlighting}
+                      />
+                    </p>
+                  </div>
+                )}
+                <div className="shrink-0 border-t border-border pt-2 flex justify-between items-center text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <User className="h-3 w-3" />
+                    <span>u/{String(post.author || "unknown")}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Radar className="h-3 w-3" />
+                    <span>r/{String(post.subreddit)}</span>
+                  </div>
                 </div>
               </div>
             </TooltipContent>
