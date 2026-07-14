@@ -58,6 +58,14 @@ export function AutomationRunner() {
         addLog("Cycle complete. Waiting for next interval.", "success");
     };
 
+    // Reddit's search parser splits an unquoted multi-word term into separate
+    // tokens, so joining phrases like "screaming frog" with OR/AND produces a
+    // malformed boolean expression that matches almost anything. Quoting only
+    // the terms that contain whitespace keeps single-word terms broad while
+    // making multi-word keywords match as an exact phrase.
+    const quoteIfMultiWord = (term: string) =>
+        term.includes(" ") ? `"${term}"` : term;
+
     const processAndFilterPosts = (posts: PostDataWrapper[], source: string) => {
         const currentSettings = settingsRef.current;
         const allKeywords = [
@@ -159,8 +167,7 @@ export function AutomationRunner() {
         const chunkSize = 5; // Reduced chunk size to give more surface area to each keyword
         for (let i = 0; i < allKeywords.length; i += chunkSize) {
             const chunk = allKeywords.slice(i, i + chunkSize);
-            // Remove forced quotes to allow broader matching
-            const query = chunk.map(k => k.term).join(" OR ");
+            const query = chunk.map(k => quoteIfMultiWord(k.term)).join(" OR ");
 
             addLog(`Searching Globally for: ${chunk.map(k => k.term).join(", ")}...`, "info");
 
@@ -231,8 +238,7 @@ export function AutomationRunner() {
             for (let i = 0; i < allKeywords.length; i += chunkSize) {
                 if (!automationIntervalRef.current) break;
                 const chunk = allKeywords.slice(i, i + chunkSize);
-                // Remove forced quotes
-                const query = `subreddit:${subreddit} (${chunk.join(" OR ")})`;
+                const query = `subreddit:${subreddit} (${chunk.map(quoteIfMultiWord).join(" OR ")})`;
 
                 try {
                     const results: PostDataWrapper[] = await invoke("get_reddit_results", {

@@ -352,6 +352,34 @@ pub async fn search_reddit(
     Ok(posts)
 }
 
+/// Reddit's search backend treats an unquoted multi-word `q` param as a loose,
+/// OR-like relevance match, which returns broad and often inaccurate results
+/// for queries like "word1 word2 word3". Rewriting the terms with an explicit
+/// `AND` forces Reddit to only return results containing every term. Queries
+/// that already use Reddit's own search syntax (quoted phrases, field
+/// selectors like `title:`, or boolean operators) are left untouched so
+/// advanced users retain full control.
+fn build_search_query(raw: &str) -> String {
+    let trimmed = raw.trim();
+
+    let has_advanced_syntax = trimmed.contains('"')
+        || trimmed.contains(':')
+        || trimmed
+            .split_whitespace()
+            .any(|w| matches!(w, "AND" | "OR" | "NOT"));
+
+    if has_advanced_syntax {
+        return trimmed.to_string();
+    }
+
+    let words: Vec<&str> = trimmed.split_whitespace().collect();
+    if words.len() <= 1 {
+        trimmed.to_string()
+    } else {
+        words.join(" AND ")
+    }
+}
+
 pub async fn search_reddit_paginated(
     access_token: &str,
     query: &str,
@@ -370,15 +398,17 @@ pub async fn search_reddit_paginated(
         None => "https://oauth.reddit.com/search".to_string(),
     };
 
+    let built_query = build_search_query(query);
+
     println!(
-        "Making search request to: {} with q='{}' type=link,comment",
-        url, query
+        "Making search request to: {} with q='{}' (raw='{}') type=link,comment",
+        url, built_query, query
     );
 
     let response = client
         .get(&url)
         .query(&[
-            ("q", query),
+            ("q", built_query.as_str()),
             ("sort", sort_type),
             ("limit", "100"),
             ("t", "all"),
