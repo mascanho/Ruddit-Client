@@ -104,7 +104,7 @@ export function AutomationSelectionDialog({
                   selectedPostIds.size === 0 ||
                   !manualBulkComment.trim()
                 }
-                className="self-end px-3 py-1.5 bg-blue-600 text-white rounded text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="self-end px-3 py-1.5 bg-blue-600 text-white rounded text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isPublishing ? (
                   <div className="flex items-center gap-1">
@@ -124,7 +124,7 @@ export function AutomationSelectionDialog({
               disabled={
                 isBulkGenerating || isPublishing || selectedPostIds.size === 0
               }
-              className="w-full text-center justify-center flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+              className="w-full text-center justify-center flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
             >
               {isBulkGenerating ? (
                 <>
@@ -143,7 +143,7 @@ export function AutomationSelectionDialog({
               disabled={
                 isBulkGenerating || isPublishing || selectedPostIds.size === 0
               }
-              className="w-full flex text-center justify-center items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+              className="w-full flex text-center justify-center items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
             >
               {isPublishing ? (
                 <>
@@ -237,7 +237,7 @@ export function AutomationSelectionDialog({
                                 toast.error("Failed to publish reply");
                               }
                             }}
-                            className="mt-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground rounded hover:bg-primary/90"
+                            className="mt-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground rounded hover:bg-primary/90 cursor-pointer"
                           >
                             Publish Reply
                           </button>
@@ -248,7 +248,7 @@ export function AutomationSelectionDialog({
                       <button
                         onClick={() => handleGenerateReply(post)}
                         disabled={generatingForId === post.id}
-                        className="text-primary hover:text-primary/80 p-1 disabled:opacity-50"
+                        className="text-primary hover:text-primary/80 p-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         title="Generate AI reply"
                       >
                         {generatingForId === post.id ? (
@@ -259,7 +259,7 @@ export function AutomationSelectionDialog({
                       </button>
                       <button
                         onClick={() => togglePostSelection(post.id)}
-                        className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                        className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer"
                         title="Remove from selection"
                       >
                         <X className="h-4 w-4" />
@@ -273,7 +273,7 @@ export function AutomationSelectionDialog({
         <div className="flex justify-end pt-2">
           <button
             onClick={() => setSelectedPostIds(new Set())}
-            className="mr-auto text-xs text-destructive hover:underline"
+            className="mr-auto text-xs text-destructive hover:underline cursor-pointer"
           >
             Clear Selection
           </button>
@@ -283,7 +283,7 @@ export function AutomationSelectionDialog({
               handleBulkAddToTracking();
             }}
             disabled={selectedPostIds.size === 0}
-            className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest rounded-md hover:bg-primary/90"
+            className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest rounded-md hover:bg-primary/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           >
             Track All ({selectedPostIds.size})
           </button>

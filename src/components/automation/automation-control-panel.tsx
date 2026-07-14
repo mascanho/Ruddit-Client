@@ -64,7 +64,7 @@ export function AutomationControlPanel({
                 </div>
                 <button
                     onClick={() => setIsRunning(!isRunning)}
-                    className={`flex items-center gap-2 px-4 h-7 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${isRunning ? "bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white" : "bg-primary text-white hover:bg-primary/90 shadow-sm"}`}
+                    className={`flex items-center gap-2 px-4 h-7 text-[10px] font-black uppercase tracking-widest rounded-md transition-all cursor-pointer ${isRunning ? "bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white" : "bg-primary text-white hover:bg-primary/90 shadow-sm"}`}
                 >
                     {isRunning ? (
                         <>

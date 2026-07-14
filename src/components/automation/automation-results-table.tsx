@@ -13,6 +13,7 @@ import {
   MessageSquare,
   ExternalLink,
   Filter,
+  Check,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -26,6 +27,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { PostDataWrapper } from "@/store/store";
 import { getIntentColor } from "@/lib/marketing-utils";
 import { useOpenUrl } from "@/hooks/useOpenUrl";
@@ -107,196 +114,235 @@ const MemoizedResultRow = React.memo(
     keywordCategoriesForHighlighting: KeywordCategory[];
   }) => {
     return (
-      <tr
-        className={`border-b transition-colors group ${index % 2 === 0 ? "bg-black/[0.02] dark:bg-white/[0.04]" : "bg-background"} hover:bg-muted/80`}
-      >
-        <td className="w-8 pl-3 pr-1">
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => togglePostSelection(post.id)}
-            aria-label={`Select ${post.title}`}
-            className="translate-y-[2px]"
-          />
-        </td>
-        <td className="px-1 w-20">
-          <div className="flex flex-col gap-0.5">
-            <span
-              className={`w-fit text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}
-            >
-              {String(post.intent || "Low")}
-            </span>
-            {post.category && post.category !== "general" && (
-              <span className="w-fit text-[9px] py-0 px-1 rounded-full bg-secondary text-secondary-foreground">
-                {String(post.category)}
-              </span>
-            )}
-          </div>
-        </td>
-        <td className="p-1.5 font-medium overflow-hidden">
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  post.url && openUrl(post.url);
-                }}
-                className="hover:underline inline-block truncate max-w-full"
-              >
-                {String(post.title)}
-                {isTracked && (
-                  <KeywordBadge className="bg-blue-500/10 text-blue-400 border border-blue-500/20 ml-2">
-                    Tracking
-                  </KeywordBadge>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <tr
+            className={`border-b transition-colors group ${index % 2 === 0 ? "bg-black/[0.02] dark:bg-white/[0.04]" : "bg-background"} hover:bg-muted/80`}
+          >
+            <td className="w-8 pl-3 pr-1">
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => togglePostSelection(post.id)}
+                aria-label={`Select ${post.title}`}
+                className="translate-y-[2px]"
+              />
+            </td>
+            <td className="px-1 w-20">
+              <div className="flex flex-col gap-0.5">
+                <span
+                  className={`w-fit text-[9px] py-0 px-1 rounded-full font-bold ${getIntentColor(post.intent?.toLowerCase() || "low")}`}
+                >
+                  {String(post.intent || "Low")}
+                </span>
+                {post.category && post.category !== "general" && (
+                  <span className="w-fit text-[9px] py-0 px-1 rounded-full bg-secondary text-secondary-foreground">
+                    {String(post.category)}
+                  </span>
                 )}
-              </a>
-            </TooltipTrigger>
-            <TooltipContent
-              className="max-w-2xl h-96 p-3 bg-stone-50 border shadow"
-              side="bottom"
-              align="start"
-            >
-              <div className="flex flex-col h-full">
-                <div className="shrink-0 border-b border-border pb-2">
-                  <div className="text-sm font-semibold text-black">
-                    <HighlightedText
-                      text={post.title}
-                      categories={keywordCategoriesForHighlighting}
-                    />
-                  </div>
-                </div>
-                {post.selftext && (
-                  <div className="flex-1 overflow-y-auto custom-scroll py-2 min-h-0">
-                    <p className="text-sm text-foreground/80 whitespace-pre-wrap">
-                      <HighlightedText
-                        text={post.selftext}
-                        categories={keywordCategoriesForHighlighting}
-                      />
-                    </p>
-                  </div>
-                )}
-                <div className="shrink-0 border-t border-border pt-2 flex justify-between items-center text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    <span>u/{String(post.author || "unknown")}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Radar className="h-3 w-3" />
-                    <span>r/{String(post.subreddit)}</span>
-                  </div>
-                </div>
               </div>
-            </TooltipContent>
-          </Tooltip>
-        </td>
-        <td className="p-1.5 text-muted-foreground text-xs w-36">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <span
-                className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${
-                  blacklistUsernames.includes(post.author?.toLowerCase() || "")
-                    ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
-                    : monitoredUsernames.includes(
-                          post.author?.toLowerCase() || "",
-                        )
-                      ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
-                      : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
-                }`}
-                title={`u/${post.author || "unknown"}`}
-              >
-                u/{String(post.author || "unknown")}
-              </span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem
-                className="text-xs"
-                onClick={() =>
-                  openUrl(`https://www.reddit.com/user/${post.author}/`)
-                }
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                <span>View Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-xs"
-                onClick={() =>
-                  post.author && addUsernameToMonitoring(post.author)
-                }
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                <span>Monitor User</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-xs text-destructive focus:text-destructive"
-                onClick={() =>
-                  post.author && addUsernameToBlacklist(post.author)
-                }
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                <span>Blacklist User</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </td>
-        <td className="p-1.5 text-muted-foreground text-xs w-36">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <span
-                className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${
-                  monitoredSubreddits.includes(
-                    post.subreddit.toLowerCase().replace(/^r\//, ""),
-                  )
-                    ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
-                    : blacklistSubreddits.includes(
-                          post.subreddit.toLowerCase().replace(/^r\//, ""),
-                        )
-                      ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
-                      : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
-                }`}
-              >
-                r/{String(post.subreddit)}
-              </span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem
-                className="text-xs"
-                onClick={() => addSubredditToMonitoring(post.subreddit)}
-              >
-                <Radar className="h-4 w-4 mr-2" />
-                Monitor r/{post.subreddit}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-xs text-destructive focus:text-destructive"
-                onClick={() => addSubredditToBlacklist(post.subreddit)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Blacklist r/{post.subreddit}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </td>
-        <td className="p-1.5 text-muted-foreground text-xs w-28 whitespace-nowrap">
-          {formatElapsedTime(post.timestamp)}
-        </td>
-        <td className="p-1.5 text-right w-12">
-          <div className="flex items-center justify-end gap-1">
-            <CustomButton
-              onClick={() => handleGetComments(post, post.sort_type)}
-              title="View Comments"
-              className="h-6 w-6 p-0 justify-center hover:bg-primary/10 hover:text-primary text-muted-foreground/60 transition-colors"
-            >
-              <MessageSquare className="h-4 w-4" />
-            </CustomButton>
-            <CustomButton
-              onClick={() => handleAddToTracking(post)}
-              title="Add to Tracking"
-              className="h-6 w-6 p-0 justify-center hover:bg-primary/10 hover:text-primary text-muted-foreground/60 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-            </CustomButton>
-          </div>
-        </td>
-      </tr>
+            </td>
+            <td className="p-1.5 font-medium overflow-hidden">
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      post.url && openUrl(post.url);
+                    }}
+                    className="hover:underline inline-block truncate max-w-full"
+                  >
+                    {String(post.title)}
+                    {isTracked && (
+                      <KeywordBadge className="bg-blue-500/10 text-blue-400 border border-blue-500/20 ml-2">
+                        Tracking
+                      </KeywordBadge>
+                    )}
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent
+                  className="max-w-2xl h-96 p-3 bg-stone-50 border shadow"
+                  side="bottom"
+                  align="start"
+                >
+                  <div className="flex flex-col h-full">
+                    <div className="shrink-0 border-b border-border pb-2">
+                      <div className="text-sm font-semibold text-black">
+                        <HighlightedText
+                          text={post.title}
+                          categories={keywordCategoriesForHighlighting}
+                        />
+                      </div>
+                    </div>
+                    {post.selftext && (
+                      <div className="flex-1 overflow-y-auto custom-scroll py-2 min-h-0">
+                        <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                          <HighlightedText
+                            text={post.selftext}
+                            categories={keywordCategoriesForHighlighting}
+                          />
+                        </p>
+                      </div>
+                    )}
+                    <div className="shrink-0 border-t border-border pt-2 flex justify-between items-center text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        <span>u/{String(post.author || "unknown")}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Radar className="h-3 w-3" />
+                        <span>r/{String(post.subreddit)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </td>
+            <td className="p-1.5 text-muted-foreground text-xs w-36">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <span
+                    className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors max-w-full truncate ${
+                      blacklistUsernames.includes(post.author?.toLowerCase() || "")
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+                        : monitoredUsernames.includes(
+                              post.author?.toLowerCase() || "",
+                            )
+                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
+                          : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
+                    }`}
+                    title={`u/${post.author || "unknown"}`}
+                  >
+                    u/{String(post.author || "unknown")}
+                  </span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem
+                    className="text-xs"
+                    onClick={() =>
+                      openUrl(`https://www.reddit.com/user/${post.author}/`)
+                    }
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    <span>View Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-xs"
+                    onClick={() =>
+                      post.author && addUsernameToMonitoring(post.author)
+                    }
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    <span>Monitor User</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-xs text-destructive focus:text-destructive"
+                    onClick={() =>
+                      post.author && addUsernameToBlacklist(post.author)
+                    }
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Blacklist User</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </td>
+            <td className="p-1.5 text-muted-foreground text-xs w-40">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <span
+                    className={`inline-block border px-2 rounded-sm cursor-pointer transition-colors whitespace-normal break-words ${
+                      monitoredSubreddits.includes(
+                        post.subreddit.toLowerCase().replace(/^r\//, ""),
+                      )
+                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
+                        : blacklistSubreddits.includes(
+                              post.subreddit.toLowerCase().replace(/^r\//, ""),
+                            )
+                          ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+                          : "bg-background/50 border-muted-foreground/10 hover:bg-gray-100 hover:text-black"
+                    }`}
+                  >
+                    r/{String(post.subreddit)}
+                  </span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem
+                    className="text-xs"
+                    onClick={() => addSubredditToMonitoring(post.subreddit)}
+                  >
+                    <Radar className="h-4 w-4 mr-2" />
+                    Monitor r/{post.subreddit}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-xs text-destructive focus:text-destructive"
+                    onClick={() => addSubredditToBlacklist(post.subreddit)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Blacklist r/{post.subreddit}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </td>
+            <td className="p-1.5 text-muted-foreground text-xs w-28 whitespace-nowrap">
+              {formatElapsedTime(post.timestamp)}
+            </td>
+            <td className="p-1.5 text-right w-16">
+              <div className="flex items-center justify-end gap-1">
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <CustomButton
+                      onClick={() => handleGetComments(post, post.sort_type)}
+                      className="h-7 w-7 p-0 justify-center rounded-md text-muted-foreground/60 hover:bg-blue-500/10 hover:text-blue-500 transition-colors"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </CustomButton>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    <p>View Comments</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <CustomButton
+                      onClick={() => !isTracked && handleAddToTracking(post)}
+                      disabled={isTracked}
+                      className={`h-7 w-7 p-0 justify-center rounded-md transition-colors ${
+                        isTracked
+                          ? "text-blue-500 bg-blue-500/10"
+                          : "text-muted-foreground/60 hover:bg-primary/10 hover:text-primary"
+                      }`}
+                    >
+                      {isTracked ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                    </CustomButton>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    <p>{isTracked ? "Already Tracking" : "Add to Tracking"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </td>
+          </tr>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-44">
+          <ContextMenuItem
+            disabled={isTracked}
+            onClick={() => handleAddToTracking(post)}
+          >
+            {isTracked ? (
+              <Check className="h-4 w-4 mr-2" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
+            {isTracked ? "Already Tracking" : "Add to Tracking"}
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
     );
   },
 );
@@ -357,14 +403,14 @@ export function AutomationResultsTable({
             <>
               <button
                 onClick={() => setIsSelectedModalOpen(true)}
-                className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-primary/20 text-primary hover:bg-primary/10 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
+                className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-primary/20 text-primary hover:bg-primary/10 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4 cursor-pointer"
               >
                 <Eye className="h-3 w-3" />
                 Comments ({selectedPostIds.size})
               </button>
               <button
                 onClick={handleBulkAddToTracking}
-                className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
+                className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-right-4 cursor-pointer"
               >
                 <Plus className="h-3 w-3" />
                 Track Selected ({selectedPostIds.size})
@@ -374,7 +420,7 @@ export function AutomationResultsTable({
           <button
             onClick={clearFoundPosts}
             disabled={foundPostsLength === 0}
-            className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-destructive/20 text-destructive/60 hover:bg-destructive hover:text-white transition-all rounded-md flex items-center gap-2"
+            className="px-3 h-7 text-[10px] font-bold uppercase tracking-widest border border-destructive/20 text-destructive/60 hover:bg-destructive hover:text-white transition-all rounded-md flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
           >
             <Trash2 className="h-3 w-3" />
             Reset Feed
@@ -467,7 +513,7 @@ export function AutomationResultsTable({
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </th>
-                  <th className="p-1.5 font-bold text-xs text-muted-foreground sticky top-0 bg-background z-40 border-b border-border/50 w-32">
+                  <th className="p-1.5 font-bold text-xs text-muted-foreground sticky top-0 bg-background z-40 border-b border-border/50 w-40">
                     Subreddit
                   </th>
                   <th
@@ -483,7 +529,7 @@ export function AutomationResultsTable({
                       )}
                     </div>
                   </th>
-                  <th className="w-12 sticky top-0 bg-background z-40 border-b border-border/50"></th>
+                  <th className="w-16 sticky top-0 bg-background z-40 border-b border-border/50"></th>
                 </tr>
               </thead>
               <tbody>

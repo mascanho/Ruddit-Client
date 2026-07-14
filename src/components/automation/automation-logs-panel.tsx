@@ -31,7 +31,7 @@ export function AutomationLogsPanel({
         <button
           onClick={clearLogs}
           disabled={logs.length === 0}
-          className="text-[9px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 disabled:opacity-10"
+          className="text-[9px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 cursor-pointer disabled:cursor-not-allowed disabled:opacity-10"
         >
           FLUSH
         </button>

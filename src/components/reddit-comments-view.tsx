@@ -253,7 +253,7 @@ const CommentItem = ({
               <button
                 className={`
                   group flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider
-                  transition-colors px-1 py-0.5 rounded
+                  transition-colors px-1 py-0.5 rounded cursor-pointer
                   ${isReplying ? "text-primary bg-primary/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-muted/50"}
                 `}
                 onClick={(e) => {

@@ -494,7 +494,7 @@ export function RedditSearch({
                   <button
                     key={filter}
                     onClick={() => toggleViewFilter(filter)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewFilters.includes(filter)
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all cursor-pointer ${viewFilters.includes(filter)
                       ? filter === "hot"
                         ? "bg-red-500/10 text-red-600 dark:text-red-400"
                         : filter === "top"
@@ -563,7 +563,7 @@ export function RedditSearch({
                   <button
                     key={intent}
                     onClick={() => toggleViewIntentFilter(intent)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all ${viewIntentFilters.includes(intent)
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter transition-all cursor-pointer ${viewIntentFilters.includes(intent)
                       ? "bg-primary/10 text-primary"
                       : "opacity-30 hover:opacity-100"
                       }`}

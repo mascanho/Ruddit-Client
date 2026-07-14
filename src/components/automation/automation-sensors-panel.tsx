@@ -41,7 +41,7 @@ export function AutomationSensorsPanel({
                 {!noKeywords && (
                     <button
                         onClick={() => setKeywordsExpanded(!keywordsExpanded)}
-                        className="text-[9px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 transition-opacity"
+                        className="text-[9px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 transition-opacity cursor-pointer"
                     >
                         {keywordsExpanded ? "COMPRESS" : "EXPAND"}
                     </button>

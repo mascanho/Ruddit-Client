@@ -3,7 +3,11 @@
     "allow": [
       "Bash(cargo check *)",
       "WebSearch",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(echo \"---exit: $?---\")",
+      "Bash(awk '/<ContextMenuTrigger asChild>/{start=NR} /<\\\\/tr>/{print \"tr close at \" NR; exit}' /home/mascanho/Coding/Ruddit-Client/src/components/automation/automation-results-table.tsx)",
+      "Bash(python3 -)",
+      "Bash(echo \"---exit:$?---\")"
     ]
   }
 }

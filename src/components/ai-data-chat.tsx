@@ -302,7 +302,7 @@ export function AIDataChat({ dataStats, shouldScroll }: { dataStats: DataStats; 
                   </p>
                   <button
                     onClick={() => handleCopy(message.content, index)}
-                    className={`opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-md hover:bg-black/10 ${message.role === "user" ? "hover:bg-white/20" : "hover:bg-black/10"
+                    className={`opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-md cursor-pointer hover:bg-black/10 ${message.role === "user" ? "hover:bg-white/20" : "hover:bg-black/10"
                       }`}
                     title="Copy message"
                   >
