@@ -1,6 +1,7 @@
 import type { SearchResult, SortType } from "./types";
 
 export type ViewSortType =
+    | "relevance"
     | "date-desc"
     | "date-asc"
     | "score-desc"
@@ -80,6 +81,14 @@ export function filterAndSortResults(
         })
         .sort((a, b) => {
             if (options.viewSort === "original") return 0;
+
+            if (options.viewSort === "relevance") {
+                const relevanceA = a.relevance_score || 0;
+                const relevanceB = b.relevance_score || 0;
+                if (relevanceB !== relevanceA) return relevanceB - relevanceA;
+                // Tie-break by recency so equally-relevant posts show newest first.
+                return (b.timestamp || 0) - (a.timestamp || 0);
+            }
 
             if (options.viewSort.startsWith("date")) {
                 const timeA = a.timestamp || 0;

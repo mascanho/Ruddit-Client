@@ -7,7 +7,22 @@
       "Bash(echo \"---exit: $?---\")",
       "Bash(awk '/<ContextMenuTrigger asChild>/{start=NR} /<\\\\/tr>/{print \"tr close at \" NR; exit}' /home/mascanho/Coding/Ruddit-Client/src/components/automation/automation-results-table.tsx)",
       "Bash(python3 -)",
-      "Bash(echo \"---exit:$?---\")"
+      "Bash(echo \"---exit:$?---\")",
+      "Bash(xargs -I{} git show {} --stat)",
+      "Bash(curl -s -A \"Mozilling/5.0\" \"https://www.reddit.com/search.json?q=running%20AND%20shoes%20AND%20marathon&limit=5&sort=relevance\" -o /tmp/r1.json -w \"%{http_code}\\\\n\")",
+      "Read(//tmp/**)",
+      "Skill(run)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000)",
+      "Bash(timeout 10 npm view playwright version)",
+      "Bash(mkdir -p /tmp/pw-test)",
+      "Bash(npm init *)",
+      "Bash(timeout 60 npm install puppeteer-core --no-audit --no-fund)",
+      "Bash(node debug.js)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(rm -rf /tmp/pw-test /tmp/nextdev.log /tmp/r1.json)",
+      "Bash(ps -p 109981 -o pid,cmd)",
+      "Bash(kill 109981)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001 --max-time 2)"
     ]
   }
 }

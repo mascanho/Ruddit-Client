@@ -380,6 +380,74 @@ fn build_search_query(raw: &str) -> String {
     }
 }
 
+/// Pulls plain lowercase search terms out of a raw query, stripping Reddit's
+/// query syntax (quotes, boolean operators, field selectors like `title:`)
+/// so relevance scoring works on the same words the user actually typed.
+fn extract_keywords(query: &str) -> Vec<String> {
+    query
+        .split_whitespace()
+        .filter(|w| !matches!(*w, "AND" | "OR" | "NOT"))
+        .map(|w| {
+            w.trim_matches(|c: char| c == '"' || c == '(' || c == ')')
+                .rsplit(':')
+                .next()
+                .unwrap_or(w)
+                .to_lowercase()
+        })
+        .filter(|w| !w.is_empty())
+        .collect()
+}
+
+/// Scores how well a post matches the search query as a 0-100 percentage, so
+/// results can be ranked by textual relevance instead of Reddit's hot/top/new
+/// ordering (which reflects community engagement, not match quality). This
+/// matters most for longer queries: the AND-rewrite above guarantees every
+/// keyword appears *somewhere* in a matching post, but without a relevance
+/// score there's no way to tell a post that's centrally about all the
+/// keywords apart from one that only mentions the last one in passing.
+///
+/// Scored on the same 0-100 scale `relevance_score` already uses elsewhere
+/// in the app (see `getRelevanceBadge` in reddit-table-utils.tsx: >=80 High,
+/// >=60 Medium, else Low) so search results plug into the existing
+/// relevance filter/badge UI instead of introducing a second scale.
+/// Per keyword: a title hit counts as full credit, a body-only hit as
+/// partial credit. An exact phrase hit in the title maxes out the score;
+/// one in the body gives a smaller flat boost.
+fn calculate_relevance_score(title: &str, selftext: Option<&str>, query: &str) -> i64 {
+    let keywords = extract_keywords(query);
+    if keywords.is_empty() {
+        return 0;
+    }
+
+    let title_lower = title.to_lowercase();
+    let body_lower = selftext.unwrap_or("").to_lowercase();
+
+    let credit: f64 = keywords
+        .iter()
+        .map(|keyword| {
+            if title_lower.contains(keyword.as_str()) {
+                1.0
+            } else if body_lower.contains(keyword.as_str()) {
+                0.4
+            } else {
+                0.0
+            }
+        })
+        .sum();
+    let mut ratio = credit / keywords.len() as f64;
+
+    if keywords.len() > 1 {
+        let phrase = keywords.join(" ");
+        if title_lower.contains(&phrase) {
+            ratio = 1.0;
+        } else if body_lower.contains(&phrase) {
+            ratio = (ratio + 0.15_f64).min(1.0);
+        }
+    }
+
+    (ratio * 100.0).round().clamp(0.0, 100.0) as i64
+}
+
 pub async fn search_reddit_paginated(
     access_token: &str,
     query: &str,
@@ -434,6 +502,8 @@ pub async fn search_reddit_paginated(
                 let intent = config
                     .api_keys
                     .calculate_intent(&post.title, post.selftext.as_deref());
+                let relevance_score =
+                    calculate_relevance_score(&post.title, post.selftext.as_deref(), query);
                 Some(PostDataWrapper {
                     id: i64::from_str_radix(&post.id, 36).unwrap_or(0),
                     title: post.title.clone(),
@@ -442,7 +512,7 @@ pub async fn search_reddit_paginated(
                     formatted_date: database::adding::DB::format_timestamp(post.created_utc as i64)
                         .expect("Failed to format timestamp"),
                     sort_type: sort_type.to_string(),
-                    relevance_score: 0,
+                    relevance_score,
                     subreddit: post.subreddit.clone(),
                     permalink: format!("https://reddit.com{}", post.permalink.clone()),
                     engaged: 0,
@@ -462,10 +532,12 @@ pub async fn search_reddit_paginated(
             }
             RedditData::Comment(comment) => {
                 let full_body = comment.body.clone();
-                let intent = config.api_keys.calculate_intent(
-                    &comment.link_title.clone().unwrap_or_default(),
-                    Some(&full_body),
-                );
+                let link_title = comment.link_title.clone().unwrap_or_default();
+                let intent = config
+                    .api_keys
+                    .calculate_intent(&link_title, Some(&full_body));
+                let relevance_score =
+                    calculate_relevance_score(&link_title, Some(&full_body), query);
 
                 Some(PostDataWrapper {
                     id: i64::from_str_radix(&comment.id, 36).unwrap_or(0),
@@ -482,7 +554,7 @@ pub async fn search_reddit_paginated(
                     )
                     .expect("Failed to format timestamp"),
                     sort_type: sort_type.to_string(),
-                    relevance_score: 0,
+                    relevance_score,
                     subreddit: comment.subreddit.unwrap_or_default(),
                     permalink: format!("https://reddit.com{}", comment.permalink),
                     engaged: 0,

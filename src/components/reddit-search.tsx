@@ -107,7 +107,7 @@ export function RedditSearch({
   }, []);
 
   // View state
-  const [viewSort, setViewSort] = useState<ViewSortType>("date-desc");
+  const [viewSort, setViewSort] = useState<ViewSortType>("relevance");
   const [viewFilters, setViewFilters] = useState<SortType[]>([
     "hot",
     "top",
@@ -475,6 +475,7 @@ export function RedditSearch({
                   value={viewSort}
                   onChange={(e) => setViewSort(e.target.value as ViewSortType)}
                 >
+                  <option value="relevance">Best Match</option>
                   <option value="date-desc">Newest First</option>
                   <option value="date-asc">Oldest First</option>
                   <option value="score-desc">Popularity</option>
@@ -682,10 +683,10 @@ export function RedditSearch({
           </div>
 
           {/* Results Grid */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden bg-background/30 p-3 scrollbar-thin scrollbar-thumb-border/20 scrollbar-track-transparent -mt-6 -mb-5">
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-background/30 p-3 scrollbar-thin scrollbar-thumb-border/20 scrollbar-track-transparent -mt-6 -mb-5">
             {paginatedResults.length > 0 ? (
               <div
-                className={`grid gap-3 ${gridColumns === 1
+                className={`grid gap-3 pb-4 ${gridColumns === 1
                   ? "grid-cols-1"
                   : gridColumns === 2
                     ? "grid-cols-1 md:grid-cols-2"
@@ -911,94 +912,92 @@ export function RedditSearch({
           </div>
 
           {/* Pagination Footer */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-1.5 bg-muted/10 border-t backdrop-blur-md relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
-                    Display:
-                  </span>
-                  <select
-                    className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
-                    value={rowsPerPage}
-                    onChange={(e) => {
-                      setRowsPerPage(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                  >
-                    {[10, 25, 50, 100].map((v) => (
-                      <option key={v} value={v}>
-                        {v} / Page
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="text-[10px] font-mono text-muted-foreground uppercase">
-                  Batch: {startIndex + 1}—
-                  {Math.min(endIndex, subreddits.length)} of {subreddits.length}
-                </div>
+          <div className="flex items-center justify-between px-4 py-1.5 bg-muted/10 border-t backdrop-blur-md relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+                  Display:
+                </span>
+                <select
+                  className="bg-transparent border-none text-[11px] font-semibold text-primary focus:ring-0 cursor-pointer p-0 h-auto"
+                  value={rowsPerPage}
+                  onChange={(e) => {
+                    setRowsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  {[10, 25, 50, 100].map((v) => (
+                    <option key={v} value={v}>
+                      {v} / Page
+                    </option>
+                  ))}
+                </select>
               </div>
-
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronsLeft className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(1, prev - 1))
-                  }
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </Button>
-
-                <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/5 border border-primary/20">
-                  <span className="text-[9px] font-bold text-primary opacity-60">
-                    PAGE
-                  </span>
-                  <span className="text-[10px] font-bold text-primary font-mono">
-                    {currentPage}
-                  </span>
-                  <span className="text-[9px] font-bold text-primary opacity-40">
-                    /
-                  </span>
-                  <span className="text-[10px] font-bold text-primary font-mono">
-                    {totalPages}
-                  </span>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronsRight className="h-3.5 w-3.5" />
-                </Button>
+              <div className="text-[10px] font-mono text-muted-foreground uppercase">
+                Batch: {startIndex + 1}—
+                {Math.min(endIndex, subreddits.length)} of {subreddits.length}
               </div>
             </div>
-          )}
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.max(1, prev - 1))
+                }
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+
+              <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/5 border border-primary/20">
+                <span className="text-[9px] font-bold text-primary opacity-60">
+                  PAGE
+                </span>
+                <span className="text-[10px] font-bold text-primary font-mono">
+                  {currentPage}
+                </span>
+                <span className="text-[9px] font-bold text-primary opacity-40">
+                  /
+                </span>
+                <span className="text-[10px] font-bold text-primary font-mono">
+                  {totalPages}
+                </span>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-50 hover:opacity-100 transition-all active:scale-90"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
         </Card>
       ) : (
         !isSearching &&
