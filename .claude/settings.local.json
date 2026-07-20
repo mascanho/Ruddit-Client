@@ -22,7 +22,9 @@
       "Bash(rm -rf /tmp/pw-test /tmp/nextdev.log /tmp/r1.json)",
       "Bash(ps -p 109981 -o pid,cmd)",
       "Bash(kill 109981)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001 --max-time 2)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001 --max-time 2)",
+      "Bash(timeout 30 bash -c 'until curl -sf http://localhost:3001 >/dev/null 2>&1 || curl -sf http://localhost:3000 >/dev/null 2>&1; do sleep 1; done')",
+      "Bash(node tracking.js)"
     ]
   }
 }
