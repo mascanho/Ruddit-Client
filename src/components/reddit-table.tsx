@@ -90,6 +90,11 @@ import {
   Globe,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Post types
 import { FileText, Link as LinkIcon, Hash } from "lucide-react";
@@ -571,17 +576,13 @@ export function RedditTable({
       const matchesSegment =
         segmentFilter === "all" || post.segment === segmentFilter;
 
-      const matchesTone =
-        toneFilter === "all" || (post.tone || "neutral") === toneFilter;
-
       return (
         matchesSearch &&
         matchesSubreddit &&
         matchesRelevance &&
         matchesStatus &&
         matchesEngagement &&
-        matchesSegment &&
-        matchesTone
+        matchesSegment
       );
     });
 
@@ -1032,37 +1033,37 @@ export function RedditTable({
   return (
     <div className="flex-1 flex flex-col min-h-0 gap-3">
       <Card className="p-2 shadow-sm border-border/60 bg-white backdrop-blur-sm">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Filters
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            subredditFilter={subredditFilter}
-            setSubredditFilter={setSubredditFilter}
-            relevanceFilter={relevanceFilter}
-            setRelevanceFilter={setRelevanceFilter}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            engagementFilter={engagementFilter}
-            setEngagementFilter={setEngagementFilter}
-            segmentFilter={segmentFilter}
-            setSegmentFilter={setSegmentFilter}
-            toneFilter={toneFilter}
-            setToneFilter={setToneFilter}
-            subreddits={subreddits}
-            segments={segments}
-            onOpenSettings={onOpenSettings}
-          />
-          <Actions
-            filteredAndSortedDataLength={filteredAndSortedData.length}
-            onExportCsv={handleExportToCsv}
-            onExportJson={handleExportToJSON}
-            onImport={handleImportClick}
-            onClearTable={() => setShowClearTableDialog(true)}
-          />
-          <div className="text-[10px] uppercase font-bold tracking-widest opacity-60 px-2 border-l border-border/40 ml-2">
-            {filteredAndSortedData.length} / {data.length}
-          </div>
-        </div>
+        <Filters
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          subredditFilter={subredditFilter}
+          setSubredditFilter={setSubredditFilter}
+          relevanceFilter={relevanceFilter}
+          setRelevanceFilter={setRelevanceFilter}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          engagementFilter={engagementFilter}
+          setEngagementFilter={setEngagementFilter}
+          segmentFilter={segmentFilter}
+          setSegmentFilter={setSegmentFilter}
+          subreddits={subreddits}
+          segments={segments}
+          onOpenSettings={onOpenSettings}
+          rightSlot={
+            <>
+              <div className="whitespace-nowrap text-[10px] uppercase font-bold tracking-widest opacity-60 px-2 border-l border-border/40">
+                {filteredAndSortedData.length} / {data.length}
+              </div>
+              <Actions
+                filteredAndSortedDataLength={filteredAndSortedData.length}
+                onExportCsv={handleExportToCsv}
+                onExportJson={handleExportToJSON}
+                onImport={handleImportClick}
+                onClearTable={() => setShowClearTableDialog(true)}
+              />
+            </>
+          }
+        />
       </Card>
 
       <Card className="p-0 m-0 flex-1 min-h-0 flex flex-col">
@@ -1073,19 +1074,19 @@ export function RedditTable({
             className="table-fixed w-full border-separate border-spacing-0"
           >
             <colgroup>
-              <col className="w-[32px]" />
-              <col className="w-[30px]" />
-              <col className="w-[75px]" />
+              <col className="w-[44px]" />
+              <col className="w-[34px]" />
+              <col className="w-[120px]" />
               <col />
-              <col className="w-[160px]" />
-              <col className="w-[95px]" />
-              <col className="w-[40px]" />
-              <col className="w-[45px]" />
-              <col className="w-[70px]" />
-              <col className="w-[60px]" />
-              <col className="w-[85px]" />
-              <col className="w-[80px]" />
-              <col className="w-[45px]" />
+              <col className="w-[150px]" />
+              <col className="w-[110px]" />
+              <col className="w-[128px]" />
+              <col className="w-[52px]" />
+              <col className="w-[58px]" />
+              <col className="w-[104px]" />
+              <col className="w-[88px]" />
+              <col className="w-[104px]" />
+              <col className="w-[52px]" />
             </colgroup>
             <RedditTableHeader onSort={handleSort} />
 
@@ -1107,9 +1108,11 @@ export function RedditTable({
                       key={post.id}
                       className={`group hover:z-10 relative text-[11px] transition-all duration-300 border-b border-border/40
                         ${
-                          post.date_added > lastVisitTimestamp
-                            ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-[3px] border-l-blue-500/80 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.2)]"
-                            : `border-l-[3px] border-l-transparent hover:bg-muted/30 ${index % 2 === 0 ? "bg-background" : "bg-muted/5"}`
+                          post.engaged === 1
+                            ? "bg-emerald-500/[0.07] dark:bg-emerald-500/10 border-l-[3px] border-l-emerald-500/70 shadow-[inset_1px_0_0_0_rgba(16,185,129,0.2)]"
+                            : post.date_added > lastVisitTimestamp
+                              ? "bg-blue-500/5 dark:bg-blue-500/10 border-l-[3px] border-l-blue-500/80 shadow-[inset_1px_0_0_0_rgba(59,130,246,0.2)]"
+                              : `border-l-[3px] border-l-transparent hover:bg-muted/30 ${index % 2 === 0 ? "bg-background" : "bg-muted/5"}`
                         }
                         ${
                           settings.tableDensity === "compact"
@@ -1120,10 +1123,27 @@ export function RedditTable({
                         }`}
                     >
                       <TableCell className="px-1 text-center relative">
-                        {post.notes && (
-                          <div className="absolute top-1 right-1">
-                            <div className="h-1 w-1 rounded-full bg-primary animate-pulse" />
-                          </div>
+                        {post.notes && post.notes.trim() !== "" && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                aria-label="View note"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditNote(post);
+                                }}
+                                className="absolute top-1 right-1 z-20 h-2 w-2 rounded-full bg-primary ring-2 ring-background transition-transform hover:scale-125"
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="right"
+                              className="max-w-xs whitespace-pre-wrap text-left leading-snug"
+                            >
+                              {post.notes.trim().slice(0, 280)}
+                              {post.notes.trim().length > 280 ? "…" : ""}
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                         <Button
                           variant="ghost"
@@ -1135,7 +1155,7 @@ export function RedditTable({
                           className={`h-7 w-7 rounded-lg transition-all duration-300 shadow-none relative z-10 flex items-center justify-center mx-auto hover:bg-primary/10 hover:text-primary ${
                             expandedRows.has(post.id.toString())
                               ? "bg-primary/5 text-primary opacity-100"
-                              : "opacity-0 group-hover:opacity-100"
+                              : "opacity-30 group-hover:opacity-100"
                           }`}
                         >
                           <ChevronDown
@@ -1150,13 +1170,19 @@ export function RedditTable({
                       <TableCell className="text-muted-foreground/30 font-mono text-[9px] px-1 text-center group-hover:text-muted-foreground/60 transition-colors">
                         {(currentPage - 1) * rowsPerPage + index + 1}
                       </TableCell>
-                      <TableCell className="font-mono text-[10px] px-2 whitespace-nowrap opacity-60 group-hover:opacity-100 transition-opacity">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-bold text-foreground/80">
-                            {post?.formatted_date?.slice(5, 10).trim() || "N/A"}
+                      <TableCell className="px-2 whitespace-nowrap opacity-70 group-hover:opacity-100 transition-opacity">
+                        <div className="flex flex-col gap-0.5 leading-tight">
+                          <span className="font-semibold text-[10.5px] text-foreground/80">
+                            {post?.timestamp
+                              ? moment(post.timestamp * 1000).format(
+                                  "DD MMM YYYY",
+                                )
+                              : post?.formatted_date?.slice(0, 10) || "N/A"}
                           </span>
-                          <span className="text-[8px] opacity-50 uppercase tracking-tighter">
-                            {post?.formatted_date?.slice(0, 4)}
+                          <span className="text-[9px] text-muted-foreground/60">
+                            {post?.timestamp
+                              ? moment(post.timestamp * 1000).fromNow()
+                              : ""}
                           </span>
                         </div>
                       </TableCell>
@@ -1184,6 +1210,11 @@ export function RedditTable({
                               />
                             </div>
                           </div>
+                          {post.selftext && post.selftext.trim() !== "" && (
+                            <div className="pl-8 pr-2 text-[10px] leading-snug text-muted-foreground/70 line-clamp-2">
+                              {post.selftext.trim()}
+                            </div>
+                          )}
                           <div className="flex items-center gap-3 mt-0.5 text-[9px] font-medium">
                             <div
                               className="flex items-center gap-1.5 cursor-pointer text-muted-foreground hover:text-primary transition-colors bg-muted/20 px-1.5 py-0.5 rounded border border-border/20"
@@ -1250,6 +1281,32 @@ export function RedditTable({
                         </DropdownMenu>
                       </TableCell>
 
+                      <TableCell className="px-1 text-center">
+                        <div
+                          className="flex flex-col items-center leading-none gap-0.5"
+                          title={`Relevance score: ${post.relevance_score ?? 0}%`}
+                        >
+                          <span
+                            className={`text-[11px] font-black tabular-nums ${
+                              (post.relevance_score ?? 0) >= 80
+                                ? "text-green-600 dark:text-green-400"
+                                : (post.relevance_score ?? 0) >= 60
+                                  ? "text-amber-600 dark:text-amber-400"
+                                  : "text-muted-foreground/50"
+                            }`}
+                          >
+                            {post.relevance_score ?? 0}%
+                          </span>
+                          <span className="text-[8px] uppercase tracking-wider font-bold opacity-50">
+                            {(post.relevance_score ?? 0) >= 80
+                              ? "High"
+                              : (post.relevance_score ?? 0) >= 60
+                                ? "Med"
+                                : "Low"}
+                          </span>
+                        </div>
+                      </TableCell>
+
                       <TableCell className="px-1 min-w-[90px]">
                         <Select
                           value={post.status || "new"}
@@ -1300,20 +1357,33 @@ export function RedditTable({
                       </TableCell>
 
                       <TableCell className="px-1 text-center">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`h-7 w-7 rounded-lg transition-all active:scale-75 ${post.engaged === 1 ? "bg-green-500/10 text-green-600 hover:bg-green-500/20" : "hover:bg-muted opacity-40"}`}
-                          onClick={() =>
-                            handleEngagedToggle(post.id, post.engaged !== 1)
-                          }
-                        >
-                          {post.engaged === 1 ? (
-                            <CheckCircle2 className="h-4 w-4" />
-                          ) : (
-                            <Circle className="h-4 w-4" />
-                          )}
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-7 w-7 rounded-lg transition-all active:scale-75 ${
+                                post.engaged === 1
+                                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 ring-1 ring-emerald-500/30"
+                                  : "hover:bg-muted opacity-30 group-hover:opacity-60"
+                              }`}
+                              onClick={() =>
+                                handleEngagedToggle(post.id, post.engaged !== 1)
+                              }
+                            >
+                              {post.engaged === 1 ? (
+                                <CheckCircle2 className="h-4 w-4" />
+                              ) : (
+                                <Circle className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-[10px] font-bold uppercase tracking-wider">
+                            {post.engaged === 1
+                              ? "Engaged — click to unmark"
+                              : "Not engaged — click to mark as engaged"}
+                          </TooltipContent>
+                        </Tooltip>
                       </TableCell>
 
                       <TableCell className="px-1 text-center">
@@ -1435,46 +1505,6 @@ export function RedditTable({
                             )} text-[9px] h-5 px-2 font-black border-0 shadow-sm rounded-lg uppercase tracking-tighter`}
                           >
                             {post.intent.toUpperCase()}
-                          </Badge>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="px-1 text-center">
-                        {editingTonePost?.id === post.id ? (
-                          <Select
-                            value={post.tone || "neutral"}
-                            onValueChange={(value) => {
-                              handleToneChange(post.id, value as any);
-                              setEditingTonePost(null);
-                            }}
-                          >
-                            <SelectTrigger
-                              className={`h-7 text-[9px] uppercase tracking-widest px-2 border-0 shadow-none ring-0 focus:ring-0 ${getToneColor(post.tone)} hover:brightness-110 transition-all font-black rounded-lg max-w-[70px] truncate`}
-                            >
-                              <SelectValue placeholder="" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-border/40 bg-background/95 backdrop-blur-xl text-xs uppercase font-bold tracking-tight">
-                              <SelectItem
-                                value="positive"
-                                className="text-green-600"
-                              >
-                                Positive
-                              </SelectItem>
-                              <SelectItem value="neutral">Neutral</SelectItem>
-                              <SelectItem
-                                value="negative"
-                                className="text-red-600"
-                              >
-                                Negative
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge
-                            className={`${getToneColor(post.tone)} text-[9px] h-5 px-2 font-black border-0 shadow-sm cursor-pointer hover:brightness-110 active:scale-95 transition-all rounded-lg uppercase tracking-tighter`}
-                            onClick={() => setEditingTonePost(post)}
-                          >
-                            {(post.tone || "neutral").toUpperCase()}
                           </Badge>
                         )}
                       </TableCell>

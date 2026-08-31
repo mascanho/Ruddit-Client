@@ -1,14 +1,6 @@
-import {
-  Search,
-  Filter,
-  Layout,
-  Activity,
-  Flag,
-  Shield,
-  Smile,
-  Tag,
-  PlusCircle,
-} from "lucide-react";
+import type { ComponentType, ReactNode } from "react";
+import { Search, Layout, Activity, Flag, Shield, Tag, PlusCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -31,11 +23,41 @@ interface FiltersProps {
   setEngagementFilter: (value: string) => void;
   segmentFilter: string;
   setSegmentFilter: (value: string) => void;
-  toneFilter: string;
-  setToneFilter: (value: string) => void;
   subreddits: string[];
   segments: string[];
   onOpenSettings?: () => void;
+  /** Rendered on the right of the search row (e.g. counts + export/import actions) */
+  rightSlot?: ReactNode;
+}
+
+/**
+ * A filter dropdown trigger with a leading icon and a value that truncates
+ * inside the box, so the chevron always stays within the button bounds.
+ */
+function FilterTrigger({
+  icon: Icon,
+  placeholder,
+  className,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  placeholder: string;
+  className?: string;
+}) {
+  return (
+    <SelectTrigger
+      className={cn(
+        "h-8 min-w-0 overflow-hidden rounded-lg border-border/40 bg-background/40 px-2.5 text-[10px] font-bold uppercase tracking-tight transition-all hover:bg-background/80",
+        className,
+      )}
+    >
+      <span className="flex min-w-0 flex-1 items-center gap-1.5">
+        <Icon className="h-3 w-3 shrink-0 text-primary/50" />
+        <span className="min-w-0 flex-1 truncate text-left">
+          <SelectValue placeholder={placeholder} />
+        </span>
+      </span>
+    </SelectTrigger>
+  );
 }
 
 export function Filters({
@@ -51,34 +73,33 @@ export function Filters({
   setEngagementFilter,
   segmentFilter,
   setSegmentFilter,
-  toneFilter,
-  setToneFilter,
   subreddits,
   segments,
   onOpenSettings,
+  rightSlot,
 }: FiltersProps) {
   return (
-    <>
-      {/* Search Input - Expands to fill space */}
-      <div className="relative flex-1 min-w-[200px] max-w-md group">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/30 group-focus-within:text-primary transition-all duration-300 group-focus-within:scale-110" />
-        <Input
-          placeholder="Search through intelligence..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-8 h-8 bg-background/40 border-border/40 focus:bg-background focus:ring-2 focus:ring-primary/10 transition-all duration-300 text-xs rounded-lg shadow-sm"
-        />
+    <div className="flex w-full flex-col gap-2">
+      {/* Row 1: search + right-side actions */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 min-w-[200px] group">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/30 group-focus-within:text-primary transition-all duration-300 group-focus-within:scale-110" />
+          <Input
+            placeholder="Search posts or subreddits..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 h-8 bg-background/40 border-border/40 focus:bg-background focus:ring-2 focus:ring-primary/10 transition-all duration-300 text-xs rounded-lg shadow-sm"
+          />
+        </div>
+        {rightSlot && (
+          <div className="flex shrink-0 items-center gap-2">{rightSlot}</div>
+        )}
       </div>
 
-      {/* Filter Dropdowns - Grouped together */}
-      <div className="flex items-center gap-2 flex-wrap">
+      {/* Row 2: filter dropdowns - wrap cleanly on their own line */}
+      <div className="flex flex-wrap items-center gap-2 [&>*]:shrink-0">
         <Select value={subredditFilter} onValueChange={setSubredditFilter}>
-          <SelectTrigger className="w-40 h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
-            <div className="flex items-center gap-2">
-              <Layout className="h-3 w-3 text-primary/50" />
-              <SelectValue placeholder="Community" />
-            </div>
-          </SelectTrigger>
+          <FilterTrigger icon={Layout} placeholder="Community" className="w-[168px]" />
           <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[160px]">
             <SelectItem value="all" className="text-[10px] font-bold uppercase">
               All r/subreddits
@@ -96,44 +117,25 @@ export function Filters({
         </Select>
 
         <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
-          <SelectTrigger className="w-[130px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
-            <div className="flex items-center gap-2">
-              <Flag className="h-3 w-3 text-primary/50" />
-              <SelectValue placeholder="Intent" />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[120px]">
-            <SelectItem
-              value="all"
-              className="text-[10px] font-bold uppercase w-full"
-            >
-              All Intent
+          <FilterTrigger icon={Flag} placeholder="Relevance" className="w-[150px]" />
+          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[140px]">
+            <SelectItem value="all" className="text-[10px] font-bold uppercase">
+              All Relevance
             </SelectItem>
-            <SelectItem
-              value="high"
-              className="text-[10px] font-bold uppercase"
-            >
-              High Intent
+            <SelectItem value="high" className="text-[10px] font-bold uppercase">
+              High (80%+)
             </SelectItem>
-            <SelectItem
-              value="medium"
-              className="text-[10px] font-bold uppercase"
-            >
-              Medium Intent
+            <SelectItem value="medium" className="text-[10px] font-bold uppercase">
+              Medium (60-79%)
             </SelectItem>
             <SelectItem value="low" className="text-[10px] font-bold uppercase">
-              Low Intent
+              Low (&lt;60%)
             </SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[130px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
-            <div className="flex items-center gap-2">
-              <Shield className="h-3 w-3 text-primary/50" />
-              <SelectValue placeholder="Status" />
-            </div>
-          </SelectTrigger>
+          <FilterTrigger icon={Shield} placeholder="Status" className="w-[140px]" />
           <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[140px]">
             <SelectItem value="all" className="text-[10px] font-bold uppercase">
               All Status
@@ -147,42 +149,29 @@ export function Filters({
             >
               Research
             </SelectItem>
-            <SelectItem
-              value="replied"
-              className="text-[10px] font-bold uppercase"
-            >
+            <SelectItem value="replied" className="text-[10px] font-bold uppercase">
               Replied
             </SelectItem>
-            <SelectItem
-              value="closed"
-              className="text-[10px] font-bold uppercase"
-            >
+            <SelectItem value="closed" className="text-[10px] font-bold uppercase">
               Closed
             </SelectItem>
-            <SelectItem
-              value="ignored"
-              className="text-[10px] font-bold uppercase"
-            >
+            <SelectItem value="ignored" className="text-[10px] font-bold uppercase">
               Ignored
             </SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={engagementFilter} onValueChange={setEngagementFilter}>
-          <SelectTrigger className="w-[160px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
-            <div className="flex items-center gap-2">
-              <Activity className="h-3 w-3 text-primary/50" />
-              <SelectValue placeholder="Engagement" />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[140px]">
+          <FilterTrigger
+            icon={Activity}
+            placeholder="Engagement"
+            className="w-[168px]"
+          />
+          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[150px]">
             <SelectItem value="all" className="text-[10px] font-bold uppercase">
               Any Engagement
             </SelectItem>
-            <SelectItem
-              value="engaged"
-              className="text-[10px] font-bold uppercase"
-            >
+            <SelectItem value="engaged" className="text-[10px] font-bold uppercase">
               Engaged
             </SelectItem>
             <SelectItem
@@ -190,38 +179,6 @@ export function Filters({
               className="text-[10px] font-bold uppercase"
             >
               Not Engaged
-            </SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={toneFilter} onValueChange={setToneFilter}>
-          <SelectTrigger className="w-[130px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
-            <div className="flex items-center gap-2">
-              <Smile className="h-3 w-3 text-primary/50" />
-              <SelectValue placeholder="Tone" />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[120px]">
-            <SelectItem value="all" className="text-[10px] font-bold uppercase">
-              All Tones
-            </SelectItem>
-            <SelectItem
-              value="positive"
-              className="text-[10px] font-bold uppercase text-green-600"
-            >
-              Positive
-            </SelectItem>
-            <SelectItem
-              value="neutral"
-              className="text-[10px] font-bold uppercase"
-            >
-              Neutral
-            </SelectItem>
-            <SelectItem
-              value="negative"
-              className="text-[10px] font-bold uppercase text-red-600"
-            >
-              Negative
             </SelectItem>
           </SelectContent>
         </Select>
@@ -236,14 +193,11 @@ export function Filters({
             setSegmentFilter(value);
           }}
         >
-          <SelectTrigger className="w-[145px] h-8 text-[10px] font-bold uppercase tracking-tight bg-background/40 border-border/40 hover:bg-background/80 transition-all rounded-lg">
-            <div className="flex items-center gap-2">
-              <Tag className="h-3 w-3 text-primary/50" />
-              <SelectValue
-                placeholder={segments.length === 0 ? "Add segment" : "Segment"}
-              />
-            </div>
-          </SelectTrigger>
+          <FilterTrigger
+            icon={Tag}
+            placeholder={segments.length === 0 ? "Add segment" : "Segment"}
+            className="w-[150px]"
+          />
           <SelectContent className="rounded-xl border-border/40 backdrop-blur-xl min-w-[140px]">
             <SelectItem value="all" className="text-[10px] font-bold uppercase">
               Any Segment
@@ -269,6 +223,6 @@ export function Filters({
           </SelectContent>
         </Select>
       </div>
-    </>
+    </div>
   );
 }
